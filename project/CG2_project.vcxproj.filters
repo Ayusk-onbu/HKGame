@@ -73,9 +73,6 @@
     <Filter Include="Game3D">
       <UniqueIdentifier>{e548cda0-0067-4976-b77f-bbf7b4b50906}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Game3D\Player3D">
-      <UniqueIdentifier>{4988ef74-887c-48f5-9b07-3b85332df5cf}</UniqueIdentifier>
-    </Filter>
     <Filter Include="UsefulTool\Camera\CameraController">
       <UniqueIdentifier>{032ec473-759f-4fba-9dfa-f953dab45e65}</UniqueIdentifier>
     </Filter>
@@ -133,18 +130,6 @@
     <Filter Include="Common\Structure\Advanced">
       <UniqueIdentifier>{b65f3c2e-68b8-428e-989d-0ef105d11d18}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Game3D\Player3D\PlayerState">
-      <UniqueIdentifier>{dd392997-87fb-4353-a4e7-d0a43b53ff03}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Game3D\Enemy">
-      <UniqueIdentifier>{c955f375-fa4e-46a7-9746-a8060ae65c76}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Game3D\Enemy\EnemyState">
-      <UniqueIdentifier>{18d78713-c94f-4916-9b57-c7fa9f8d7471}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Game3D\Bullet">
-      <UniqueIdentifier>{c5d09d8d-5964-470d-b187-39fdf1e9e843}</UniqueIdentifier>
-    </Filter>
     <Filter Include="resources\shaders\Object3d">
       <UniqueIdentifier>{31786124-72df-4f0a-be7f-ec8a9a1ce7f9}</UniqueIdentifier>
     </Filter>
@@ -181,9 +166,6 @@
     <Filter Include="resources\shaders\SkinningObject3d">
       <UniqueIdentifier>{768110a9-3e68-4c94-8c11-0ab15faa5fa3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Game3D\Player3D\Player3DCommand">
-      <UniqueIdentifier>{95d85004-aebf-4ac3-ac33-0c8080cdab73}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Game3D\Other">
       <UniqueIdentifier>{35ecde88-901f-43bb-8144-b5394c6b2065}</UniqueIdentifier>
     </Filter>
@@ -201,6 +183,15 @@
     </Filter>
     <Filter Include="UsefulTool\Motion">
       <UniqueIdentifier>{499c004e-274f-4edb-bce2-7620acbe3c43}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TD3Game">
+      <UniqueIdentifier>{eab4c9c0-fe8e-44a2-8481-fd26b72be6b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TD3Game\Player">
+      <UniqueIdentifier>{f0ad6a75-160d-4778-9f49-7c0f4ecc228e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TD3Game\Player\States">
+      <UniqueIdentifier>{d1df7805-4f1d-4400-a225-b10a1be73520}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -275,9 +266,6 @@
     </ClCompile>
     <ClCompile Include="Common\MathUtils\Quaternion\Quaternion.cpp">
       <Filter>Common\MathUtils\Quaternion</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3D.cpp">
-      <Filter>Game3D\Player3D</Filter>
     </ClCompile>
     <ClCompile Include="UsefulTool\Camera\CameraController\CameraController.cpp">
       <Filter>UsefulTool\Camera\CameraController</Filter>
@@ -441,77 +429,8 @@
     <ClCompile Include="UsefulTool\Easing\EasingType.cpp">
       <Filter>UsefulTool\Easing</Filter>
     </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerJumpState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerStopState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerWalkState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerFallState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerDoubleJumpState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerDashState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerAttackState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\Enemy.cpp">
-      <Filter>Game3D\Enemy</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\EnemyState\BossDecisionState.cpp">
-      <Filter>Game3D\Enemy\EnemyState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\EnemyState\BossChaseState.cpp">
-      <Filter>Game3D\Enemy\EnemyState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\EnemyState\BossMeleeAttackState.cpp">
-      <Filter>Game3D\Enemy\EnemyState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\EnemyState\BossHurtState.cpp">
-      <Filter>Game3D\Enemy\EnemyState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\EnemyState\BossRangeAttackState.cpp">
-      <Filter>Game3D\Enemy\EnemyState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\EnemyState\BossDeathState.cpp">
-      <Filter>Game3D\Enemy\EnemyState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\BossBodyCollider.cpp">
-      <Filter>Game3D\Enemy</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerExhaustedState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\PlayerBodyCollider.cpp">
-      <Filter>Game3D\Player3D</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerHurtState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerDeathState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerEvasionState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
     <ClCompile Include="Engine\Objects\Particle\Particle.cpp">
       <Filter>Engine\Objects\Particle</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Bullet\Bullet.cpp">
-      <Filter>Game3D\Bullet</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Bullet\BulletManager.cpp">
-      <Filter>Game3D\Bullet</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Clear\ClearScene.cpp">
       <Filter>Scene\Clear</Filter>
@@ -567,27 +486,6 @@
     <ClCompile Include="UsefulTool\Camera\CameraController\GameCameraController.cpp">
       <Filter>UsefulTool\Camera\CameraController</Filter>
     </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DCommand\Player3DCommand.cpp">
-      <Filter>Game3D\Player3D\Player3DCommand</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DCommand\PlayerInputHandler.cpp">
-      <Filter>Game3D\Player3D\Player3DCommand</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerStepEvasionState.cpp">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Player3D\Player3DState\PlayerJustEvasionState.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\EnemyState\BossDashAttackState.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\EnemyState\BossSpinAttackState.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
-    <ClCompile Include="Game3D\Enemy\EnemyState\BossRoarState.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="Game3D\Other\Ground.cpp">
       <Filter>Game3D\Other</Filter>
     </ClCompile>
@@ -627,11 +525,38 @@
     <ClCompile Include="Common\MathUtils\Spline\Hermite.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="UsefulTool\Motion\MotionManager.ixx">
-      <Filter>UsefulTool\Motion</Filter>
-    </ClCompile>
     <ClCompile Include="UsefulTool\Motion\MotionManager.cpp">
       <Filter>UsefulTool\Motion</Filter>
+    </ClCompile>
+    <ClCompile Include="TD3Game\Player\ManaComponent.cpp">
+      <Filter>TD3Game\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="TD3Game\Player\ManaComponent.ixx">
+      <Filter>TD3Game\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="TD3Game\Player\Player.cpp">
+      <Filter>TD3Game\Player</Filter>
+    </ClCompile>
+    <ClCompile Include="TD3Game\Player\States\PlayerState_Movement.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="TD3Game\Player\States\PlayerState_Action.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="TD3Game\Player\InputHandler.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="TD3Game\Player\Umbrella.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="TD3Game\Player\Attachment.ixx">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="TD3Game\Player\Attachment.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="TD3Game\Player\UmbrellaState.cpp">
+      <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -706,9 +631,6 @@
     </ClInclude>
     <ClInclude Include="Common\MathUtils\Quaternion\Quaternion.h">
       <Filter>Common\MathUtils\Quaternion</Filter>
-    </ClInclude>
-    <ClInclude Include="Game3D\Player3D\Player3D.h">
-      <Filter>Game3D\Player3D</Filter>
     </ClInclude>
     <ClInclude Include="UsefulTool\Camera\CameraController\CameraController.h">
       <Filter>UsefulTool\Camera\CameraController</Filter>
@@ -887,29 +809,8 @@
     <ClInclude Include="UsefulTool\Easing\EasingType.h">
       <Filter>UsefulTool\Easing</Filter>
     </ClInclude>
-    <ClInclude Include="Game3D\Player3D\Player3DState\PlayerState.h">
-      <Filter>Game3D\Player3D\PlayerState</Filter>
-    </ClInclude>
-    <ClInclude Include="Game3D\Enemy\Enemy.h">
-      <Filter>Game3D\Enemy</Filter>
-    </ClInclude>
-    <ClInclude Include="Game3D\Enemy\EnemyState\EnemyState.h">
-      <Filter>Game3D\Enemy\EnemyState</Filter>
-    </ClInclude>
-    <ClInclude Include="Game3D\Enemy\BossBodyCollider.h">
-      <Filter>Game3D\Enemy</Filter>
-    </ClInclude>
-    <ClInclude Include="Game3D\Player3D\PlayerBodyCollider.h">
-      <Filter>Game3D\Player3D</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Objects\Particle\Particle.h">
       <Filter>Engine\Objects\Particle</Filter>
-    </ClInclude>
-    <ClInclude Include="Game3D\Bullet\Bullet.h">
-      <Filter>Game3D\Bullet</Filter>
-    </ClInclude>
-    <ClInclude Include="Game3D\Bullet\BulletManager.h">
-      <Filter>Game3D\Bullet</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Clear\ClearScene.h">
       <Filter>Scene\Clear</Filter>
@@ -956,12 +857,6 @@
     <ClInclude Include="UsefulTool\Animation\Animation.h">
       <Filter>UsefulTool\Animation</Filter>
     </ClInclude>
-    <ClInclude Include="Game3D\Player3D\Player3DCommand\Player3DCommand.h">
-      <Filter>Game3D\Player3D\Player3DCommand</Filter>
-    </ClInclude>
-    <ClInclude Include="Game3D\Player3D\Player3DCommand\PlayerInputHandler.h">
-      <Filter>Game3D\Player3D\Player3DCommand</Filter>
-    </ClInclude>
     <ClInclude Include="Game3D\Other\Ground.h">
       <Filter>Game3D\Other</Filter>
     </ClInclude>
@@ -991,6 +886,24 @@
     </ClInclude>
     <ClInclude Include="Scene\Title\TitleScene.h">
       <Filter>Scene\Title</Filter>
+    </ClInclude>
+    <ClInclude Include="TD3Game\Player\Player.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="TD3Game\Player\PlayerStates.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="TD3Game\Player\InputHandler.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="TD3Game\Player\Umbrella.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="TD3Game\Player\UmbrellaState.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="UsefulTool\Motion\MotionManager.h">
+      <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

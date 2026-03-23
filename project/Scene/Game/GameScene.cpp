@@ -5,9 +5,7 @@
 
 
 GameScene::GameScene()
-	: player_(std::make_unique<Player3D>()),
-	  boss_(std::make_unique<BossEnemy>()),
-	  collisionManager_(std::make_unique<CollisionManager>()),
+	: collisionManager_(std::make_unique<CollisionManager>()),
 	  ground_(std::make_unique<Ground>())
 {
 
@@ -18,8 +16,6 @@ GameScene::~GameScene() {
 }
 
 void GameScene::Initialize() {
-	player_->Initialize(p_fngine_);
-	boss_->Initialize(p_fngine_,player_.get());
 	ground_->Initialize(p_fngine_);
 	toGameTimer_ = 0.0f;
 	// Fade関係のUI
@@ -70,16 +66,12 @@ void GameScene::Update(){
 	if (notGame_) {
 		toGameTimer_ += deltaTime;
 		FirstFade(toGameTimer_);
-		if (boss_->StartCutscene(toGameTimer_)) {
+		if (true/*boss_->StartCutscene(toGameTimer_)*/) {
 			notGame_ = false;
 		}
 		ImGuiManager::GetInstance()->Text("Not Game");
 	}
 	else {
-		player_->Update();
-
-		//boss_->Update();
-
 		ground_->Update();
 
 		CollisionCheck();
@@ -91,8 +83,6 @@ void GameScene::Update(){
 void GameScene::Draw() {
 	skySphere_->Draw();
 	ground_->Draw();
-	boss_->Draw();
-	player_->Draw();
 
 	playUI_->Draw();
 	// Fade
@@ -108,13 +98,6 @@ void GameScene::CollisionCheck() {
 	collisionManager_->Begin();
 
 	// ここからColliderを設定
-	collisionManager_->SetColliders(&player_->GetAttackCollider());
-	collisionManager_->SetColliders(&player_->GetPlayerBodyCollider());
-	collisionManager_->SetColliders(&boss_->GetAttackCollider());
-	collisionManager_->SetColliders(&boss_->GetBossBodyCollider());
-	for (auto& bullet : boss_->GetBulletManager().bullets_) {
-		collisionManager_->SetColliders(&bullet->GetCollider());
-	}
 	
 
 	// Check!
@@ -132,12 +115,7 @@ void GameScene::ToScene() {
 		downPos.y = Easing_Float((180.0f) + 720.0f, 180.0f + 360.0f, toSceneTimer_, 3.0f, EASINGTYPE::InBounce);
 		fadeDown_->worldTransform_.set_.Translation(downPos);
 	}
-	if (boss_->IsDead()) {
-		ToClearScene();
-	}
-	else if (player_->IsDead()) {
-		ToGameOverScene();
-	}
+	
 }
 
 void GameScene::ToClearScene() {
@@ -195,8 +173,6 @@ void GameScene::PauseUpdate() {
 
 void GameScene::PauseDraw() {
 	ground_->Draw();
-	boss_->Draw();
-	player_->Draw();
 
 	pause_->Draw();
 	playGuide_->Draw();

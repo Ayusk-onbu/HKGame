@@ -2,8 +2,6 @@
 #include "Fngine.h"
 #include "Scene.h"
 #include "WorldTransform.h"
-#include "Player3D.h"
-#include "Enemy.h"
 #include "CollisionManager.h"
 #include "SpriteObject.h"
 #include "Particle.h"
@@ -48,8 +46,6 @@ private:
 	std::unique_ptr<SpriteObject>purposeUI_;
 private:
 
-	std::unique_ptr<Player3D>player_;
-	std::unique_ptr<BossEnemy>boss_;
 	std::unique_ptr<CollisionManager>collisionManager_;
 	std::unique_ptr<Ground>ground_;
 	std::unique_ptr<ConvenienceModel>skySphere_;

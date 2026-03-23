@@ -2,8 +2,7 @@
 #include "CameraSystem.h"
 #include "ModelManager.h"
 #include "UIAnimation.h"
-
-import MotionManager;
+#include "MotionManager.h"
 
 SceneDirector::~SceneDirector() {
 	delete currentScene_;
@@ -143,6 +142,9 @@ void SceneDirector::LoadModelData() {
 	name = ModelManager::GetInstance()->LoadObj("debugBlock.obj", "resources", LoadFileType::OBJ);
 	name = ModelManager::GetInstance()->LoadObj("plane.gltf", "resources");
 	name = ModelManager::GetInstance()->LoadObj("ulthimaSky.obj", "resources", LoadFileType::OBJ);
+	name = ModelManager::GetInstance()->LoadObj("UmbrellaHandle.obj", "resources/Umbrella", LoadFileType::OBJ);
+	name = ModelManager::GetInstance()->LoadObj("UmbrellaTop.obj", "resources/Umbrella", LoadFileType::OBJ);
+	name = ModelManager::GetInstance()->LoadObj("UmbrellaTopClose.obj", "resources/Umbrella", LoadFileType::OBJ);
 }
 
 void SceneDirector::LoadTexture() {

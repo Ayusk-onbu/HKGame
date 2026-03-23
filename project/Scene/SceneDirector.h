@@ -1,11 +1,12 @@
 #pragma once
+#include <memory>
 #include "Scene.h"
 #include "TitleScene.h"
 #include "GameScene.h"
 #include "TestScene.h"
 #include "GameOver.h"
 #include "ClearScene.h"
-#include <memory>
+
 
 class SceneDirector
 {

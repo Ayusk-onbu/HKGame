@@ -13,7 +13,7 @@ void DebugCameraController::Update(Camera& camera)
 	camera.GetRadius() -= InputManager::GetMouse().GetWheel() * panSpeed * 0.1f;
 
 	//   視点の移動
-	if (InputManager::GetKey().PressKey(DIK_LSHIFT) && InputManager::GetMouse().IsButtonPress(2)) {
+	if (InputManager::GetKey().PressKey(DIK_LSHIFT) && InputManager::GetMouse().IsButtonPress(1)) {
 		Vector3 right = camera.CalculateRight();
 		Vector3 up = camera.CalculateUp();
 		camera.targetPos_.x -= right.x * InputManager::GetMouse().getDelta().x * panSpeed;
@@ -25,7 +25,7 @@ void DebugCameraController::Update(Camera& camera)
 	}
 
 	//   視点の回転
-	if (InputManager::GetMouse().IsButtonPress(2) && !InputManager::GetKey().PressKey(DIK_LSHIFT)) {
+	if (InputManager::GetMouse().IsButtonPress(1) && !InputManager::GetKey().PressKey(DIK_LSHIFT)) {
 		camera.GetTheta() += (InputManager::GetMouse().getDelta().y * 0.1f);
 		camera.GetPhi() -= (InputManager::GetMouse().getDelta().x * 0.1f);
 	}

@@ -1,11 +1,9 @@
-module;
+#include "MotionManager.h"
 #include <json.hpp>
 #include <fstream>
 #include <iostream>
 #include "Structures.h"
 #include "ImGuiManager.h"
-
-module MotionManager;
 
 using json = nlohmann::json;
 using namespace MathUtils;
