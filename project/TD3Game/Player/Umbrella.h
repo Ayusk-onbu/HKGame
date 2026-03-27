@@ -1,6 +1,7 @@
 #pragma once
 #include "ModelObject.h"
 #include "UmbrellaState.h"
+#include "Collider.h"
 
 import Attachment;
 
@@ -122,8 +123,19 @@ namespace Umbrella {
         ///  当たり判定とパラメータ
         /// 
         //////////////////////
+    public:
+        void UpdateColliderShape();
+        ConvexCollider* GetCollider() const { return collider_.get(); }
+        // 攻撃判定のON/OFF（属性の切り替え）
+        void EnableAttackCollision() {
+            collider_->SetMyType(COL_Player_Attack);
+        }
+        void DisableAttackCollision() {
+            collider_->SetMyType(COL_None);
+        }
     private:
-         /*Collider*/
+        std::unique_ptr<ConvexCollider>collider_;
+
         float durability_;// 耐久度
         float manaAmount_;// 過剰量のマナ管理
 
@@ -147,6 +159,10 @@ namespace Umbrella {
         //std::unique_ptr<UmbrellaStates::Open>openState_;
         //std::unique_ptr<UmbrellaStates::Reverse>reverseState_;
 
+    public:// Get・Set関係の関数
+        // 傘の「かさ」の状態を返す関数
+        UmbrellaForm GetUmbrellaForm()const { return form_; }
+
         //////////////////////
         /// 
         ///  基本的な情報
@@ -154,6 +170,7 @@ namespace Umbrella {
         //////////////////////
     private:
         std::unique_ptr<ModelObject>obj_;
+        std::unique_ptr<ModelObject>openObj_;
     public:  Fngine* p_fngine_;
     };
 

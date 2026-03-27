@@ -30,8 +30,9 @@ public:
 	void SetInfo(const Vector3& pos, const Vector3& rot) { position_ = pos;rotation_ = rot; }
 	void SetPos(const Vector3& pos) { position_ = pos; }
 	void SetRot(const Vector3& rot) { rotation_ = rot; }
-	Vector3 GetPos() { return position_; }
+	void SetMatrix(const Matrix4x4& mat) { matWorld_ = mat; }
 	// 取得
+	Vector3 GetPos() { return position_; }
 	Matrix4x4 GetMatrix()const { return matWorld_; }
 	Vector3 GetWorldPos()const { return { matWorld_.m[3][0],matWorld_.m[3][1], matWorld_.m[3][2], }; }
 private:

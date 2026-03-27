@@ -4,6 +4,7 @@
 #include "InputHandler.h"
 #include "Umbrella.h"
 #include "MotionManager.h"
+#include "Collider.h"
 
 import ManaComponent;
 
@@ -20,6 +21,8 @@ struct PlayerInputData {
 	bool isJump;		  // ジャンプボタンが押された瞬間か
 	bool isEvasion;		  // 回避ボタンが押された瞬間か
 	bool isSheathe;		  // 納刀ボタンが押されたか瞬間か
+	bool useMana;         // マナを使用するかどうか
+	bool isGuard;
 };
 
 class Player {
@@ -41,8 +44,10 @@ public:
 public:
 	void ChangeMovementState(PlayerStates::Base* newState);
 	void ChangeActionState(PlayerStates::Base* newState);
+	bool onGround_ = false;
 private:
 	WeaponStance currentStance_ = WeaponStance::Drawn;
+	
 
 	// 使用しているステート
 	PlayerStates::Base* currentMovementState_;
@@ -56,12 +61,18 @@ public:
 	std::unique_ptr<Movement::Walking>walkingState_;
 	std::unique_ptr<Movement::Running>runningState_;
 	std::unique_ptr<Movement::Airborne>airborneState_;
+	std::unique_ptr<Movement::Restricted>restrictedState_;// アクションの際に動きを制限するState
 
 	// Action State
 	std::unique_ptr<Action::SheatheWeapon>sheatheWeaponState_;
 	std::unique_ptr<Action::DrawWeapon>drawWeaponState_;
 	std::unique_ptr<Action::Normal>normalState_;
 	std::unique_ptr<Action::Attack>attackState_;
+	std::unique_ptr<Action::Guard>guardState_;
+
+	std::unique_ptr<Action::UmbrellaOpen>umbrellaOpenState_;
+	std::unique_ptr<Action::UmbrellaClose>umbrellaCloseState_;
+	std::unique_ptr<Action::UmbrellaReverse>umbrellaReverseState_;
 
 public:// Get・Set
 	WeaponStance GetWeaponStance() const { return currentStance_; }
@@ -99,6 +110,10 @@ public:
 	Vector3 moveAmount_;// 最終的な1フレームの移動量
 	// ※加速度や速さはそれぞれのStateで各々作る
 
+	// 【 ジャンプ 】
+	float jumpCoyoteTimer_ = 0.0f;
+	const float JUMP_COYOTE_MAX_TIME = 0.15f;
+
 	//////////////////////////////
 	///
 	///   入力関係
@@ -121,6 +136,8 @@ public:
 	Attachment* GetRightHandJoint() { return &rightHandJoint_; }
 	Attachment* GetBackJoint() { return &backJoint_; }
 
+	void UmbrellaAttachRHand();
+	void UmbrellaAttachBack();
 private:
 	Attachment rightHandJoint_;
 	Attachment backJoint_;
@@ -130,8 +147,33 @@ private:
 	///   傘
 	/// 
 	//////////////////////////////
+public:
+	Umbrella::Main& GetUmbrella() { return *umbrella_; }
 private:
 	std::unique_ptr<Umbrella::Main>umbrella_;
+
+	//////////////////////////////
+	///
+	///   マナ
+	/// 
+	//////////////////////////////
+public:
+	// Get関係
+	ManaComponent& GetManaComponent() { return *mana_; }
+private:
+	// ManaComponent
+	std::unique_ptr<ManaComponent>mana_;
+
+	//////////////////////////////
+	///
+	///   当たり判定
+	/// 
+	//////////////////////////////
+public:
+	Collider* GetCollider()const { return collider_.get(); }
+
+private:
+	std::unique_ptr<ConvexCollider>collider_;
 
 	//////////////////////////////
 	///
@@ -143,15 +185,12 @@ private:
 
 	std::unique_ptr<ModelObject> obj_;
 
-	// ManaComponent
-	std::unique_ptr<ManaComponent>mana_;
-
 	// プレイヤーの行動を管理するクラス
 public:	std::unique_ptr<MotionController> motionController_;
 
+	  /*OnGroundの実装必要だわ。浮いちゃう*/
+
 public:
-	// Get関係
-	ManaComponent& GetManaComponent() { return *mana_; }
 	Vector3 GetPosition()const { return obj_->worldTransform_.get_.Translation(); }
 	void SetPosition(const Vector3& pos) { obj_->worldTransform_.set_.Translation(pos); }
 private:

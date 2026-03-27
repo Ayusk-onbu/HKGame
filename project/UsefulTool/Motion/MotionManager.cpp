@@ -4,6 +4,7 @@
 #include <iostream>
 #include "Structures.h"
 #include "ImGuiManager.h"
+#include "Easing.h"
 
 using json = nlohmann::json;
 using namespace MathUtils;
@@ -59,7 +60,8 @@ Vector3 MotionController::Update(float deltaTime, const Vector3& direction) {
 	auto& motionData = MotionManager::GetInstance()->GetMotion(currentMotionName_);
 	motionTimer_ += deltaTime;
 	float t = motionTimer_ / motionDuration_;
-	Vector3 localOffset = MathUtils::Spline::GetPointSpline(motionData, t);
+    float x = InSine(t);
+	Vector3 localOffset = MathUtils::Spline::GetPointSpline(motionData, x);
 	localOffset.y *= -1.0f;
 	localOffset.x *= direction.x >= 0 ? 1.0f : -1.0f; // 方向に応じて左右反転
 

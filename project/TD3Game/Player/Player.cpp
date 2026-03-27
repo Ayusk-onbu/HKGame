@@ -1,6 +1,7 @@
 #include "CameraSystem.h"
 #include "ImGuiManager.h"
 #include "Player.h"
+#include "Ground.h"
 #include <string>
 
 using namespace PlayerStates;
@@ -30,6 +31,87 @@ void Player::Initialize() {
 	umbrella_->handle_->GetBaseJoint()->AttachTo(GetRightHandJoint());
 
 	motionController_ = std::make_unique<MotionController>();
+
+	// =====================
+	// 【 当たり判定の設定 】
+	// =====================
+	
+	// 1. コライダーの生成
+	collider_ = std::make_unique<ConvexCollider>();
+	collider_->SetUserData(this);
+
+	// 2. 属性の設定（自分はPlayer、当たる相手はEnemyやEnemyの攻撃）
+	collider_->SetMyType(COL_Player);
+	collider_->SetYourType(COL_Enemy | COL_Enemy_Attack | COL_Ground);
+
+	// 3. ローカル頂点データの設定（例：プレイヤーを囲む四角形やひし形など）
+	std::vector<Vector3> localVertices = {
+		{-1.0f, -1.0f, 0.0f}, // 左下
+		{ 1.0f, -1.0f, 0.0f}, // 右下
+		{-1.0f,  1.0f, 0.0f}, // 左上
+		{ 1.0f,  1.0f, 0.0f}  // 右上
+	};
+	collider_->SetVertices(localVertices);
+
+	// 4. 当たった時の処理（コールバック関数の登録）
+	// ラムダ式を使って、このPlayerのメンバ関数や変数にアクセスできるようにする
+	collider_->onCollisionCallback = [this](Collider* other, const Vector3& pushOut) {
+		if (other->GetMyType() == COL_Ground) {
+
+			ImGuiManager::GetInstance()->Text("Player to Ground Collision!!");
+
+			// =========================
+			// 【 めり込み解消処理 】
+			// =========================
+			Vector3 actualPush = { -pushOut.x, -pushOut.y, -pushOut.z };
+			Vector3 pos = obj_->worldTransform_.get_.Translation();
+			pos.x += actualPush.x;
+			pos.y += actualPush.y;
+			pos.z += actualPush.z;
+			obj_->worldTransform_.set_.Translation(pos);
+
+			Vector3 normal = actualPush;
+			float length = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+			if (length > 0.0f) {
+				normal.x /= length;
+				normal.y /= length;
+				normal.z /= length;
+			}
+
+			// 足元に地面があるかのチェック
+			if (normal.y > 0.8f) {
+				// 「落下中」または「立ち止まっている」時だけ着地判定
+				// ジャンプ上昇中（> 0.0f）は坂に触れても着地しないようにする
+				if (this->externalVelocity_.y <= 0.0f) {
+					ImGuiManager::GetInstance()->Text("Player to Ground Collision!! -> OKOKOKO");
+					this->onGround_ = true;
+
+					// 地面の上なのでリセット
+					if (this->externalVelocity_.y < 0.0f) {
+						this->externalVelocity_.y = 0.0f;
+					}
+				}
+			}
+
+			Ground* ground = static_cast<Ground*>(other->GetUserData());
+			if (ground != nullptr) {
+
+			}
+		}
+		else if (other->GetMyType() == COL_Enemy_Attack) {
+
+			// 1. 相手のコライダーから「持ち主（Enemy）」のポインタをもらう
+			// ※ void* で返ってくるので、Enemy型にキャスト（変換）する
+			//Enemy* enemy = static_cast<Enemy*>(other->GetUserData());
+
+			// 2. 万が一キャストに失敗していないかチェック
+			//if (enemy != nullptr) {
+			//	// 3. 敵本体から攻撃力を取得して、ダメージを受ける！
+			//	int damage = enemy->GetAttackPower();
+			//	this->TakeDamage(damage); // プレイヤーのHPを減らす処理など
+			//}
+		}
+	};
 }
 
 void Player::Update(float deltaTime) {
@@ -51,6 +133,16 @@ void Player::Update(float deltaTime) {
 		currentActionState_->Update(deltaTime);
 	}
 
+	// =========================
+	// 【 コヨーテタイムの処理 】
+	// =========================
+	if (this->onGround_) {
+		jumpCoyoteTimer_ = 0.0f;
+	}
+	else {
+		jumpCoyoteTimer_ += deltaTime;
+	}
+
 	// ここから移動関係の処理
 	moveAmount_ = (myVelocity_ + externalVelocity_) * deltaTime;
 
@@ -69,8 +161,36 @@ void Player::Update(float deltaTime) {
 	// 傘
 	umbrella_->Update(deltaTime);
 
+	// Colliderに設定
+	collider_->SetWorldPosition(GetPosition());
+
+	collider_->SetWorldMatrix(obj_->worldTransform_.mat_);
+
+	collider_->UpdateAABB();
+
 	Vector3 test = rightHandJoint_.GetPos();
 	ImGui::DragFloat3("RHandJoint", &test.x);
+
+	Vector3 colliderPos = collider_->GetWorldPosition();
+	ImGui::DragFloat3("colliderPos", &colliderPos.x);
+
+	ImGuiManager::GetInstance()->DrawDrag("Player : External Speed", this->externalVelocity_);
+	ImGuiManager::GetInstance()->DrawDrag("Player : My Speed", this->myVelocity_);
+
+	if (ImGui::TreeNodeEx("Mana")) {
+		ImGui::Text("Use : Push LSHIFT");
+		ImGui::Text("Mana is Use ? : ");
+		ImGui::SameLine();
+		ImGui::Text(inputData_.useMana ? "Using" : "Not Use");
+
+		float mana = mana_->GetCurrentMana();
+		ImGui::DragFloat("Amount", &mana);
+		ImGui::TreePop();
+	}
+
+	// 地面についているフラグを解除
+	// ※ バグの原因になりそうな箇所
+	this->onGround_ = false;
 }
 
 void Player::Draw() {
@@ -117,6 +237,7 @@ void Player::InitializeStates() {
 	idleState_ = std::make_unique<Movement::Idle>();idleState_->SetInfo(this, groundedState_.get());
 	walkingState_ = std::make_unique<Movement::Walking>();walkingState_->SetInfo(this, groundedState_.get());
 	runningState_ = std::make_unique<Movement::Running>();runningState_->SetInfo(this, groundedState_.get());
+	restrictedState_ = std::make_unique<Movement::Restricted>();restrictedState_->SetInfo(this, groundedState_.get());
 
 	// 最初の設定
 	currentMovementState_ = idleState_.get();
@@ -127,6 +248,11 @@ void Player::InitializeStates() {
 	drawWeaponState_ = std::make_unique<Action::DrawWeapon>();drawWeaponState_->SetInfo(this);
 	normalState_ = std::make_unique<Action::Normal>();normalState_->SetInfo(this);
 	attackState_ = std::make_unique<Action::Attack>();attackState_->SetInfo(this);
+	guardState_ = std::make_unique<Action::Guard>();guardState_->SetInfo(this);
+
+	umbrellaOpenState_ = std::make_unique<Action::UmbrellaOpen>();umbrellaOpenState_->SetInfo(this);
+	umbrellaCloseState_ = std::make_unique<Action::UmbrellaClose>();umbrellaCloseState_->SetInfo(this);
+	umbrellaReverseState_ = std::make_unique<Action::UmbrellaReverse>();umbrellaReverseState_->SetInfo(this);
 
 	// 最初の設定
 	currentActionState_ = normalState_.get();
@@ -148,11 +274,24 @@ void Player::AddForce(const Vector3& force) {
 
 void Player::Jump() {
 	if (inputData_.isJump) {
-		// Y軸に上向きの初速（ジャンプ力）を与える！
-		float jumpPower = 7.0f; // 調整
-		externalVelocity_.y = jumpPower;
+		if (this->onGround_ || this->jumpCoyoteTimer_ < JUMP_COYOTE_MAX_TIME) {
+			// Y軸に上向きの初速（ジャンプ力）を与える！
+			float jumpPower = 7.0f; // 調整
+			externalVelocity_.y = jumpPower;// 初速
+			// フラグの処理
+			this->onGround_ = false;
+			this->jumpCoyoteTimer_ = this->JUMP_COYOTE_MAX_TIME;
 
-		// ステートを「空中」に切り替える！
-		ChangeMovementState(airborneState_.get());
+			// ステートを「空中」に切り替える！
+			ChangeMovementState(airborneState_.get());
+		}
 	}
+}
+
+void Player::UmbrellaAttachBack() {
+	umbrella_->handle_->GetBaseJoint()->AttachTo(GetBackJoint());
+}
+
+void Player::UmbrellaAttachRHand() {
+	umbrella_->handle_->GetBaseJoint()->AttachTo(GetRightHandJoint());
 }

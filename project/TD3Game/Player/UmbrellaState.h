@@ -18,21 +18,21 @@ namespace UmbrellaStates {
 		Top* top_;
 	};
 
-	class Close : Base {
+	class Close : public Base {
 	public:
 		void Enter()override;
 		void Update(float deltaTime)override;
 		void Exit()override;
 	};
 
-	class Open : Base {
+	class Open : public Base {
 	public:
 		void Enter()override;
 		void Update(float deltaTime)override;
 		void Exit()override;
 	};
 
-	class Reverse : Base {
+	class Reverse : public Base {
 	public:
 		void Enter()override;
 		void Update(float deltaTime)override;

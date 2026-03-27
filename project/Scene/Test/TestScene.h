@@ -1,6 +1,7 @@
 #pragma once
 #include "Scene.h"
 #include "Collider.h"
+#include "CollisionManager.h"
 #include "Quaternion.h"
 #include "Particle.h"
 #include "UIContainer.h"
@@ -29,6 +30,7 @@ public:
 	void PauseDraw()override;
 	bool CanPause()const override { return true; }
 
+	void CollisionCheck();
 private:
 	UIContainer container_;
 	UIHAnimation animation_;
@@ -37,6 +39,8 @@ private:
 
 	std::unique_ptr<Player>testPlayer_;
 
-	std::unique_ptr<ConvenienceModel>ground_;
+	std::unique_ptr<Ground>ground_;
+
+	std::unique_ptr<CollisionManager>collisionManager_;
 };
 

@@ -53,6 +53,13 @@ namespace PlayerStates {
 			void Update(float deltaTime) override {};
 			void Exit() override {};
 		};
+		// アクション実行中などで移動入力を受け付けないステート
+		class Restricted : public Base {
+		public:
+			void Enter() override;
+			void Update(float deltaTime) override;
+			void Exit() override;
+		};
 	}
 	namespace Action {
 		class Normal : public Base {
@@ -62,6 +69,17 @@ namespace PlayerStates {
 			void Exit() override;
 		};
 		class Attack : public Base {
+		public:
+			void Enter() override;
+			void Update(float deltaTime) override;
+			void Exit() override;
+		private:
+			MotionController motion_;
+			int comboCount_ = 1;
+			float attackTimer_ = 0.0f;
+			bool isNextAttackReserved_ = false;
+		};
+		class Guard : public Base {
 		public:
 			void Enter() override;
 			void Update(float deltaTime) override;
@@ -88,6 +106,25 @@ namespace PlayerStates {
 			void Exit()override;
 		};
 		class SheatheWeapon : public Base {
+		public:
+			void Enter()override;
+			void Update(float deltaTime)override;
+			void Exit()override;
+		};
+
+		class UmbrellaOpen : public Base {
+		public:
+			void Enter()override;
+			void Update(float deltaTime)override;
+			void Exit()override;
+		};
+		class UmbrellaClose : public Base {
+		public:
+			void Enter()override;
+			void Update(float deltaTime)override;
+			void Exit()override;
+		};
+		class UmbrellaReverse : public Base {
 		public:
 			void Enter()override;
 			void Update(float deltaTime)override;

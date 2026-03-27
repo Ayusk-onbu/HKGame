@@ -26,13 +26,17 @@ void TestScene::Initialize() {
 	//particle_ = std::make_unique<Particle>(p_fngine_);
 	//particle_->Initialize(1000,"water");
 
-	ground_ = std::make_unique<ConvenienceModel>();
-	ground_->Initialize(p_fngine_, "ground", "GridLine");
+	ground_ = std::make_unique<Ground>();
+	ground_->Initialize(p_fngine_);
+
+	collisionManager_ = std::make_unique<CollisionManager>();
 }
 
 void TestScene::Update() {
 
 	//player_->Update();
+
+	ground_->Update();
 
 	testPlayer_->Update(1.0f / 60.0f);
 
@@ -41,6 +45,8 @@ void TestScene::Update() {
 	/*if (InputManager::IsJump()) {
 		hasRequestedNextScene_ = true;
 	}*/
+
+	CollisionCheck();
 
 	if (hasRequestedNextScene_) {
 		p_sceneDirector_->RequestChangeScene(new TitleScene());
@@ -69,4 +75,16 @@ void TestScene::PauseDraw() {
 
 	//Draw();
 	container_.Draw();
+}
+
+void TestScene::CollisionCheck() {
+	// 中身をclear
+	collisionManager_->Begin();
+
+	// ここからColliderを設定
+	collisionManager_->SetColliders(testPlayer_->GetCollider());
+	collisionManager_->SetColliders(ground_->GetCollider());
+
+	// Check!
+	collisionManager_->CheckAllCollisions();
 }

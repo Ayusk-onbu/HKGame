@@ -23,7 +23,7 @@ namespace PlayerStates::Movement {
 		// ※ 関数でまとめておく
 
 		// Y軸の速度
-		player_->externalVelocity_.y = 0.0f;// ※地面にいるので 0
+		player_->externalVelocity_.y -= 9.8f * deltaTime; // 通常の重力
 
 		// ジャンプ
 		player_->Jump();
@@ -39,8 +39,8 @@ namespace PlayerStates::Movement {
 
 	void Airborne::Update(float deltaTime) {
 		// 空気の抵抗（小さいのであまり減速しない）
-		float airResistance = 1.0f;
-		float gravity = 9.8f; // 重力加速度
+		float airResistance = 1.5f;
+		float gravity = 9.8f * 1.3f; // 重力加速度
 
 		// 外部からの速度（X, Z軸）を少しだけ減衰させる
 		player_->externalVelocity_.x = std::lerp(player_->externalVelocity_.x, 0.0f, airResistance * deltaTime);
@@ -49,19 +49,17 @@ namespace PlayerStates::Movement {
 		// Y軸には常に重力をかけ続ける
 		player_->externalVelocity_.y -= gravity * deltaTime;
 
-		if (player_->GetPosition().y <= 0.0f) {
-
-			// 地面にめり込まないようにY座標を0に補正
-			Vector3 pos = player_->GetPosition();
-			pos.y = 0.0f;
-			player_->SetPosition(pos);
+		if (player_->onGround_ == true) {
 
 			// 落下速度をリセット
 			player_->externalVelocity_.y = 0.0f;
 
 			// 地上に着いたので Idle ステートに戻す！
 			player_->ChangeMovementState(player_->idleState_.get());
+			return;
 		}
+
+		player_->Jump();
 	}
 
 	/*void Airborne::Exit() {
@@ -123,10 +121,10 @@ namespace PlayerStates::Movement {
 		// 武器の状態で切り替え
 		switch (player_->GetWeaponStance()) {
 		case WeaponStance::Sheathed:
-			targetSpeed = 5.0f;
+			targetSpeed = 7.0f;
 			break;
 		case WeaponStance::Drawn:
-			targetSpeed = 3.0f;
+			targetSpeed = 5.0f;
 			break;
 		}
 
@@ -143,6 +141,32 @@ namespace PlayerStates::Movement {
 	}
 
 	void Walking::Exit() {
+
+	}
+	////////////////////////////
+	//
+	//  Restricted
+	// 
+	////////////////////////////
+	void Restricted::Enter() {
+
+	}
+
+	void Restricted::Update(float deltaTime) {
+		// 親（Grounded）のUpdateを呼び、重力や外部速度（ノックバック等）の減衰処理
+		if (parentState_) {
+			parentState_->Update(deltaTime);
+		}
+
+		// ！！！ スティック入力は一切見ない（移動させない） ！！！
+
+		// 攻撃などで付与された myVelocity_（踏み込み速度）を摩擦で減衰させる
+		float deceleration = 15.0f; // ※ここの値が踏み込みの「滑り具合」
+		player_->myVelocity_.x = std::lerp(player_->myVelocity_.x, 0.0f, deceleration * deltaTime);
+		player_->myVelocity_.z = std::lerp(player_->myVelocity_.z, 0.0f, deceleration * deltaTime);
+	}
+
+	void Restricted::Exit() {
 
 	}
 }

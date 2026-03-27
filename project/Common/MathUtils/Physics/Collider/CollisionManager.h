@@ -10,7 +10,10 @@ public:
 	void SetColliders(Collider* collider);
 	void CheckAllCollisions();
 private:
-	void CheckCollisionPair(Collider* colliderA, Collider* colliderB);
+	bool CheckNarrowPhase(Collider* a, Collider* b, Vector3& outPush);
+    // GJKアルゴリズムの本体
+    bool GJK(ConvexCollider* a, ConvexCollider* b, Vector3& outPush);
+	bool CheckFilter(Collider* colA, Collider* colB);
 private:
 	std::vector<Collider*> colliders_;
 };

@@ -62,15 +62,24 @@ public:
 	/// <param name="direction">向いている方向</param>
 	/// <returns></returns>
 	Vector3 Update(float deltaTime, const Vector3& direction);
-	/// <summary>
-	/// 生成中かどうか
-	/// </summary>
-	/// <returns></returns>
-	bool IsPlaying()const { return isPlaying_; }
 private:
 	std::string currentMotionName_;// 再生中のモーションの名前
 	float motionTimer_ = 0.0f;// モーションのタイマー
 	float motionDuration_ = 1.0f; // モーションの総再生時間（秒）
 	bool isPlaying_ = false;// 再生中かどうか
 	Vector3 actionStartPosition_;// モーション開始時の座標(相対的に動かすため)
+
+	///////////////////////////////////
+	///
+	///  Get や Set 関係
+	///
+	///////////////////////////////////
+public:
+	float GetMotionDuration()const { return motionDuration_; }
+	float GetCurrentTime()const { return motionTimer_; }
+	/// <summary>
+	/// 再生中かどうか
+	/// </summary>
+	/// <returns></returns>
+	bool IsPlaying()const { return isPlaying_; }
 };

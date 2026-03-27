@@ -27,6 +27,19 @@ void InputHandler::HandleInput() {
     input.isAttack = InputManager::IsAttack();
     input.isEvasion = InputManager::TrigerEvasion();
     input.isSheathe = false; // ※任意のボタンを設定（例: IsSheathe() など）
+    input.isGuard = false;
+    if (InputManager::GetKey().PressedKey(DIK_RETURN)) {
+        input.isSheathe = true;
+    }
+    if (InputManager::GetKey().PressedKey(DIK_I)) {
+        input.isGuard = true;
+    }
+
+    input.useMana = false;
+    // マナ使用モードとして実装するかどうか
+    if (InputManager::GetKey().PressKey(DIK_LSHIFT)) {
+        input.useMana = true;
+    }
 
     // Playerに入力情報を渡す！
     player_->SetInputData(input);
