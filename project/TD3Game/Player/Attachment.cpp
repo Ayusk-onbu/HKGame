@@ -53,4 +53,6 @@ void Attachment::Detach() {
 	// 解除処理
 	parent_ = nullptr;
 	attached_ = false;
+	// ローカル座標なのでワールドに変換する
+	position_ = GetWorldPos();
 }

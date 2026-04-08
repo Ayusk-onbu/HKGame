@@ -48,7 +48,25 @@ namespace UmbrellaStates {
 		}
 	}
 	void Reverse::Exit() {
+		// 状態の設定
 		top_->ChangeForm(UmbrellaForm::Reverse);
+		// 防御力を低く設定
+		top_->GetStatusComponent().SetDefense(1.0f);
+	}
+	/////////////////////////
+	/// 
+	///  Broken
+	///
+	/////////////////////////
+	void Broken::Enter() {
+		// アニメーション開始
+		
+	}
+	void Broken::Update(float deltaTime) {
+		
+	}
+	void Broken::Exit() {
+		
 	}
 	/////////////////////////
 	/// 
@@ -88,19 +106,58 @@ namespace UmbrellaStates {
 		top_->DisableAttackCollision();
 	}
 
-	//////////////////////////
+	/////////////////////////
+	/// 
+	///  Flying
 	///
-	///   Thrown
-	///
-	//////////////////////////
-	void Thrown::Enter() {
-		Vector3 startPos = { top_->GetRootJoint()->GetMatrix().m[3][0],top_->GetRootJoint()->GetMatrix().m[3][1] ,top_->GetRootJoint()->GetMatrix().m[3][2] };
-		motion_.Play("", startPos, 1.0f);
+	/////////////////////////
+	void Flying::Enter() {
+		// 親（持ち手）から自分（かさ）を切り離す！
+		// ※ Topクラスが持っているJoint（アタッチメント）をDetachする処理
+		top_->GetRootJoint()->Detach();
+
+		top_->ChangeForm(UmbrellaForm::Flying); // 飛んでいる間は「かさがない状態」にする
 	}
-	void Thrown::Update(float deltaTime) {
+
+	void Flying::Update(float deltaTime) {
+		// ③ 座標を更新して飛ばす
+		Vector3 pos = top_->GetRootJoint()->GetPos();
+		pos.x += velocity_.x * deltaTime;
+		pos.y += velocity_.y * deltaTime;
+		pos.z += velocity_.z * deltaTime;
+		top_->GetRootJoint()->SetPos(pos);
+		// Velocityをだんだん減速させる
+		float deceleration = 15.0f; // ブレーキの強さ
+		velocity_.x = std::lerp(velocity_.x, 0.0f, deceleration * deltaTime);
+		velocity_.y = std::lerp(velocity_.z, 0.0f, deceleration * deltaTime);
+
+		// 速度がゼロになったら飛ぶのを終了する
+		if (velocity_.x <= 0.0001f && velocity_.y <= 0.0001f) {
+			top_->ChangeState(new Stationary());
+		}
+	}
+
+	void Flying::Exit() {
+		// 飛び終わった時の処理
+	}
+
+	// ==========================================
+	//   Stationary (静止・足場状態)
+	// ==========================================
+	void Stationary::Enter() {
+		// 足場用の当たり判定（コライダー属性）をONにするなどの処理
+		top_->GetCollider()->SetMyType(COL_Umbrella_Ground);
+		top_->UpdateColliderShape();
+	}
+
+	void Stationary::Update(float deltaTime) {
+		// ここに留まり続ける。
+		// もしプレイヤーが「回収ボタン」を押したら、手元に戻るステートへ移行など
 
 	}
-	void Thrown::Exit() {
 
+	void Stationary::Exit() {
+		// 足場判定をOFFにするなど
+		top_->GetCollider()->SetMyType(COL_None);
 	}
 }

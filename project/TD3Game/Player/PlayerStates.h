@@ -67,6 +67,9 @@ namespace PlayerStates {
 			void Enter() override;
 			void Update(float deltaTime) override;
 			void Exit() override;
+		private:
+			MotionController motion_;
+			/*アニメーションデータ*/
 		};
 		class Attack : public Base {
 		public:
@@ -78,6 +81,30 @@ namespace PlayerStates {
 			int comboCount_ = 1;
 			float attackTimer_ = 0.0f;
 			bool isNextAttackReserved_ = false;
+		};
+		class ReverseCharge : public Base {
+		public:
+			void Enter() override;
+			void Update(float deltaTime) override;
+			void Exit() override;
+		private:
+			MotionController motion_;
+		};
+		class ReverseAttack : public Base {
+		public:
+			void Enter() override;
+			void Update(float deltaTime) override;
+			void Exit() override;
+		private:
+			MotionController motion_;
+		};
+		class ThrowUmbrella : public Base {
+		public:
+			void Enter() override;
+			void Update(float deltaTime) override;
+			void Exit() override;
+		private:
+			MotionController motion_;
 		};
 		class Guard : public Base {
 		public:
@@ -111,7 +138,9 @@ namespace PlayerStates {
 			void Update(float deltaTime)override;
 			void Exit()override;
 		};
-
+		// ========================
+		// 【 傘 】の変形関係
+		//=========================
 		class UmbrellaOpen : public Base {
 		public:
 			void Enter()override;
@@ -129,6 +158,22 @@ namespace PlayerStates {
 			void Enter()override;
 			void Update(float deltaTime)override;
 			void Exit()override;
+		};
+		class RepairUmbrella : public Base {
+		public:
+			void Enter()override;
+			void Update(float deltaTime)override;
+			void Exit()override;
+		private:
+			MotionController motion_;
+			
+			float repairTimer_ = 0.0f;
+			const float REPAIR_INTERVAL = 0.5f;// 一回の修理のかかる時間
+			const float HEAL_PERCENTAGE = 20.0f;// 修理一回当たりの回復量（％？）
+
+			bool isFinishing_ = false;
+			float finishTimer_ = 0.0f;
+			const float FINISH_TIME = 0.5f;
 		};
 	}
 }

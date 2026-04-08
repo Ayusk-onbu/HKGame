@@ -61,7 +61,7 @@ bool InputManager::IsAttack() {
 	if (GetKey().PressKey(DIK_J)) {
 		isAttack = true;
 	}
-	if (GetGamePad(0).IsPressed(XINPUT_GAMEPAD_X)) {
+	if (GetGamePad(0).IsPressed(XINPUT_GAMEPAD_Y)) {
 		isAttack = true;
 	}
 	return isAttack;

@@ -59,17 +59,32 @@ namespace Umbrella {
 		rootJoint_.SetInfo({ 0.0f,0.0f,0.0f }, { 0.0f,0.0f,0.0f });
 
 		// ======================
+		// ステータス
+		// ======================
+		status_ = std::make_unique<StatusComponent>(100.0f, 10.0f, 10.0f);
+		mana_ = std::make_unique<ManaComponent>(100.0f);
+
+		// ======================
 		// 当たり判定
 		// ======================
 		collider_ = std::make_unique<ConvexCollider>();
 
 		collider_->SetMyType(COL_None);
-		collider_->SetYourType(COL_Enemy);
+		collider_->SetYourType(COL_Enemy | COL_Player);
 
 		collider_->SetUserData(this);
 
 		collider_->onCollisionCallback = [](Collider* other, const Vector3& outPush) {
-
+			/*
+			* Enemy* enemy = 
+			* if(enemy){
+			*	status_->TakeDamage(enemyの攻撃力);
+			*	if(status_->IsDead()){
+			*		isBroken_ = true;
+			*		top_->ChangeState(new UmbrellaStates::Broken());// 壊れたステート
+			*	}
+			* }
+			*/
 		};
 
 		UpdateColliderShape();
@@ -81,13 +96,33 @@ namespace Umbrella {
 			currentState_->Update(deltaTime);
 		}
 
+		float maxHp = status_->GetMaxHp();
+		float currentHp = status_->GetHp();
+		ImGui::Begin("Umbrella Status");
+		ImGui::Text("HP: %.1f / %.1f", currentHp, maxHp);
+		ImGui::DragFloat("HP", &currentHp, 1.0f, 0.0f, maxHp);
+		if (ImGui::Button("Damage")) {
+			status_->TakeDamage(10.0f);
+		}
+		ImGui::End();
+
 		rootJoint_.Update();
 
 		switch (form_) {
 		case UmbrellaForm::Closed:
+			rootJoint_.SetRot({ Deg2Rad(0),0.0f,0.0f });
 			obj_->worldTransform_.mat_ = rootJoint_.GetMatrix();
 			break;
 		case UmbrellaForm::Opened:
+			rootJoint_.SetRot({ Deg2Rad(0),0.0f,0.0f });
+			openObj_->worldTransform_.mat_ = rootJoint_.GetMatrix();
+			break;
+		case UmbrellaForm::Reverse:
+			rootJoint_.SetRot({Deg2Rad(180),Deg2Rad(0),Deg2Rad(0) });
+			openObj_->worldTransform_.mat_ = rootJoint_.GetMatrix();
+			break;
+		case UmbrellaForm::Flying:
+			rootJoint_.SetRot({ Deg2Rad(0),0.0f,0.0f });
 			openObj_->worldTransform_.mat_ = rootJoint_.GetMatrix();
 			break;
 		}
@@ -96,10 +131,8 @@ namespace Umbrella {
 			collider_->SetWorldPosition(rootJoint_.GetWorldPos());
 
 			collider_->SetWorldMatrix(rootJoint_.GetMatrix());
-
-			collider_->UpdateAABB();
 		}
-
+		
 	}
 
 	void Top::Draw() {
@@ -110,6 +143,8 @@ namespace Umbrella {
 			obj_->Draw();
 			break;
 		case UmbrellaForm::Opened:
+		case UmbrellaForm::Reverse:
+		case UmbrellaForm::Flying:
 			openObj_->LocalToWorld();
 			openObj_->SetWVPData(CameraSystem::GetInstance()->GetActiveCamera()->DrawCamera(openObj_->worldTransform_.mat_));
 			openObj_->Draw();
@@ -131,6 +166,7 @@ namespace Umbrella {
 
 	void Top::UpdateColliderShape() {
 		std::vector<Vector3> vertices;
+		collider_->ClearVertices();
 
 		if (form_ == UmbrellaForm::Closed) {
 			// 閉じた状態：細長い剣のような判定（ローカル座標で定義）
@@ -142,11 +178,24 @@ namespace Umbrella {
 				{-w,     h, -w}, { w,     h, -w}, {-w,     h,  w}, { w,     h,  w}  // 先端
 			};
 		}
-		else if (form_ == UmbrellaForm::Opened) {
-
+		else if (form_ == UmbrellaForm::Opened || form_ == UmbrellaForm::Flying) {
+			float w = 1.0f;  // 半径1mくらいの広さ
+			float h = 0.05f;  // 厚み
+			float y = 0.0f;  // 持ち手から少し上の位置
+			vertices = {
+				{-w, y, 0.0f},{w, y, 0.0f},{-w, y + h, 0.0f},{w, y + h,0.0f}
+			};
 		}
 		else if (form_ == UmbrellaForm::Reverse) {
-
+			// 逆さ状態：雨（マナ）を受け止めるための、上向きのお椀（または広い箱）のような判定
+			// ※とりあえず、開いた傘と同じか、少し広めの直方体（板）にしておく
+			float w = 1.0f;  // 半径1mくらいの広さ
+			float h = 0.2f;  // 厚み
+			float y = 0.0f;  // 持ち手から少し上の位置
+			vertices = {
+				{-w, y, -w}, { w, y, -w}, {-w, y,  w}, { w, y,  w},
+				{-w, y + h,-w}, { w, y + h,-w}, {-w, y + h, w}, { w, y + h, w}
+			};
 		}
 
 		// ConvexCollider に頂点をセットする関数（無ければ Collider.h に追加してください）

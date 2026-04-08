@@ -83,6 +83,7 @@ void TestScene::CollisionCheck() {
 
 	// ここからColliderを設定
 	collisionManager_->SetColliders(testPlayer_->GetCollider());
+	collisionManager_->SetColliders(testPlayer_->GetUmbrella().top_->GetCollider());
 	collisionManager_->SetColliders(ground_->GetCollider());
 
 	// Check!

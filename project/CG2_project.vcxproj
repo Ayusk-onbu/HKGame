@@ -168,8 +168,10 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="TD3Game\Player\Player.cpp" />
     <ClCompile Include="TD3Game\Player\States\PlayerState_Action.cpp" />
     <ClCompile Include="TD3Game\Player\States\PlayerState_Movement.cpp" />
+    <ClCompile Include="TD3Game\Player\StatusComponent.ixx" />
     <ClCompile Include="TD3Game\Player\Umbrella.cpp" />
     <ClCompile Include="TD3Game\Player\UmbrellaState.cpp" />
+    <ClCompile Include="TD3Game\StatusComponent.cpp" />
     <ClCompile Include="UsefulTool\Light\AreaLight\AreaLight.cpp" />
     <ClCompile Include="Engine\Objects\Model\Joint.cpp" />
     <ClCompile Include="Engine\Objects\Model\Skeleton.cpp" />

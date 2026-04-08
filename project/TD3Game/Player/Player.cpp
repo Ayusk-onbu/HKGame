@@ -32,6 +32,8 @@ void Player::Initialize() {
 
 	motionController_ = std::make_unique<MotionController>();
 
+	targetMarker_.Initialize(p_fngine, "bullet", "GridLine");
+
 	// =====================
 	// 【 当たり判定の設定 】
 	// =====================
@@ -42,16 +44,21 @@ void Player::Initialize() {
 
 	// 2. 属性の設定（自分はPlayer、当たる相手はEnemyやEnemyの攻撃）
 	collider_->SetMyType(COL_Player);
-	collider_->SetYourType(COL_Enemy | COL_Enemy_Attack | COL_Ground);
+	collider_->SetYourType(COL_Enemy | COL_Enemy_Attack | COL_Ground | COL_Umbrella_Ground);
 
 	// 3. ローカル頂点データの設定（例：プレイヤーを囲む四角形やひし形など）
 	std::vector<Vector3> localVertices = {
-		{-1.0f, -1.0f, 0.0f}, // 左下
-		{ 1.0f, -1.0f, 0.0f}, // 右下
-		{-1.0f,  1.0f, 0.0f}, // 左上
-		{ 1.0f,  1.0f, 0.0f}  // 右上
+		{-1.0f, -0.0f, 0.0f}, // 左下
+		{ 1.0f, -0.0f, 0.0f}, // 右下
+		{-1.0f,  1.5f, 0.0f}, // 左上
+		{ 1.0f,  1.5f, 0.0f}  // 右上
 	};
 	collider_->SetVertices(localVertices);
+
+	for (int i = 0;i < 4;i++) {
+		colliderTopper_[i].Initialize(p_fngine, "bullet", "GridLine");
+		colliderTopper_[i].obj_->worldTransform_.set_.Scale({ 0.1f,0.1f,0.1f });
+	}
 
 	// 4. 当たった時の処理（コールバック関数の登録）
 	// ラムダ式を使って、このPlayerのメンバ関数や変数にアクセスできるようにする
@@ -98,6 +105,41 @@ void Player::Initialize() {
 
 			}
 		}
+		else if (other->GetMyType() == COL_Umbrella_Ground) {
+			ImGuiManager::GetInstance()->Text("Player to Umbrella Ground Collision!!");
+
+			// =========================
+			// 【 めり込み解消処理 】
+			// =========================
+			Vector3 actualPush = { -pushOut.x, -pushOut.y, -pushOut.z };
+			
+
+			Vector3 normal = actualPush;
+			float length = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+			if (length > 0.0f) {
+				normal.x /= length;
+				normal.y /= length;
+				normal.z /= length;
+			}
+
+			// 足元に地面があるかのチェック
+			if (normal.y > 0.8f) {
+				if (this->externalVelocity_.y <= 0.0f) {
+					Vector3 pos = obj_->worldTransform_.get_.Translation();
+					pos.x += actualPush.x;
+					pos.y += actualPush.y;
+					pos.z += actualPush.z;
+					obj_->worldTransform_.set_.Translation(pos);
+					ImGuiManager::GetInstance()->Text("Player to Umbrella Ground Collision!! -> OKOKOKO");
+					this->onGround_ = true;
+
+					// バウンドする
+					if (this->externalVelocity_.y < 0.0f) {
+						this->externalVelocity_.y = normal.y * 4.5f; // バウンドの強さを調整
+					}
+				}
+			}
+		}
 		else if (other->GetMyType() == COL_Enemy_Attack) {
 
 			// 1. 相手のコライダーから「持ち主（Enemy）」のポインタをもらう
@@ -125,6 +167,7 @@ void Player::Update(float deltaTime) {
 	if (mana_) {
 		mana_->Update(deltaTime);
 	}
+
 	// ステートの更新
 	if (currentMovementState_) {
 		currentMovementState_->Update(deltaTime);
@@ -132,6 +175,11 @@ void Player::Update(float deltaTime) {
 	if (currentActionState_) {
 		currentActionState_->Update(deltaTime);
 	}
+
+	ThrowUpdate(deltaTime);
+
+	targetMarker_.obj_->worldTransform_.set_.Translation(targetPos_);
+	targetMarker_.Update();
 
 	// =========================
 	// 【 コヨーテタイムの処理 】
@@ -168,6 +216,18 @@ void Player::Update(float deltaTime) {
 
 	collider_->UpdateAABB();
 
+	for(int i = 0;i<4;i++){
+		Vector3 topperPos = collider_->GetWorldPosition();
+		switch (i) {
+		case 0: topperPos.x -= 1.0f; topperPos.y -= 0.0f; break;// 左下
+		case 1: topperPos.x += 1.0f; topperPos.y -= 0.0f; break;// 右下
+		case 2: topperPos.x -= 1.0f; topperPos.y += 1.5f; break;// 左上
+		case 3: topperPos.x += 1.0f; topperPos.y += 1.5f; break;// 右上
+		}
+		colliderTopper_[i].obj_->worldTransform_.set_.Translation(topperPos);
+		colliderTopper_[i].Update();
+	}
+
 	Vector3 test = rightHandJoint_.GetPos();
 	ImGui::DragFloat3("RHandJoint", &test.x);
 
@@ -199,6 +259,12 @@ void Player::Draw() {
 	obj_->Draw();
 
 	umbrella_->Draw();
+
+	targetMarker_.Draw();
+
+	for (int i = 0;i < 4;i++) {
+		colliderTopper_[i].Draw();
+	}
 }
 
 void Player::ChangeMovementState(PlayerStates::Base* newState) {
@@ -249,10 +315,14 @@ void Player::InitializeStates() {
 	normalState_ = std::make_unique<Action::Normal>();normalState_->SetInfo(this);
 	attackState_ = std::make_unique<Action::Attack>();attackState_->SetInfo(this);
 	guardState_ = std::make_unique<Action::Guard>();guardState_->SetInfo(this);
+	reverseChargeState_ = std::make_unique<Action::ReverseCharge>();reverseChargeState_->SetInfo(this);
+	reverseAttackState_ = std::make_unique<Action::ReverseAttack>();reverseAttackState_->SetInfo(this);
+	throwUmbrellaState_ = std::make_unique<Action::ThrowUmbrella>();throwUmbrellaState_->SetInfo(this);
 
 	umbrellaOpenState_ = std::make_unique<Action::UmbrellaOpen>();umbrellaOpenState_->SetInfo(this);
 	umbrellaCloseState_ = std::make_unique<Action::UmbrellaClose>();umbrellaCloseState_->SetInfo(this);
 	umbrellaReverseState_ = std::make_unique<Action::UmbrellaReverse>();umbrellaReverseState_->SetInfo(this);
+	repairUmbrellaState_ = std::make_unique<PlayerStates::Action::RepairUmbrella>();repairUmbrellaState_->SetInfo(this);
 
 	// 最初の設定
 	currentActionState_ = normalState_.get();
@@ -262,6 +332,9 @@ void Player::InitializeComponents() {
 	//// ManaComponentの初期化 ////
 	mana_ = std::make_unique<ManaComponent>(100.0f);
 
+	//// StatusComponentの初期化 ////
+	// HP , Attack , Defence
+	status_ = std::make_unique<StatusComponent>(100.0f, 20.0f, 5.0f);
 }
 ///////////////////
 ///
@@ -294,4 +367,53 @@ void Player::UmbrellaAttachBack() {
 
 void Player::UmbrellaAttachRHand() {
 	umbrella_->handle_->GetBaseJoint()->AttachTo(GetRightHandJoint());
+}
+
+///////////////////
+///
+///   照準・射撃
+///
+///////////////////
+void Player::ThrowUpdate(float deltaTime) {
+	// 照準を押しているときは飛ばす方向を決めれる。
+	// ただし、抜刀済みのみ
+	float scalar = 5.0f;
+	if (inputData_.isAiming) {
+		targetPos_.x = GetPosition().x + scalar;
+		targetPos_.y = GetPosition().y;
+	}
+	else if (inputData_.isAimingHeld == true) {
+		// ここは要改善
+		targetPos_.x = GetPosition().x + (inputData_.aimingDirectionX * scalar);
+		targetPos_.y = GetPosition().y + (inputData_.aimingDirectionY * scalar);
+
+		ImGuiManager::GetInstance()->DrawDrag("aimDirectionX", inputData_.aimingDirectionX);
+		ImGuiManager::GetInstance()->DrawDrag("aimDirectionY", inputData_.aimingDirectionY);
+
+
+		// 照準のときのみ射撃する
+		if (inputData_.isShoot) {
+			// ここで投げる処理
+			ChangeActionState(throwUmbrellaState_.get());
+		}
+	}
+}
+
+void Player::WarpToUmbrella() {
+	// 1. 傘の現在のワールド座標を取得
+	Vector3 targetPos = umbrella_->top_->GetRootJoint()->GetWorldPos();
+
+	// 2. プレイヤーの座標を傘の場所へ上書き
+	// （SetPosition 等、環境に合わせてください）
+	this->SetPosition(targetPos);
+
+	// 3. 飛んでいた傘を手元に戻す（アタッチし直す）
+	umbrella_->top_->GetRootJoint()->AttachTo(umbrella_->handle_->GetTipJoint());
+	umbrella_->top_->GetRootJoint()->SetInfo({ 0.0f,0.0f,0.0f }, { 0.0f,0.0f,0.0f });
+
+	umbrella_->top_->ChangeState(new UmbrellaStates::Attached());
+	umbrella_->top_->ChangeForm(UmbrellaForm::Closed);
+
+	// 4. 空中状態にするなどの後処理
+	ChangeMovementState(airborneState_.get());
 }

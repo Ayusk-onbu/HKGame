@@ -39,6 +39,18 @@ bool GamePad::IsPressed(WORD button) {
         ((prevState_.Gamepad.wButtons & button) == 0);
 }
 
+bool GamePad::IsHold(WORD button) const {
+    if (!isConnected_) return false;
+    return ((state_.Gamepad.wButtons & button) != 0) &&
+        ((prevState_.Gamepad.wButtons & button) != 0);
+}
+
+bool GamePad::IsRelease(WORD button) const {
+    if (!isConnected_) return false;
+    return ((state_.Gamepad.wButtons & button) == 0) &&
+        ((prevState_.Gamepad.wButtons & button) != 0);
+}
+
 BYTE GamePad::GetLeftTrigger() const {
     return isConnected_ ? state_.Gamepad.bLeftTrigger : 0;
 }

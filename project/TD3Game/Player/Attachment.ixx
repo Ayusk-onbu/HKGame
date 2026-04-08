@@ -33,6 +33,7 @@ public:
 	void SetMatrix(const Matrix4x4& mat) { matWorld_ = mat; }
 	// 取得
 	Vector3 GetPos() { return position_; }
+	Vector3 GetRot() { return rotation_; }
 	Matrix4x4 GetMatrix()const { return matWorld_; }
 	Vector3 GetWorldPos()const { return { matWorld_.m[3][0],matWorld_.m[3][1], matWorld_.m[3][2], }; }
 private:
