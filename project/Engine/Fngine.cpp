@@ -137,7 +137,7 @@ void Fngine::SettingShader() {
 		"SpriteObject3D"
 	);
 
-	PSOManager::GetInstance()->CreateNewPSO
+	/*PSOManager::GetInstance()->CreateNewPSO
 	(
 		{
 			PIPELINETYPE::Graphics,
@@ -161,7 +161,7 @@ void Fngine::SettingShader() {
 		true
 		},
 		"SkinningObject3D"
-	);
+	);*/
 
 	PSOManager::GetInstance()->CreateNewPSO
 	(
@@ -189,6 +189,32 @@ void Fngine::SettingShader() {
 		"CopyImage"
 	);
 	PSOManager::GetInstance()->GetPSO("CopyImage").SetBlendState(BLENDMODE::Multiplicative);
+
+	PSOManager::GetInstance()->CreateNewPSO
+	(
+		{
+			PIPELINETYPE::Compute,
+			ROOTTYPE::Skinning,
+			PSOTYPE::Skinning,
+		 {
+			L"",
+			L"",
+			L"resources/shaders/CS/Skinning.CS.hlsl",
+			L"",
+			L"",
+			L"cs_6_0"
+		 },
+		 {
+			 D3D12_CULL_MODE_NONE,
+			 D3D12_FILL_MODE_SOLID,
+			 FALSE,
+			 0,
+			 0.0f
+		 },
+		false
+		},
+		"SkinningCS"
+	);
 }
 
 void Fngine::Initialize() {

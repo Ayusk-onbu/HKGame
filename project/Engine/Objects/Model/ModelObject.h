@@ -1,5 +1,6 @@
 #pragma once
 #include "ObjectBase.h"
+#include "Structured.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>

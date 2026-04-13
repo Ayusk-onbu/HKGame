@@ -91,18 +91,23 @@ void ObjectBase::DrawBase(TheOrderCommand& command, PSO& pso, DirectionLight& li
 void ObjectBase::DrawIndexBase(ObjectDrawType type) {
 	//RootSignalの設定
 	if (type == ObjectDrawType::SOLID) {
-		fngine_->GetCommand().GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("SkinningObject3D").GetRootSignature().GetRS().Get());
-		fngine_->GetCommand().GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO("SkinningObject3D").GetGPS().Get());
+		fngine_->GetCommand().GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("Object3D").GetRootSignature().GetRS().Get());
+		fngine_->GetCommand().GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO("Object3D").GetGPS().Get());
 	}
 	if (type == ObjectDrawType::WIREFRAME) {
 		fngine_->GetCommand().GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("DebugObject3D").GetRootSignature().GetRS().Get());
 		fngine_->GetCommand().GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO("DebugObject3D").GetGPS().Get());
 	}
-	D3D12_VERTEX_BUFFER_VIEW vbvs[2] = {
+	/*D3D12_VERTEX_BUFFER_VIEW vbvs[2] = {
 		vertexBufferView_,
-		skinCluster_.influenceBufferView_
+		skinCluster_.influences_->GetSRVHandleGPU().ptr
 	};
-	fngine_->GetCommand().GetList().GetList()->IASetVertexBuffers(0, 2, vbvs);
+	fngine_->GetCommand().GetList().GetList()->IASetVertexBuffers(0, 2, vbvs);*/
+	D3D12_VERTEX_BUFFER_VIEW skinnedVbView{};
+	skinnedVbView.BufferLocation = skinCluster_.outputVertices_->GetResource()->GetGPUVirtualAddress();
+	skinnedVbView.SizeInBytes = sizeof(VertexData) * skinCluster_.GetNumVertices();
+	skinnedVbView.StrideInBytes = sizeof(VertexData);
+	fngine_->GetCommand().GetList().GetList()->IASetVertexBuffers(0, 1, &skinnedVbView);
 	// IndexBufferView(IBV)の設定
 	fngine_->GetCommand().GetList().GetList()->IASetIndexBuffer(&indexBufferView_);
 	//マテリアルCBufferの場所を設定
@@ -126,7 +131,7 @@ void ObjectBase::DrawIndexBase(ObjectDrawType type) {
 	// t2: LTC2
 	fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(9, fngine_->GetAreaLight().GetLTC2GPUHandle());
 	// MatrixPalatteの設定
-	fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(10, skinCluster_.paletteSrvHandle_.second);
+	//fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(10, skinCluster_.paletteSrvHandle_.second);
 }
 
 void ObjectBase::DrawIndexBase(TheOrderCommand& command, PSO& pso, DirectionLight& light, Texture& tex) {

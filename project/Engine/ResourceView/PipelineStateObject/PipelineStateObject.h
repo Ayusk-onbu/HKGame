@@ -96,6 +96,7 @@ public:
 	Microsoft::WRL::ComPtr<IDxcBlob>& GetVSB() { return vertexShaderBlob_; }
 	Microsoft::WRL::ComPtr<IDxcBlob>& GetPSB() { return pixelShaderBlob_; }
 	Microsoft::WRL::ComPtr <ID3D12PipelineState>& GetGPS();
+	Microsoft::WRL::ComPtr <ID3D12PipelineState>& GetCPS() { return computePipelineState_; }
 
 private:
 	DXC* dxc_;

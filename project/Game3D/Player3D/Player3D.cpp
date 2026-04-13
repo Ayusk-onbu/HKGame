@@ -79,7 +79,7 @@ void Player3D::Update()
 		{ obj_->worldTransform_.get_.Translation().x,obj_->worldTransform_.get_.Translation().y ,obj_->worldTransform_.get_.Translation().z });
 	if (lockOn_ == false) {
 		
-		CameraSystem::GetInstance()->GetActiveCamera()->SetRadius(30);
+		//CameraSystem::GetInstance()->GetActiveCamera()->SetRadius(30);
 	}
 
 	inputHandler_->HandleInput();

@@ -8,6 +8,8 @@
 #include "VertexData.h"
 #include "WorldTransform.h"
 #include "ResourceFunc.h"
+#include "Structured.h"
+#include "Constant.h"
 #include "Fngine.h"
 
 struct MaterialData {
@@ -72,17 +74,22 @@ struct WellForGPU {
 	Matrix4x4 skeletonSpaceInverseTransMatrix;
 };
 
+struct SkinningInformation {
+	uint32_t numVertices;
+};
+
 class SkinCluster {
 public:
 	void Create(Fngine* engine,const Skeleton& skeleton,const ModelData& modelData);
 	void Update(const Skeleton& skeleton);
+	void DispatchComputeShader(ID3D12GraphicsCommandList* commandList);
+	uint32_t GetNumVertices() const { return numVertices_; }
 public:
 	std::vector<Matrix4x4> inverseBindPoseMatrices_;
-	Microsoft::WRL::ComPtr<ID3D12Resource> influenceResource_;
-	D3D12_VERTEX_BUFFER_VIEW influenceBufferView_;
-	std::span<VertexInfluence> mappedInfluence_;
-	Microsoft::WRL::ComPtr<ID3D12Resource> paletteResource_;
-	std::span<WellForGPU> mappedPalette_;
-	// first CPU. Second GPU
-	std::pair<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE> paletteSrvHandle_;
+	uint32_t numVertices_ = 0;
+	std::unique_ptr<Structured<WellForGPU>> palette_;             // t0
+	std::unique_ptr<Structured<VertexData>> inputVertices_;       // t1
+	std::unique_ptr<Structured<VertexInfluence>> influences_;     // t2
+	std::unique_ptr<RWStructured<VertexData>> outputVertices_;    // u0
+	std::unique_ptr<ConstantBuffer<SkinningInformation>> skinningInfo_; // b0
 };

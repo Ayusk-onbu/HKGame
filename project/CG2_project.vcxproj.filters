@@ -992,6 +992,9 @@
     <ClInclude Include="Scene\Title\TitleScene.h">
       <Filter>Scene\Title</Filter>
     </ClInclude>
+    <ClInclude Include="Common\Structure\Advanced\Constant.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt">
