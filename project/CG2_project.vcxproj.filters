@@ -288,7 +288,7 @@
     <ClCompile Include="UsefulTool\Camera\CameraController\NormalCameraController.cpp">
       <Filter>UsefulTool\Camera\CameraController</Filter>
     </ClCompile>
-    <ClCompile Include="UsefulTool\Camera\CameraController\DenugCameraController.cpp">
+    <ClCompile Include="UsefulTool\Camera\CameraController\DebugCameraController.cpp">
       <Filter>UsefulTool\Camera\CameraController</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Core\D3D12System.cpp">
