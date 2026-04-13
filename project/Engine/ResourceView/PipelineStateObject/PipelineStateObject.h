@@ -21,30 +21,41 @@ enum class PSOTYPE {
 	CopyImage,
 };
 
+struct ShaderCompileSettings {
+	// グラフィックス用のシェーダー
+	std::wstring vsFilePath;
+	std::wstring psFilePath;
+	// ( GS, HS, DS も追加して良い )
+
+	// コンピュート用シェーダー
+	std::wstring csFilePath;
+
+	// プロファイル
+	const wchar_t* vsProfile = L"vs_6_0";
+	const wchar_t* psProfile = L"ps_6_0";
+	const wchar_t* csProfile = L"cs_6_0";
+};
+
+struct PSOKey {
+	PIPELINETYPE pipelineType;// pipelineのType設定
+	ROOTTYPE rootSignatureType;// rootSignatureのType設定
+	PSOTYPE psoType;
+
+	ShaderCompileSettings shaderCompileSettings;
+
+	// ラスタライザ設定
+	RasterizerSettings rasterizerSettings;
+
+	// Depthの設定
+	bool depthFlag;
+};
+
 class PipelineStateObject
 {
 public:
 	//void Initialize(Fngine* fngine, PSOTYPE type);
 
-	void Initialize(
-		Fngine* fngine,
-		PIPELINETYPE pipelineType,
-		PSOTYPE psoType,
-		// RootSignatureの設定
-		ROOTTYPE rootType,
-		//Rasterizerの設定
-		RasterizerSettings rasterSettings,
-		// Depth
-		bool depthFlag,
-		//CompilerするShaderファイルへのパス
-		const std::wstring& vsFilePath,
-		//Compilerに使用するProfile
-		const wchar_t* vsProfile,
-		//CompilerするShaderファイルへのパス
-		const std::wstring& psFilePath,
-		//Compilerに使用するProfile
-		const wchar_t* psProfile
-	);
+	void Initialize(Fngine* fngine, const PSOKey& key);
 
 	void Compile(
 		//CompilerするShaderファイルへのパス
@@ -66,6 +77,9 @@ public:
 		IDxcCompiler3* dxcCompiler,
 		IDxcIncludeHandler* includeHandler);
 
+	/// <summary>
+	/// PSOのDescに情報をまとめる
+	/// </summary>
 	void MargeDesc();
 
 	// --------------------------------
@@ -105,7 +119,11 @@ private:
 	Microsoft::WRL::ComPtr <ID3D12PipelineState> graphicsPipelineState_Sub = nullptr;
 	Microsoft::WRL::ComPtr <ID3D12PipelineState> graphicsPipelineState_Mul = nullptr;
 	Microsoft::WRL::ComPtr <ID3D12PipelineState> graphicsPipelineState_Scr = nullptr;
+
+	//ComputePipeline
+	Microsoft::WRL::ComPtr<IDxcBlob> computeShaderBlob_;
+	D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc_ = {};
+	Microsoft::WRL::ComPtr <ID3D12PipelineState> computePipelineState_ = nullptr;
 };
 
 using PSO = PipelineStateObject;
-

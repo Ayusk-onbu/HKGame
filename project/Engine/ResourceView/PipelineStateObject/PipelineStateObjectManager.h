@@ -2,35 +2,6 @@
 #include "PipelineStateObject.h"
 #include <unordered_map>
 
-struct ShaderCompileSettings {
-	// グラフィックス用のシェーダー
-	std::wstring vsFilePath;
-	std::wstring psFilePath;
-	// ( GS, HS, DS も追加して良い )
-
-	// コンピュート用シェーダー
-	std::wstring csFilePath;
-
-	// プロファイル
-	const wchar_t* vsProfile = L"vs_6_0";
-	const wchar_t* psProfile = L"ps_6_0";
-	const wchar_t* csProfile = L"cs_6_0";
-};
-
-struct PSOKey {
-	PIPELINETYPE pipelineType;// pipelineのType設定
-	ROOTTYPE rootSignatureType;// rootSignatureのType設定
-	PSOTYPE psoType;
-
-	ShaderCompileSettings shaderCompileSettings;
-
-	// ラスタライザ設定
-	RasterizerSettings rasterizerSettings;
-
-	// Depthの設定
-	bool depthFlag;
-};
-
 class PipelineStateObjectManager
 {
 public:

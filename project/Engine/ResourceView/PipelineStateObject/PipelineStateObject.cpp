@@ -18,68 +18,61 @@ static const D3D12_INPUT_ELEMENT_DESC Layout_FullSkinningMesh[] = {
 	{ "INDEX",    0, DXGI_FORMAT_R32G32B32A32_SINT,  1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 };
 
-void PipelineStateObject::Initialize(
-	Fngine* fngine,
-	PIPELINETYPE pipelineType,
-	PSOTYPE psoType,
-	ROOTTYPE rootType,
-	RasterizerSettings rasterSettings,
-	// Depth
-	bool depthFlag,
-	//CompilerするShaderファイルへのパス
-	const std::wstring& vsFilePath,
-	//Compilerに使用するProfile
-	const wchar_t* vsProfile,
-	//CompilerするShaderファイルへのパス
-	const std::wstring& psFilePath,
-	//Compilerに使用するProfile
-	const wchar_t* psProfile
-) {
+void PipelineStateObject::Initialize(Fngine* fngine, const PSOKey& key) {
 	// DXCを取得
 	dxc_ = &fngine->GetDXC();
+	pipelineType_ = key.pipelineType;
 
-	// rootSigantureを設定
-	rootSignature_.CreateRootSignature(fngine->GetD3D12System(), rootType);
+	// 使用するRootSignatureを設定
+	rootSignature_.CreateRootSignature(fngine->GetD3D12System(), key.rootSignatureType);
 
-	// InputLayoutの設定
-	switch (psoType) {
-	case PSOTYPE::Normal:
+	if (key.pipelineType == PIPELINETYPE::Graphics) {
+		// InputLayoutの設定
+		switch (key.psoType) {
+		case PSOTYPE::Normal:
+		case PSOTYPE::Line:
+			// ここはLayoutを外部で設定して適用できるように変更した
+			inputLayoutDesc_.Initialize(Layout_FullMesh, _countof(Layout_FullMesh));
+			break;
+		case PSOTYPE::Skinning:
+			inputLayoutDesc_.Initialize(Layout_FullSkinningMesh, _countof(Layout_FullSkinningMesh));
+			break;
+		case PSOTYPE::CopyImage:
+			inputLayoutDesc_.Initialize(nullptr, 0);
+			break;
+		}
 
-	case PSOTYPE::Line:
+		// BlendStateの設定
+		blendState_.Initialize(USECOLOR::All);
 
-		// ここはLayoutを外部で設定して適用できるように変更した
-		inputLayoutDesc_.Initialize(Layout_FullMesh, _countof(Layout_FullMesh));
-		break;
-	case PSOTYPE::Skinning:
+		// Rasterizerの設定
+		rasterizer_.SetDesc(key.rasterizerSettings);
+		if (key.psoType == PSOTYPE::Line) {
+			rasterizer_.GetDesc().AntialiasedLineEnable = true;
+		}
 
-		inputLayoutDesc_.Initialize(Layout_FullSkinningMesh, _countof(Layout_FullSkinningMesh));
-		break;
+		// Compile
+		Compile(key.shaderCompileSettings.vsFilePath,
+			key.shaderCompileSettings.vsProfile,
+			key.shaderCompileSettings.psFilePath,
+			key.shaderCompileSettings.psProfile);		
 
-	case PSOTYPE::CopyImage:
-		inputLayoutDesc_.Initialize(nullptr, 0);
-		break;
+		// depthStencil
+		depthStencil_.InitializeDesc(key.depthFlag);
+	}
+	else if (key.pipelineType == PIPELINETYPE::Compute) {
+		// ShaderのデータをCompileして保存
+		computeShaderBlob_ = CompileShader(key.shaderCompileSettings.csFilePath,
+			key.shaderCompileSettings.csProfile,
+			dxc_->GetUtils().Get(), dxc_->GetCompiler().Get(), dxc_->GetIncludeHandle().Get());
+		// ShaderがCompileできているかを確認
+		assert(computeShaderBlob_ != nullptr);
 	}
 
-	// BlendStateの設定
-	blendState_.Initialize(USECOLOR::All);
-
-	// Rasterizerの設定
-	rasterizer_.SetDesc(rasterSettings);
-	if (psoType == PSOTYPE::Line) {
-		rasterizer_.GetDesc().AntialiasedLineEnable = true;
-	}
-
-	// Compile
-	Compile(vsFilePath, vsProfile, psFilePath, psProfile);
-
-	pipelineType_ = pipelineType;
 	MargeDesc();
 
-	// depthStencil
-	depthStencil_.InitializeDesc(depthFlag);
-
 	// 
-	SetDesc(fngine->GetD3D12System(), psoType);
+	SetDesc(fngine->GetD3D12System(), key.psoType);
 }
 
 void PipelineStateObject::Compile(
@@ -180,71 +173,86 @@ void PipelineStateObject::MargeDesc() {
 		pixelShaderBlob_->GetBufferSize() };//PixelShader
 	}
 	else if (pipelineType_ == PIPELINETYPE::Compute) {
-
+		// ルートシグネチャの情報を取得
+		computePipelineStateDesc_.pRootSignature = rootSignature_.GetRS().Get();
+		computePipelineStateDesc_.CS = {
+			computeShaderBlob_->GetBufferPointer(),
+			computeShaderBlob_->GetBufferSize()
+		};
 	}
 }
 
 void PipelineStateObject::SetDesc(D3D12System& d3d12, PSOTYPE type) {
-	//書きこむRTVの情報
-	graphicsPipelineStateDesc_.NumRenderTargets = 1;
-	graphicsPipelineStateDesc_.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-	//利用するトボロジ（形状）のタイプ。三角形
-	if (type == PSOTYPE::Line) {
-		graphicsPipelineStateDesc_.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+	if (pipelineType_ == PIPELINETYPE::Graphics) {
+		//書きこむRTVの情報
+		graphicsPipelineStateDesc_.NumRenderTargets = 1;
+		graphicsPipelineStateDesc_.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		//利用するトボロジ（形状）のタイプ。三角形
+		if (type == PSOTYPE::Line) {
+			graphicsPipelineStateDesc_.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+		}
+		else {
+			graphicsPipelineStateDesc_.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		}
+		//どのように画面に色を打ち込むかの設定
+		graphicsPipelineStateDesc_.SampleDesc.Count = 1;
+		graphicsPipelineStateDesc_.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
+		//DepthStencil
+		graphicsPipelineStateDesc_.DepthStencilState = depthStencil_.GetDesc();
+		graphicsPipelineStateDesc_.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+		// ---  --------------- ------------ ------ //
+		//  BlendState                              //
+		//  -------- -------- -------  -- --------- //
+		blendState_.SetBlendMode(BLENDMODE::AlphaBlend);//BlendStateの設定
+		graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
+
+		//実際に生成
+		HRESULT hr;
+		hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
+			IID_PPV_ARGS(&graphicsPipelineState_));
+		assert(SUCCEEDED(hr));
+
+		blendState_.SetBlendMode(BLENDMODE::Additive);//BlendStateの設定
+		graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
+
+		//実際に生成
+		hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
+			IID_PPV_ARGS(&graphicsPipelineState_Add));
+		assert(SUCCEEDED(hr));
+
+		blendState_.SetBlendMode(BLENDMODE::Subtractive);//BlendStateの設定
+		graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
+
+		//実際に生成
+		hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
+			IID_PPV_ARGS(&graphicsPipelineState_Sub));
+		assert(SUCCEEDED(hr));
+
+		blendState_.SetBlendMode(BLENDMODE::ScreenBlend);//BlendStateの設定
+		graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
+
+		//実際に生成
+		hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
+			IID_PPV_ARGS(&graphicsPipelineState_Scr));
+		assert(SUCCEEDED(hr));
+
+		blendState_.SetBlendMode(BLENDMODE::Multiplicative);//BlendStateの設定
+		graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
+
+		//実際に生成
+		hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
+			IID_PPV_ARGS(&graphicsPipelineState_Mul));
+		assert(SUCCEEDED(hr));
 	}
-	else {
-		graphicsPipelineStateDesc_.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	else if (pipelineType_ == PIPELINETYPE::Compute) {
+		//実際に生成
+		HRESULT hr;
+		// 作成書をもとにPSOを生成
+		hr = d3d12.GetDevice()->CreateComputePipelineState(&computePipelineStateDesc_,
+			IID_PPV_ARGS(&computePipelineState_));
+		assert(SUCCEEDED(hr));
 	}
-	//どのように画面に色を打ち込むかの設定
-	graphicsPipelineStateDesc_.SampleDesc.Count = 1;
-	graphicsPipelineStateDesc_.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
-	//DepthStencil
-	graphicsPipelineStateDesc_.DepthStencilState = depthStencil_.GetDesc();
-	graphicsPipelineStateDesc_.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-	// ---  --------------- ------------ ------ //
-	//  BlendState                              //
-	//  -------- -------- -------  -- --------- //
-	blendState_.SetBlendMode(BLENDMODE::AlphaBlend);//BlendStateの設定
-	graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
-
-	//実際に生成
-	HRESULT hr;
-	hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
-		IID_PPV_ARGS(&graphicsPipelineState_));
-	assert(SUCCEEDED(hr));
-
-	blendState_.SetBlendMode(BLENDMODE::Additive);//BlendStateの設定
-	graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
-
-	//実際に生成
-	hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
-		IID_PPV_ARGS(&graphicsPipelineState_Add));
-	assert(SUCCEEDED(hr));
-
-	blendState_.SetBlendMode(BLENDMODE::Subtractive);//BlendStateの設定
-	graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
-
-	//実際に生成
-	hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
-		IID_PPV_ARGS(&graphicsPipelineState_Sub));
-	assert(SUCCEEDED(hr));
-
-	blendState_.SetBlendMode(BLENDMODE::ScreenBlend);//BlendStateの設定
-	graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
-
-	//実際に生成
-	hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
-		IID_PPV_ARGS(&graphicsPipelineState_Scr));
-	assert(SUCCEEDED(hr));
-
-	blendState_.SetBlendMode(BLENDMODE::Multiplicative);//BlendStateの設定
-	graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
-
-	//実際に生成
-	hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
-		IID_PPV_ARGS(&graphicsPipelineState_Mul));
-	assert(SUCCEEDED(hr));
 }
 
 Microsoft::WRL::ComPtr <ID3D12PipelineState>& PipelineStateObject::GetGPS() {

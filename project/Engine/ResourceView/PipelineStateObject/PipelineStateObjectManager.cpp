@@ -9,18 +9,7 @@ void PipelineStateObjectManager::Initialize(Fngine* fngine) {
 
 void PipelineStateObjectManager::CreateNewPSO(const PSOKey& key,const std::string& name) {
 	PSO newPSO;
-	newPSO.Initialize(
-		p_fngine_,
-		key.pipelineType,
-		key.psoType,
-		key.rootSignatureType,
-		key.rasterizerSettings,
-		key.depthFlag,
-		key.shaderCompileSettings.vsFilePath,
-		key.shaderCompileSettings.vsProfile,
-		key.shaderCompileSettings.psFilePath,
-		key.shaderCompileSettings.psProfile
-	);
+    newPSO.Initialize(p_fngine_, key);
 	PSOs_.emplace(name, std::move(newPSO));
 }
 
