@@ -1,6 +1,7 @@
 #pragma once
 #include "ObjectBase.h"
 #include "Structured.h"
+#include "BVH.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -43,6 +44,7 @@ public:
 	ModelData& GetModelData() { return modelData_; }
 	// [ Node ]
 	Node& GetNode() { return modelData_.rootNode; }
+	std::vector<PhysicsTriangle>ExtractPhysicsTriangles();
 private:
 
 	//========== - + - ==========

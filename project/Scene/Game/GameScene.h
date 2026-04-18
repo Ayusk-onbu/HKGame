@@ -9,6 +9,7 @@
 #include "Particle.h"
 #include "Ground.h"
 #include "UIContainer.h"
+#include "GameMap.h"
 
 class GameScene 
 	:public Scene
@@ -51,7 +52,7 @@ private:
 	std::unique_ptr<Player3D>player_;
 	std::unique_ptr<BossEnemy>boss_;
 	std::unique_ptr<CollisionManager>collisionManager_;
-	std::unique_ptr<Ground>ground_;
+	std::unique_ptr<GameMap>gameMap_;
 	std::unique_ptr<ConvenienceModel>skySphere_;
 };
 

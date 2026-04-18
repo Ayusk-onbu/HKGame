@@ -33,10 +33,12 @@ public:
 
 	void InitializeMD(Vector4 color, bool isLight);
 	void InitializeWVPD();
+
 public:
 	void SetColor(const Vector4& color);
 	void SetEnableLighting(const bool& isLight) { materialData_->enableLighting = isLight; }
 	void SetFngine(Fngine* fngine) { fngine_ = fngine; }
+
 public:
 	// Resource
 	Microsoft::WRL::ComPtr <ID3D12Resource> vertexResource_;

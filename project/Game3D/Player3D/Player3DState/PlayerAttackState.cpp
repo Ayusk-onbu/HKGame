@@ -53,7 +53,7 @@ void PlayerAttackState::Update() {
 
 		attackOffset = CalculateAttackOffset(data, slashTime);
 		colliderRadius = data.range;
-		player_->SetAttackColliderRadius(colliderRadius);
+		//player_->SetAttackColliderRadius(colliderRadius);
 		hitBoxWorldPos = playerPos + (Quaternion::RotateVector(attackOffset, player_->GetPlayerQuaternion()) * 2.0f);
 		player_->EnableHitBox(true, hitBoxWorldPos);
 	}

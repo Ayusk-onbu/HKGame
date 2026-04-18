@@ -22,7 +22,7 @@ void BossEnemy::Initialize(Fngine* fngine, Player3D* target) {
     hp_ = maxHp_;
 
     // Colliderの初期化
-    bodyCollider_ = std::make_unique<BossBodyCollider>(this);
+    /*bodyCollider_ = std::make_unique<BossBodyCollider>(this);
     bodyCollider_->SetRadius(bossBodyRadius);
 
     bodyColliderObj_ = std::make_unique<ModelObject>();
@@ -35,7 +35,7 @@ void BossEnemy::Initialize(Fngine* fngine, Player3D* target) {
     attackCollider_ = std::make_unique<AttackCollider>();
     attackCollider_->SetMyType(COL_None);
     attackCollider_->SetYourType(COL_None);
-    attackCollider_->SetWorldPosition({ 0.0f,0.0f,30.0f });
+    attackCollider_->SetWorldPosition({ 0.0f,0.0f,30.0f });*/
 
     isViewAttack_ = false;
 
@@ -136,10 +136,10 @@ void BossEnemy::Draw(){
     obj_->Draw();
 
     if (isViewAttack_) {
-        bodyColliderObj_->worldTransform_.set_.Translation(attackCollider_->GetWorldPosition());
+       /* bodyColliderObj_->worldTransform_.set_.Translation(attackCollider_->GetWorldPosition());
         bodyColliderObj_->LocalToWorld();
         bodyColliderObj_->SetWVPData(CameraSystem::GetInstance()->GetActiveCamera()->DrawCamera(bodyColliderObj_->worldTransform_.mat_));
-        bodyColliderObj_->Draw();
+        bodyColliderObj_->Draw();*/
     }
 
     bullets_->Draw();
@@ -186,27 +186,27 @@ void BossEnemy::TakeDamage(float damage) {
 
 void BossEnemy::EnableAttackHitBox(bool enable, const Vector3& worldPos, float radius)
 {
-    if (!attackCollider_) return;
+    //if (!attackCollider_) return;
 
-    if (enable) {
-        // 1. 位置と半径を設定
-        attackCollider_->SetWorldPosition(worldPos);
-        attackCollider_->SetRadius(radius);
+    //if (enable) {
+    //    // 1. 位置と半径を設定
+    //    attackCollider_->SetWorldPosition(worldPos);
+    //    attackCollider_->SetRadius(radius);
 
-        // 2. 攻撃判定をアクティブにする
-        // 自身の属性をボスの攻撃 (COL_ENEMY_ATTACK) に設定
-        attackCollider_->SetMyType(COL_Enemy_Attack);
+    //    // 2. 攻撃判定をアクティブにする
+    //    // 自身の属性をボスの攻撃 (COL_ENEMY_ATTACK) に設定
+    //    attackCollider_->SetMyType(COL_Enemy_Attack);
 
-        // 3. マスクを設定
-        // プレイヤー本体 (COL_PLAYER) に当たるように設定
-        attackCollider_->SetYourType(COL_Player);
-    }
-    else {
-        // 攻撃判定を非アクティブにする
-        // 自身の属性を COL_NONE に設定することで、CollisionManagerでのチェックをスキップさせる
-        attackCollider_->SetMyType(COL_None);
-        attackCollider_->SetYourType(COL_None);
-    }
+    //    // 3. マスクを設定
+    //    // プレイヤー本体 (COL_PLAYER) に当たるように設定
+    //    attackCollider_->SetYourType(COL_Player);
+    //}
+    //else {
+    //    // 攻撃判定を非アクティブにする
+    //    // 自身の属性を COL_NONE に設定することで、CollisionManagerでのチェックをスキップさせる
+    //    attackCollider_->SetMyType(COL_None);
+    //    attackCollider_->SetYourType(COL_None);
+    //}
 }
 
 void BossEnemy::ChangeState(BossState* newState) {

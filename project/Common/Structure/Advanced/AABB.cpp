@@ -1,5 +1,8 @@
 #include "AABB.h"
 
+#include <algorithm>
+#include <cfloat>
+
 AABB AABB::World2AABB(Vector3 world) {
 	Vector3 worldPos = world;
 	AABB aabb;
@@ -34,4 +37,28 @@ void AABB::Initialize() {
 	max.x = 0.5f;
 	max.y = 0.5f;
 	max.z = 0.5f;
+}
+
+void AABB::Expand(const Vector3& point) {
+	min.x = (std::min)(min.x, point.x);
+	min.y = (std::min)(min.y, point.y);
+	min.z = (std::min)(min.z, point.z);
+
+	max.x = (std::max)(max.x, point.x);
+	max.y = (std::max)(max.y, point.y);
+	max.z = (std::max)(max.z, point.z);
+}
+
+void AABB::Expand(const AABB& other) {
+	Expand(other.min);
+	Expand(other.max);
+}
+
+Vector3 AABB::GetSize() const {
+	return { max.x - min.x, max.y - min.y, max.z - min.z };
+}
+
+void AABB::ResetToExtreme() {
+	min = { FLT_MAX, FLT_MAX, FLT_MAX };
+	max = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
 }

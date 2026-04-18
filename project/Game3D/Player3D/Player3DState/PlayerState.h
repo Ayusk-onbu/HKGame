@@ -50,7 +50,7 @@ public:
 	void Exit()override;
 private:
 	// ジャンプの初期速度設定、空中移動、着地判定など
-	float initial_verticalVelocity = 0.50f;
+	float initial_verticalVelocity = 0.5f;
 };
 
 class PlayerFallState

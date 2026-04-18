@@ -15,6 +15,8 @@ class Player3D
 public:
 	~Player3D();
 public:
+	std::unique_ptr<MeshCollider>collider_ = nullptr;
+
 	void Initialize(Fngine* fngine);
 	void Update();
 	void Draw();
@@ -53,15 +55,15 @@ public:
 	bool IsJustEvasion()const { return isJustEvasion_; }
 	void SetJustEvasion(bool isJustEvasion) { isJustEvasion_ = isJustEvasion; }
 
-	AttackCollider& GetAttackCollider() { return *attackCollider_.get(); }
-	PlayerBodyCollider& GetPlayerBodyCollider() { return *playerCollider_.get(); }
+	//AttackCollider& GetAttackCollider() { return *attackCollider_.get(); }
+	//PlayerBodyCollider& GetPlayerBodyCollider() { return *playerCollider_.get(); }
 
 	// 位置の取得
 	Vector3 GetPosition() { return obj_->worldTransform_.GetWorldPos(); }
 	void TakeDamage(float damage);
 	Vector3 GetForwardVector();
 	// AttackColliderのRadiusの設定
-	void SetAttackColliderRadius(float radius) { attackCollider_->SetRadius(radius); }
+	//void SetAttackColliderRadius(float radius) { attackCollider_->SetRadius(radius); }
 	void SetAlpha(float alpha) { obj_->SetColor({ 1.0f,1.0f,1.0f,alpha }); }
 	// Quaternionの設定・取得
 	void SetPlayerQuaternion(const Quaternion& q) { obj_->worldTransform_.set_.Quaternion(q); }
@@ -113,10 +115,10 @@ private:
 	std::unique_ptr<ModelObject>obj_;
 	PlayerState* state_ = nullptr;
 	// キャラのCollider
-	std::unique_ptr<PlayerBodyCollider>playerCollider_;
+	//std::unique_ptr<PlayerBodyCollider>playerCollider_;
 
 	// 攻撃判定用のCollider
-	std::unique_ptr<AttackCollider>attackCollider_;
+	//std::unique_ptr<AttackCollider>attackCollider_;
 	std::unique_ptr<ModelObject>attackColliderObj_;
 	bool isAttackViewFlag_ = false;
 
@@ -152,7 +154,7 @@ private:
 	// 一旦これは元のスピード
 	float speed_ = 2.5f;
 	// 移動速度倍率
-	float speedMultiplier_ = 1.0f;
+	float speedMultiplier_ = 4.0f;
 	// 動くことができるかどうか
 	int moveBlockers_ = 0;
 
@@ -174,7 +176,7 @@ private:
 	// 垂直速度（Ｙ軸方向）
 	float verticalVelocity_ = 0.0f;
 	// 重力加速度
-	float gravity_ = 3.8f;
+	float gravity_ = 1.0f;
 	// 地面にいるかどうかのフラグ
 	bool isOnGround_ = false;
 	// ジャンプが可能かどうかのフラグ

@@ -417,3 +417,56 @@ MaterialData ModelObject::LoadMaterialTemplateFile(const std::string& directoryP
 	return materialData;
 }
 
+std::vector<PhysicsTriangle> ModelObject::ExtractPhysicsTriangles() {
+	// ポリゴンの情報
+	std::vector<PhysicsTriangle> triangles;
+	// 頂点情報
+	const auto& vertices = modelData_.vertices;
+	const auto& indices = modelData_.indices;
+	// ワールド行列
+	const Matrix4x4& worldMat = worldTransform_.mat_;
+
+	// 1. IndexBufferがある場合（インデックス付きメッシュ）
+	if (!indices.empty()) {
+		for (size_t i = 0; i < indices.size(); i += 3) {
+			PhysicsTriangle tri;
+
+			// 計算負荷を下げるため、Transform（行列の掛け算）は1頂点につき1回だけ行う
+			auto pos0 = Matrix4x4::Transform(worldMat, vertices[indices[i]].position);
+			auto pos1 = Matrix4x4::Transform(worldMat, vertices[indices[i + 1]].position);
+			auto pos2 = Matrix4x4::Transform(worldMat, vertices[indices[i + 2]].position);
+
+			tri.v0 = { pos0.x, pos0.y, pos0.z };
+			tri.v1 = { pos1.x, pos1.y, pos1.z };
+			tri.v2 = { pos2.x, pos2.y, pos2.z };
+
+			// ポリゴンに番号を振る
+			tri.originalIndex = static_cast<int>(i / 3);
+
+			triangles.push_back(tri);
+		}
+	}
+	// 2. IndexBufferがない場合（頂点が直接並んでいるトライアングルスープ）
+	else if (!vertices.empty()) {
+		// 頂点が3つずつのセットになっている前提でループを回す
+		for (size_t i = 0; i + 2 < vertices.size(); i += 3) {
+			PhysicsTriangle tri;
+
+			auto pos0 = Matrix4x4::Transform(worldMat, vertices[i].position);
+			auto pos1 = Matrix4x4::Transform(worldMat, vertices[i + 1].position);
+			auto pos2 = Matrix4x4::Transform(worldMat, vertices[i + 2].position);
+
+			tri.v0 = { pos0.x, pos0.y, pos0.z };
+			tri.v1 = { pos1.x, pos1.y, pos1.z };
+			tri.v2 = { pos2.x, pos2.y, pos2.z };
+
+			// ポリゴンに番号を振る
+			tri.originalIndex = static_cast<int>(i / 3);
+
+			triangles.push_back(tri);
+		}
+	}
+
+	// 最後にまとめて返す（これでif文の条件から外れても安全）
+	return triangles;
+}

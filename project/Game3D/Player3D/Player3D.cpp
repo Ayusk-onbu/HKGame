@@ -30,11 +30,58 @@ void Player3D::Initialize(Fngine* fngine)
 	attackColliderObj_->Initialize(fngine);
 	attackColliderObj_->SetColor({ 0.9f,1.0f,0.1f,1.0f });
 
+	collider_ = std::make_unique<MeshCollider>();
+	collider_->SetUserData(this);
+
+	collider_->SetMyType(COL_Player);
+	collider_->SetYourType(COL_Static_Map);
+
+	// 3. ローカル頂点データの設定（例：プレイヤーを囲む四角形やひし形など）
+	std::vector<Vector3> localVertices = {
+		{-1.0f, -0.8f, -0.5f}, // 左下
+		{ 1.0f, -0.8f, -0.5f}, // 右下
+		{ 1.0f,  1.4f, -0.5f},  // 右上
+		{ -1.0f,  1.4f, -0.5f }, // 左上
+		{-1.0f, -0.8f, 0.5f}, // 左下
+		{ 1.0f, -0.8f, 0.5f}, // 右下
+		{ 1.0f,  1.4f, 0.5f},  // 右上
+		{ -1.0f,  1.4f, 0.5f }, // 左上
+	};
+	collider_->SetVertices(localVertices);
+
+	collider_->onCollisionCallBack = [this](Collider* other, const Vector3& pushOut) {
+		Vector3 pos = obj_->worldTransform_.get_.Translation();
+		if (other->GetMyType() == COL_Static_Map) {
+			Vector3 actualPush = -pushOut;
+
+			pos += actualPush;
+
+			obj_->worldTransform_.set_.Translation(pos);
+
+			Vector3 normal = actualPush;
+			float len2{ Dot(actualPush, actualPush) };
+			if (len2 > 0.0f) {
+				normal =  normal / sqrt(len2);
+			}
+
+			// 足元に地面があるかのチェック
+			if (normal.y > 0.8f) {
+				// 「落下中」または「立ち止まっている」時だけ着地判定
+				// ジャンプ上昇中（> 0.0f）は坂に触れても着地しないようにする
+#if defined(_DEBUG)
+				ImGui::Text("Player to Ground Collision!! -> OKOKOKO");
+#endif
+				this->isOnGround_ = true;
+			}
+
+		}
+	};
+
 	// Colliderの設定
 	// 1, Player
-	playerCollider_ = std::make_unique<PlayerBodyCollider>(this);
+	//playerCollider_ = std::make_unique<PlayerBodyCollider>(this);
 	// 2, Attack
-	attackCollider_ = std::make_unique<AttackCollider>();
+	//attackCollider_ = std::make_unique<AttackCollider>();
 	EnableHitBox(false, obj_->worldTransform_.get_.Translation());
 
 	// UI関係
@@ -113,23 +160,8 @@ void Player3D::Update()
 		// ※ここの性で攻撃すると空中に止まるよ
 		pos.y += move_.y * verticalVelocity_;
 	}
-	// ここで移動範囲の制限を掛ける
-	float minX = -20.0f;
-	float maxX = 20.0f;
-	float minZ = -20.0f;
-	float maxZ = 20.0f;
-	pos.x = std::clamp(pos.x, minX, maxX);
-	pos.z = std::clamp(pos.z, minZ, maxZ);
 
 	obj_->worldTransform_.set_.Translation(pos);
-
-	// 一旦地面との当たり判定（地面を０とする）
-	if (obj_->worldTransform_.get_.Translation().y <= 0.0f) {
-		isOnGround_ = true;
-		Vector3 pos = obj_->worldTransform_.get_.Translation();
-		pos.y = 0.0f;
-		obj_->worldTransform_.set_.Translation(pos);
-	}
 
 	if (isOnGround_ == true) {
 		verticalVelocity_ = 0.0f;
@@ -147,6 +179,9 @@ void Player3D::Update()
 	skeleton_->Update();
 	obj_->skinCluster_.Update(*skeleton_);
 
+	collider_->SetWorldPosition(GetPosition());
+	collider_->SetWorldMatrix(obj_->worldTransform_.mat_);
+
 	ImGui();
 }
 
@@ -157,11 +192,11 @@ void Player3D::Draw()
 	obj_->Draw();
 
 	if (isAttackViewFlag_) {
-		attackColliderObj_->worldTransform_.set_.Rotation({ 0.0f,attackColliderObj_->worldTransform_.get_.Rotation().y + 20.0f,0.0f });
+		/*attackColliderObj_->worldTransform_.set_.Rotation({ 0.0f,attackColliderObj_->worldTransform_.get_.Rotation().y + 20.0f,0.0f });
 		attackColliderObj_->worldTransform_.set_.Translation(attackCollider_->GetWorldPosition());
 		attackColliderObj_->LocalToWorld();
 		attackColliderObj_->SetWVPData(CameraSystem::GetInstance()->GetActiveCamera()->DrawCamera(attackColliderObj_->worldTransform_.mat_));
-		attackColliderObj_->Draw();
+		attackColliderObj_->Draw();*/
 	}
 
 	
@@ -200,23 +235,23 @@ void Player3D::ChangeState(PlayerState* newState) {
 // ------------------------------
 
 void Player3D::EnableHitBox(bool enable, const Vector3& worldPos) {
-	if (enable) {
-		// 攻撃判定の位置を更新
-		attackCollider_->SetWorldPosition(worldPos);
+	//if (enable) {
+	//	// 攻撃判定の位置を更新
+	//	attackCollider_->SetWorldPosition(worldPos);
 
-		// 攻撃判定をアクティブ化
-		attackCollider_->SetMyType(COL_Player_Attack);
+	//	// 攻撃判定をアクティブ化
+	//	attackCollider_->SetMyType(COL_Player_Attack);
 
-		// 相手のマスクも設定
-		attackCollider_->SetYourType(COL_Enemy | COL_Enemy_Attack);
-		ImGuiManager::GetInstance()->Text("Player Attack -> Enemy Hit!!");
-	}
-	else {
-		// 攻撃判定を非アクティブにする
-		attackCollider_->SetMyType(COL_None);
-		attackCollider_->SetYourType(COL_None);
-		ImGuiManager::GetInstance()->Text("Player Attack -> Enemy NO!!");
-	}
+	//	// 相手のマスクも設定
+	//	attackCollider_->SetYourType(COL_Enemy | COL_Enemy_Attack);
+	//	ImGuiManager::GetInstance()->Text("Player Attack -> Enemy Hit!!");
+	//}
+	//else {
+	//	// 攻撃判定を非アクティブにする
+	//	attackCollider_->SetMyType(COL_None);
+	//	attackCollider_->SetYourType(COL_None);
+	//	ImGuiManager::GetInstance()->Text("Player Attack -> Enemy NO!!");
+	//}
 
 }
 
@@ -227,9 +262,10 @@ void Player3D::EnableHitBox(bool enable, const Vector3& worldPos) {
 void Player3D::ApplyPhysics() {
 	if (isOnGround_ == false) {
 		if (moveBlockers_ == 0) {
-			verticalVelocity_ -= gravity_ * (1.0f / 60.0f) * 0.85f;
+			
 		}
 	}
+	verticalVelocity_ -= gravity_ * (1.0f / 60.0f) * 0.85f;
 }
 
 // ------------------------------
@@ -312,7 +348,7 @@ void Player3D::TakeDamage(float damage) {
 		ChangeState(new PlayerDeathState());
 
 		// 本体Colliderを無効化（死亡後に当たり判定を残さないため）
-		playerCollider_->SetMyType(COL_None);
+		///playerCollider_->SetMyType(COL_None);
 	}
 	else {
 		// HPが残っている場合は被ダメージ State へ遷移

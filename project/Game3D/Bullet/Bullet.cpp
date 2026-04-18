@@ -1,15 +1,15 @@
 #include "Bullet.h"
 #include "CameraSystem.h"
 
-void BulletCollider::OnCollision(Collider* other)
-{
-	// 衝突相手がBulletの衝突マスクと一致しているか確認はCollisionManager側で行われる
-	// 衝突が発生したらBulletに死亡フラグを立てる
-	if (bullet_)
-	{
-		bullet_->Dead();
-	}
-}
+//void BulletCollider::OnCollision(Collider* other)
+//{
+//	// 衝突相手がBulletの衝突マスクと一致しているか確認はCollisionManager側で行われる
+//	// 衝突が発生したらBulletに死亡フラグを立てる
+//	if (bullet_)
+//	{
+//		bullet_->Dead();
+//	}
+//}
 
 void Bullet::Initialize(Fngine* fngine, const Vector3& pos, const Vector3& speed, int MyType, int yourType, float radius, float lifeTime) {
 	fngine_ = fngine;
@@ -20,11 +20,11 @@ void Bullet::Initialize(Fngine* fngine, const Vector3& pos, const Vector3& speed
 	obj_->worldTransform_.set_.Translation(pos);
 	obj_->worldTransform_.set_.Scale({ radius,radius,radius });
 
-	collider_ = std::make_unique<BulletCollider>(this);
+	/*collider_ = std::make_unique<BulletCollider>(this);
 	collider_->SetMyType(MyType);
 	collider_->SetYourType(yourType);
 	collider_->SetRadius(radius);
-	collider_->SetWorldPosition(pos);
+	collider_->SetWorldPosition(pos);*/
 
 	velocity_ = speed;
 	lifeTime_ = lifeTime;
@@ -40,7 +40,7 @@ void Bullet::Update() {
 	obj_->worldTransform_.set_.Translation(pos);
 
 	// コライダーの更新
-	collider_->SetWorldPosition(pos);
+	//collider_->SetWorldPosition(pos);
 
 	// ライフタイムの更新
 	lifeTime_ -= 1.0f / 60.0f;
@@ -65,6 +65,6 @@ void Bullet::Draw() {
 void Bullet::Dead() {
 	isDead_ = true;
 	// 衝突時にコライダーを無効化し、それ以上の衝突判定を防ぐ
-	collider_->SetMyType(COL_None);
-	collider_->SetYourType(COL_None);
+	/*collider_->SetMyType(COL_None);
+	collider_->SetYourType(COL_None);*/
 }

@@ -8,7 +8,7 @@ GameScene::GameScene()
 	: player_(std::make_unique<Player3D>()),
 	  boss_(std::make_unique<BossEnemy>()),
 	  collisionManager_(std::make_unique<CollisionManager>()),
-	  ground_(std::make_unique<Ground>())
+	  gameMap_(std::make_unique<GameMap>())
 {
 
 }
@@ -20,7 +20,8 @@ GameScene::~GameScene() {
 void GameScene::Initialize() {
 	player_->Initialize(p_fngine_);
 	boss_->Initialize(p_fngine_,player_.get());
-	ground_->Initialize(p_fngine_);
+	gameMap_->Initialize(p_fngine_);
+
 	toGameTimer_ = 0.0f;
 	// Fade関係のUI
 	fadeUp_ = std::make_unique<SpriteObject>(p_fngine_);
@@ -80,7 +81,7 @@ void GameScene::Update(){
 
 		//boss_->Update();
 
-		ground_->Update();
+		gameMap_->Update();
 
 		CollisionCheck();
 
@@ -90,7 +91,8 @@ void GameScene::Update(){
 
 void GameScene::Draw() {
 	skySphere_->Draw();
-	ground_->Draw();
+	gameMap_->Draw();
+
 	boss_->Draw();
 	player_->Draw();
 
@@ -107,17 +109,16 @@ void GameScene::CollisionCheck() {
 	// 中身をclear
 	collisionManager_->Begin();
 
-	// ここからColliderを設定
-	collisionManager_->SetColliders(&player_->GetAttackCollider());
-	collisionManager_->SetColliders(&player_->GetPlayerBodyCollider());
-	collisionManager_->SetColliders(&boss_->GetAttackCollider());
-	collisionManager_->SetColliders(&boss_->GetBossBodyCollider());
-	for (auto& bullet : boss_->GetBulletManager().bullets_) {
-		collisionManager_->SetColliders(&bullet->GetCollider());
-	}
-	
+	// マップの情報を登録
+	collisionManager_->SetMap(gameMap_->GetBVH());
 
-	// Check!
+	// ここからColliderを設定
+	collisionManager_->SetColliders(player_->collider_.get());
+
+	// Map と 動的な物体（Player等）当たり判定をCheck！
+	collisionManager_->CheckMapCollisions();
+
+	// 動的な物体 と 動的な物体の当たり判定をCheck!
 	collisionManager_->CheckAllCollisions();
 }
 
@@ -194,7 +195,7 @@ void GameScene::PauseUpdate() {
 }
 
 void GameScene::PauseDraw() {
-	ground_->Draw();
+	gameMap_->Draw();
 	boss_->Draw();
 	player_->Draw();
 

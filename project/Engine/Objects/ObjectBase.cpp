@@ -1,6 +1,10 @@
 #include "ObjectBase.h"
 #include "Fngine.h"
 
+//  ==========
+//【 Draw関係 】
+//  ==========
+
 void ObjectBase::DrawBase(ObjectDrawType type) {
 	//RootSignalの設定
 	if (type == ObjectDrawType::SOLID) {

@@ -44,8 +44,8 @@ public:
 	// player_->EnableHitBox と同様の機能を BossEnemy にも実装
 	void EnableAttackHitBox(bool enable, const Vector3& worldPos, float radius);
 
-	BossBodyCollider& GetBossBodyCollider() { return *bodyCollider_.get(); }
-	AttackCollider& GetAttackCollider() { return *attackCollider_.get(); }
+	//BossBodyCollider& GetBossBodyCollider() { return *bodyCollider_.get(); }
+	//AttackCollider& GetAttackCollider() { return *attackCollider_.get(); }
 
 	BulletManager& GetBulletManager() { return *bullets_.get(); }
 
@@ -70,11 +70,11 @@ private:
 
 	// --- 衝突判定 ---
 	// ボス本体の Collider (Body)
-	std::unique_ptr<BossBodyCollider> bodyCollider_;
+	//std::unique_ptr<BossBodyCollider> bodyCollider_;
 	std::unique_ptr<ModelObject>bodyColliderObj_;
 	float bossBodyRadius = 4.0f;
 	// 攻撃用の Collider (Attack)
-	std::unique_ptr<AttackCollider> attackCollider_;
+	//std::unique_ptr<AttackCollider> attackCollider_;
 	bool isViewAttack_ = false;
 	// ロックオン
 	bool lockOn_ = false;

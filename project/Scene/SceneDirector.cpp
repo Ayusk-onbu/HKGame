@@ -143,6 +143,7 @@ void SceneDirector::LoadModelData() {
 	name = ModelManager::GetInstance()->LoadObj("debugBlock.obj", "resources", LoadFileType::OBJ);
 	name = ModelManager::GetInstance()->LoadObj("plane.gltf", "resources");
 	name = ModelManager::GetInstance()->LoadObj("ulthimaSky.obj", "resources", LoadFileType::OBJ);
+	name = ModelManager::GetInstance()->LoadObj("Map.obj", "resources/Data/Map");
 }
 
 void SceneDirector::LoadTexture() {
