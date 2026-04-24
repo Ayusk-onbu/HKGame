@@ -168,25 +168,28 @@ void Particle::Draw() {
 		index++;
 		numInstance++;
 	}
-	p_fngine_->GetCommand().GetList().GetList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	if (numInstance > 0) {
+		p_fngine_->GetCommand().GetList().GetList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	p_fngine_->GetCommand().GetList().GetList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	//RootSignalの設定
-	p_fngine_->GetCommand().GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("Structured").GetRootSignature().GetRS().Get());
-	p_fngine_->GetCommand().GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO("Structured").GetGPS().Get());
-	p_fngine_->GetCommand().GetList().GetList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
-	// IndexBufferView(IBV)の設定
-	p_fngine_->GetCommand().GetList().GetList()->IASetIndexBuffer(&indexBufferView_);
-	//マテリアルCBufferの場所を設定
-	p_fngine_->GetCommand().GetList().GetList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
-	//wvp用のCBufferの場所を設定
-	p_fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(1, instancingBuffer_->GetSRVHandleGPU());
-	//SRVのDescritorTableの先頭を設定。2はrootParameter[2]である
-	p_fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetTexture(textureName_).GetHandleGPU());
+		p_fngine_->GetCommand().GetList().GetList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		//RootSignalの設定
+		p_fngine_->GetCommand().GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("Structured").GetRootSignature().GetRS().Get());
+		p_fngine_->GetCommand().GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO("Structured").GetGPS().Get());
+		p_fngine_->GetCommand().GetList().GetList()->IASetVertexBuffers(0, 1, &vertexBufferView_);
+		// IndexBufferView(IBV)の設定
+		p_fngine_->GetCommand().GetList().GetList()->IASetIndexBuffer(&indexBufferView_);
+		//マテリアルCBufferの場所を設定
+		p_fngine_->GetCommand().GetList().GetList()->SetGraphicsRootConstantBufferView(0, materialResource_->GetGPUVirtualAddress());
+		//wvp用のCBufferの場所を設定
+		p_fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(1, instancingBuffer_->GetSRVHandleGPU());
+		//SRVのDescritorTableの先頭を設定。2はrootParameter[2]である
+		p_fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(2, TextureManager::GetInstance()->GetTexture(textureName_).GetHandleGPU());
 
-	p_fngine_->GetCommand().GetList().GetList()->DrawIndexedInstanced(6, numInstance, 0, 0, 0);
+		p_fngine_->GetCommand().GetList().GetList()->DrawIndexedInstanced(6, numInstance, 0, 0, 0);
 
-	DrawDebug();
+		DrawDebug();
+	}
+
 }
 
 void Particle::DrawDebug() {

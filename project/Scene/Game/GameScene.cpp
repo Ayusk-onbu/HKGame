@@ -69,6 +69,7 @@ void GameScene::Update(){
 		playGuide_->Play({ {"PlayGuide","PlayGuideFadeInAnim"} }, false);
 	}
 	if (notGame_) {
+		notGame_ = false;
 		toGameTimer_ += deltaTime;
 		FirstFade(toGameTimer_);
 		if (boss_->StartCutscene(toGameTimer_)) {

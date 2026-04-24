@@ -38,14 +38,14 @@ void Player3D::Initialize(Fngine* fngine)
 
 	// 3. ローカル頂点データの設定（例：プレイヤーを囲む四角形やひし形など）
 	std::vector<Vector3> localVertices = {
-		{-1.0f, -0.8f, -0.5f}, // 左下
-		{ 1.0f, -0.8f, -0.5f}, // 右下
-		{ 1.0f,  1.4f, -0.5f},  // 右上
-		{ -1.0f,  1.4f, -0.5f }, // 左上
-		{-1.0f, -0.8f, 0.5f}, // 左下
-		{ 1.0f, -0.8f, 0.5f}, // 右下
-		{ 1.0f,  1.4f, 0.5f},  // 右上
-		{ -1.0f,  1.4f, 0.5f }, // 左上
+		{-1.0f, -0.5f, -0.5f}, // 左下
+		{ 1.0f, -0.5f, -0.5f}, // 右下
+		{ 1.0f,  0.8f, -0.5f},  // 右上
+		{ -1.0f,  0.8f, -0.5f }, // 左上
+		{-1.0f, -0.5f, 0.5f}, // 左下
+		{ 1.0f, -0.5f, 0.5f}, // 右下
+		{ 1.0f,  0.8f, 0.5f},  // 右上
+		{ -1.0f,  0.8f, 0.5f }, // 左上
 	};
 	collider_->SetVertices(localVertices);
 
@@ -68,10 +68,14 @@ void Player3D::Initialize(Fngine* fngine)
 			if (normal.y > 0.8f) {
 				// 「落下中」または「立ち止まっている」時だけ着地判定
 				// ジャンプ上昇中（> 0.0f）は坂に触れても着地しないようにする
+
 #if defined(_DEBUG)
 				ImGui::Text("Player to Ground Collision!! -> OKOKOKO");
 #endif
 				this->isOnGround_ = true;
+			}
+			else {
+
 			}
 
 		}
@@ -265,7 +269,7 @@ void Player3D::ApplyPhysics() {
 			
 		}
 	}
-	verticalVelocity_ -= gravity_ * (1.0f / 60.0f) * 0.85f;
+	verticalVelocity_ -= gravity_ * (1.0f / 60.0f) * 1.00f;
 }
 
 // ------------------------------
