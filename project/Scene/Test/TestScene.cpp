@@ -24,6 +24,9 @@ void TestScene::Initialize() {
 	player_ = std::make_unique<Player3D>();
 	player_->Initialize(p_fngine_);
 
+	testPlayer_ = std::make_unique<Player>();
+	testPlayer_->Initialize(p_fngine_);
+
 	//particle_ = std::make_unique<Particle>(p_fngine_);
 	//particle_->Initialize(1000,"water");
 
@@ -33,7 +36,9 @@ void TestScene::Initialize() {
 
 void TestScene::Update() {
 
-	player_->Update();
+	//player_->Update();
+
+	testPlayer_->Update(1.0f / 60.0f);
 
 	//particle_->Update();
 
@@ -51,6 +56,8 @@ void TestScene::Draw() {
 	ground_->Draw();
 	//particle_->Draw();
 	player_->Draw();
+
+	testPlayer_->Draw();
 }
 
 void TestScene::PauseUpdate() {

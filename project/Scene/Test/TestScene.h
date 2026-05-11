@@ -6,6 +6,7 @@
 #include "Particle.h"
 #include "UIContainer.h"
 #include "Ground.h"
+#include "../../InGame/DynamicObject/Character/Player/Player.h"
 
 import Hermite;
 using namespace MathUtils;
@@ -34,6 +35,9 @@ private:
 	UIHAnimation animation_;
 
 	std::unique_ptr<Player3D>player_;
+
+	std::unique_ptr<Player>testPlayer_;
+
 	std::unique_ptr<Particle>particle_;
 
 	std::unique_ptr<ConvenienceModel>ground_;

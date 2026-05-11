@@ -13,6 +13,7 @@ enum COLLISIONATTRIBUTE :int{
 	COL_Enemy_Attack = 1 << 3,  //
 	COL_Ground = 1 << 4,        // 
 	COL_Static_Map = 1 << 5,    // 動かないマップ
+	COL_ICE = 1 << 6,           // 氷（滑る床など）
 };
 
 enum class ColliderShape {
@@ -33,6 +34,15 @@ public:
 	CollisionCallBack onCollisionCallBack = nullptr;
 
 	virtual void OnCollision(Collider* other, const Vector3& outPush) {
+		if (enableHitHistory) {
+			if (std::find(hitHistory_.begin(), hitHistory_.end(), other) != hitHistory_.end()) {
+				return; // 既に当たっているので無視！
+			}
+			// 新しい相手なら履歴に追加
+			hitHistory_.push_back(other);
+		}
+
+		// 履歴チェックを抜けた場合のみ、コールバック（ダメージ処理など）を呼ぶ
 		if (onCollisionCallBack) {
 			onCollisionCallBack(other, outPush);
 		}
@@ -80,6 +90,19 @@ public:
 
 private:
 	void* userData_ = nullptr; // 持ち主のポインタを保存
+
+/////////////////////////////////
+/// 
+///   当たり判定の保存に関する機能
+///
+/////////////////////////////////
+public:
+	// 履歴をリセットする関数（時間経過やアニメーションで呼ぶ）
+	void ClearHitHistory() { hitHistory_.clear(); }
+	void SetEnableHitHistory(bool enable) { enableHitHistory = enable; }
+private:
+	bool enableHitHistory = false; // デフォルトはOFF（体や壁用）
+	std::vector<Collider*> hitHistory_;
 };
 
 class MeshCollider : public Collider

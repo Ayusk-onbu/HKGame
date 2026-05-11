@@ -5,7 +5,7 @@
 
 
 GameScene::GameScene()
-	: player_(std::make_unique<Player3D>()),
+	: player_(std::make_unique<Player>()),
 	  boss_(std::make_unique<BossEnemy>()),
 	  collisionManager_(std::make_unique<CollisionManager>()),
 	  gameMap_(std::make_unique<GameMap>())
@@ -19,7 +19,7 @@ GameScene::~GameScene() {
 
 void GameScene::Initialize() {
 	player_->Initialize(p_fngine_);
-	boss_->Initialize(p_fngine_,player_.get());
+	//boss_->Initialize(p_fngine_,player_.get());
 	gameMap_->Initialize(p_fngine_);
 
 	toGameTimer_ = 0.0f;
@@ -72,13 +72,13 @@ void GameScene::Update(){
 		notGame_ = false;
 		toGameTimer_ += deltaTime;
 		FirstFade(toGameTimer_);
-		if (boss_->StartCutscene(toGameTimer_)) {
+		/*if (boss_->StartCutscene(toGameTimer_)) {
 			notGame_ = false;
-		}
+		}*/
 		ImGuiManager::GetInstance()->Text("Not Game");
 	}
 	else {
-		player_->Update();
+		player_->Update(deltaTime);
 
 		//boss_->Update();
 
@@ -94,7 +94,7 @@ void GameScene::Draw() {
 	skySphere_->Draw();
 	gameMap_->Draw();
 
-	boss_->Draw();
+	//boss_->Draw();
 	player_->Draw();
 
 	playUI_->Draw();
@@ -114,7 +114,7 @@ void GameScene::CollisionCheck() {
 	collisionManager_->SetMap(gameMap_->GetBVH());
 
 	// ここからColliderを設定
-	collisionManager_->SetColliders(player_->collider_.get());
+	collisionManager_->SetColliders(player_->GetCollider());
 
 	// Map と 動的な物体（Player等）当たり判定をCheck！
 	collisionManager_->CheckMapCollisions();
@@ -137,7 +137,7 @@ void GameScene::ToScene() {
 	if (boss_->IsDead()) {
 		ToClearScene();
 	}
-	else if (player_->IsDead()) {
+	else if (player_->GetStatus().IsDead()) {
 		ToGameOverScene();
 	}
 }

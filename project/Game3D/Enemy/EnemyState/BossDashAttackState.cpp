@@ -17,7 +17,7 @@ void BossDashAttackState::Update() {
 	if (!boss_)return;
 	const float deltaTime = 1.0f / 60.0f;
 	timer_ += deltaTime;
-
+	Vector3 move = dashDirection_ * dashSpeed_ * deltaTime;
 	switch (phase_) {
 	case DashPhase::Prepare:
 		// 溜め期間：移動停止
@@ -34,7 +34,7 @@ void BossDashAttackState::Update() {
 	case DashPhase::Dash:
 		// 突進期間：高速移動
 	
-		Vector3 move = dashDirection_ * dashSpeed_ * deltaTime;
+		
 		boss_->SetMovement(move);
 
 		// 突進中も当たり判定を出す
