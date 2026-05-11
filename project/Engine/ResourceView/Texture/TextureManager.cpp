@@ -33,7 +33,8 @@ std::string TextureManager::LoadTexture(const std::string& filename, const std::
 	// [ ファイルパスを作成する ]
 	std::string path = filePath + "/" + filename;
 	// [ Textureを作成 ]
-	texture->Initialize(p_fngine_->GetD3D12System(), p_fngine_->GetSRV(), path, textureCount_);
+	// [ 中間リソースを取得 ]
+	intermediateResources_.push_back(texture->Initialize(p_fngine_->GetD3D12System(), p_fngine_->GetSRV(), path, textureCount_, p_fngine_->GetCommand().GetList().GetList().Get()));
 	// [ 登録 ]
 	textures_.emplace(name, std::move(texture));
 
@@ -47,4 +48,38 @@ Texture& TextureManager::GetTexture(const std::string& name) {
 		
 	}
 	return *it->second.get();
+}
+
+void TextureManager::BeginLoad() {
+	//HRESULT hr = p_fngine_->GetCommand().GetList().GetAllocator()->Reset();
+	//assert(SUCCEEDED(hr));
+
+	// 最初のフレームなのでOpen既になっているらしく、Resetするとエラーになるのでしていない
+}
+
+void TextureManager::EndLoad() {
+	if (!p_fngine_) return;
+
+    auto& commandSet = p_fngine_->GetCommand().GetList();
+    ID3D12GraphicsCommandList* list = commandSet.GetList().Get();
+    ID3D12CommandQueue* queue = p_fngine_->GetCommand().GetQueue().GetQueue().Get();
+
+    if (!list || !queue) return;
+
+    // 1. 閉じて実行するだけ（リセットはしない！）
+    list->Close();
+    ID3D12CommandList* ppCommandLists[] = { list };
+    queue->ExecuteCommandLists(1, ppCommandLists);
+
+    // 2. GPUが終わるのを絶対に待つ
+    p_fngine_->GetTachyonSync().GetCGPU().Update(p_fngine_->GetCommand().GetQueue().GetQueue());
+
+    // 3. 中間リソースを捨てる
+    intermediateResources_.clear();
+
+	// 5. 【重要】次の描画のためにここでリセットしておく
+	HRESULT hr = p_fngine_->GetCommand().GetList().GetAllocator()->Reset();
+	assert(SUCCEEDED(hr));
+	hr = list->Reset(p_fngine_->GetCommand().GetList().GetAllocator().Get(), nullptr);
+	assert(SUCCEEDED(hr));
 }

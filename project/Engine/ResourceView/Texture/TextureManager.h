@@ -27,4 +27,15 @@ private:
 	std::unordered_map<std::string, std::unique_ptr<Texture>>textures_;
 	uint32_t textureCount_ = 0;
 	uint32_t textureMax_ = 100;
+
+//////////////////
+/// 
+///  ロードをまとめて行うための関数
+/// 
+//////////////////
+public:
+	void BeginLoad();
+	void EndLoad();
+private:
+	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> intermediateResources_;
 };

@@ -56,6 +56,8 @@ public:
 	TheOrderCommand& GetCommand() { return command_; }
 	SRV& GetSRV() { return srv_; }
 	DXC& GetDXC() { return dxc_; }
+	TachyonSync& GetTachyonSync() { return tachyonSync_; }
+
 	DirectionLight& GetLight() { return light_; }
 	PointLight& GetPointLight() { return pointLight_; }
 	SpotLight& GetSpotLight() { return spotLight_; }

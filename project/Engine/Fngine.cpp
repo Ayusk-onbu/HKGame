@@ -377,8 +377,18 @@ void Fngine::EndFrame() {
 	// ここにFPS固定するための処理を書く
 
 	//次のフレーム用のコマンドリストを準備
-	hr = command_.GetList().GetAllocator()->Reset();
-	assert(SUCCEEDED(hr));
+	auto allocator = command_.GetList().GetAllocator().Get();
+	if (allocator) {
+		hr = allocator->Reset();
+		assert(SUCCEEDED(hr));
+	}
+	else {
+		// ここで止まるなら、そもそも command_ の初期化に失敗しているか、
+		// TextureManagerのどこかでアロケータ自体を破壊(Release)している。
+		assert(false && "Allocator is missing!");
+	}
+	//hr = command_.GetList().GetAllocator()->Reset();
+	//assert(SUCCEEDED(hr));
 	hr = command_.GetList().GetList()->Reset(command_.GetList().GetAllocator().Get(), nullptr);
 	assert(SUCCEEDED(hr));
 #pragma endregion
