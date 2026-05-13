@@ -6,7 +6,7 @@ void GameMap::Initialize(Fngine* engine) {
 	obj_->modelName_ = "Map";
 	obj_->Initialize(engine);
 
-	obj_->materialData_->environmentCoefficient = 1.0f;
+	obj_->materialData_->environmentCoefficient = 0.01f;
 
 	// マップの大きさを設定する（したいなら）
 

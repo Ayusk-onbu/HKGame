@@ -94,18 +94,18 @@ void GameScene::Update(){
 
 void GameScene::Draw() {
 	//skySphere_->Draw();
-	skyBox_->Draw();
+	//skyBox_->Draw();
 	gameMap_->Draw();
 
 	//boss_->Draw();
 	player_->Draw();
 
-	playUI_->Draw();
+	//playUI_->Draw();
 	// Fade
-	fadeUp_->Draw();
-	fadeDown_->Draw();
+	//fadeUp_->Draw();
+	//fadeDown_->Draw();
 	// UI
-	purposeUI_->Draw();
+	//purposeUI_->Draw();
 
 	
 }

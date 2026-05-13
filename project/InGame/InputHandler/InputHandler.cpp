@@ -15,8 +15,25 @@ CommandState PlayerController::GetCommandState(CommandState preState) {
 	float stickX = gamepad.GetLeftStickX();
 	float stickY = gamepad.GetLeftStickY();
 
-	if (std::abs(stickX) > 0.1f) cmd.moveDirection.x = stickX;
-	if (std::abs(stickY) > 0.1f) cmd.moveDirection.z = stickY;
+	// キーボードの入力
+	float keyboardX = 0.0f;
+	if (key.PressKey(DIK_D)) keyboardX += 1.0f;
+	if (key.PressKey(DIK_A)) keyboardX -= 1.0f;
+
+	float keyboardY = 0.0f;
+	if (key.PressKey(DIK_W)) keyboardY += 1.0f;
+	if (key.PressKey(DIK_S)) keyboardY -= 1.0f;
+
+	Vector3 normalKeyboardInput = Normalize({ keyboardX,keyboardY,0.0f });
+
+	// 入力を合成して最終的な移動量を計算
+	// スティックとキーボードで値が大きい方を採用
+	float moveX = (std::abs(stickX) > 0.1f) ? stickX : normalKeyboardInput.x;
+	float moveY = (std::abs(stickY) > 0.1f) ? stickY : normalKeyboardInput.y;
+
+	// 4. 指令値（cmd）へ代入
+	cmd.moveDirection.x = moveX;
+	cmd.moveDirection.z = moveY;
 
 	cmd.dash = UpdateButtonState(preState.dash, (key.PressKey(DIK_LSHIFT) || gamepad.GetLeftTrigger() > 50));
 
