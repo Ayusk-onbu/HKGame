@@ -30,6 +30,10 @@ void Character::Update(float deltaTime) {
 
 	obj_->worldTransform_.set_.Translation(obj_->worldTransform_.get_.Translation() + moveAmount_);
 
+	Vector3 moveDirectionXZ = Normalize({ moveAmount_.x,0.0f,moveAmount_.z});
+
+	obj_->worldTransform_.LookAtToDirection(moveDirectionXZ);
+
 	onGround_ = false;
 }
 

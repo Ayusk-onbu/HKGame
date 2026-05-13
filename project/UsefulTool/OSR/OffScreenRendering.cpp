@@ -65,7 +65,7 @@ void OffScreenRendering::Initialize(D3D12System& d3d12, SRV& srv, float width, f
 
 	dsv_.InitializeHeap(d3d12);
 	dsv_.MakeResource(d3d12,int32_t(width),int32_t(height)); 
-	d3d12.GetDevice()->CreateDepthStencilView(dsv_.GetResource().Get(), &dsv_.GetDSVDesc(), dsv_.GetHeap().GetHeap()->GetCPUDescriptorHandleForHeapStart());
+	//d3d12.GetDevice()->CreateDepthStencilView(dsv_.GetResource().Get(), &dsv_.GetDSVDesc(), dsv_.GetHeap().GetHeap()->GetCPUDescriptorHandleForHeapStart());
 
 	//pso_.Initialize(, PSOTYPE::Normal);
 	
@@ -79,7 +79,7 @@ void OffScreenRendering::Begin(TheOrderCommand& command) {
 	// コマンドリストにレンダーターゲットを設定
 	// 深度ステンシルバッファを使用する場合は、DSVハンドルもここに渡す
 	//command.GetList().GetList()->OMSetRenderTargets(1, &offRTV_.GetHandle(), FALSE, nullptr); // FALSE は単一 RTV の場合
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsv_.GetHeap().GetHeap()->GetCPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsv_.GetCPUHandle(DSV_HANDLE_TYPE::Normal);
 	command.GetList().GetList()->OMSetRenderTargets(1, &offRTV_.GetHandle(), false, &dsvHandle);
 
 	command.GetList().GetList()->ClearRenderTargetView(offRTV_.GetHandle(), clearColor, 0, nullptr);
@@ -89,4 +89,9 @@ void OffScreenRendering::Begin(TheOrderCommand& command) {
 void OffScreenRendering::End(TheOrderCommand& command) {
 	//ResourceBarrier barrier = {};
 	//barrier.SetTransition(command.GetList().GetList().Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+}
+
+void OffScreenRendering::ChangeDSVHandleType(TheOrderCommand& command,DSV_HANDLE_TYPE type) {
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsv_.GetCPUHandle(type);
+	command.GetList().GetList()->OMSetRenderTargets(1, &offRTV_.GetHandle(), false, &dsvHandle);
 }

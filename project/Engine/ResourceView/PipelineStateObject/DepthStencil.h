@@ -11,13 +11,23 @@ struct DepthSettings {
 	DXGI_FORMAT formats = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマットも指定可能に
 };
 
+enum class DSV_HANDLE_TYPE {
+	Normal = 0,   // 書き込み可能(D3D12_DSV_FLAG_NONE)
+	ReadOnly = 1, // 読み取り専用(D3D12_DSV_FLAG_READ_ONLY_DEPTH)
+	Count     // ハンドル数用
+};
+
 class DepthStencil
 {
 public:
-
+	// ヒープの初期化（ハンドル数を2にする）
 	void InitializeHeap(D3D12System& d3d12);
 
+	// リソースと複数のビュー(DSV)を作成
 	void MakeResource(D3D12System& d3d12, int32_t width, int32_t height);
+
+	// 特定のタイプのハンドルを取得する
+	D3D12_CPU_DESCRIPTOR_HANDLE GetCPUHandle(DSV_HANDLE_TYPE type);
 
 	void InitializeDesc(BOOL is = true, 
 		D3D12_DEPTH_WRITE_MASK mask = D3D12_DEPTH_WRITE_MASK_ALL,
@@ -56,6 +66,8 @@ private:
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc_{};
 	DescriptorHeap heap_;
 	Microsoft::WRL::ComPtr <ID3D12Resource> depthStencilResource_;
+	// ヒープ内でのオフセット計算用
+	uint32_t descriptorSize_;
 };
 
 using DSV = DepthStencil;

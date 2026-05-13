@@ -2,7 +2,9 @@
 #include <cassert>
 
 void DepthStencil::InitializeHeap(D3D12System& d3d12) {
-	heap_.CreateDescriptorHeap(d3d12.GetDevice().Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+	heap_.CreateDescriptorHeap(d3d12.GetDevice().Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, (UINT)DSV_HANDLE_TYPE::Count, false);
+	// 1つあたりのサイズを取得しておく
+	descriptorSize_ = d3d12.GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 }
 
 void DepthStencil::InitializeDesc(BOOL is, D3D12_DEPTH_WRITE_MASK mask, D3D12_COMPARISON_FUNC func) {
@@ -12,8 +14,28 @@ void DepthStencil::InitializeDesc(BOOL is, D3D12_DEPTH_WRITE_MASK mask, D3D12_CO
 }
 
 void DepthStencil::MakeResource(D3D12System& d3d12, int32_t width, int32_t height) {
+	// リソース作成
 	depthStencilResource_ = CreateDepthStencilTextureResource(d3d12.GetDevice().Get(), width, height);
-	SetDesc();
+
+	// 基本的なViewDescの設定
+	SetDesc(); // ここで dsvDesc_ の Format と ViewDimension を設定
+
+	// --- 1. Normal DSV の作成 ---
+	dsvDesc_.Flags = D3D12_DSV_FLAG_NONE;
+	d3d12.GetDevice()->CreateDepthStencilView(
+		depthStencilResource_.Get(),
+		&dsvDesc_,
+		GetCPUHandle(DSV_HANDLE_TYPE::Normal)
+	);
+
+	// --- 2. ReadOnly DSV の作成 ---
+	dsvDesc_.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH; // 深度を読み取り専用に
+	// ※ ステンシルも使う場合は D3D12_DSV_FLAG_READ_ONLY_STENCIL も検討
+	d3d12.GetDevice()->CreateDepthStencilView(
+		depthStencilResource_.Get(),
+		&dsvDesc_,
+		GetCPUHandle(DSV_HANDLE_TYPE::ReadOnly)
+	);
 }
 
 //DepthStencilTexture(奥行きの根幹をなすもの大量に読み書きするらしい)
@@ -58,4 +80,10 @@ Microsoft::WRL::ComPtr < ID3D12Resource> DepthStencil::CreateDepthStencilTexture
 #pragma endregion
 	/////////////////////////////////////////////
 	return resource;
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE DepthStencil::GetCPUHandle(DSV_HANDLE_TYPE type) {
+	D3D12_CPU_DESCRIPTOR_HANDLE handle = heap_.GetHeap()->GetCPUDescriptorHandleForHeapStart();
+	handle.ptr += (uint32_t)type * descriptorSize_;
+	return handle;
 }

@@ -39,6 +39,7 @@ public:
 	void End(TheOrderCommand& command);
 	D3D12_GPU_DESCRIPTOR_HANDLE& GetHandleGPU() { return textureSrvHandleGPU_; }
 	Microsoft::WRL::ComPtr <ID3D12Resource> GetResource() {return offScreenTexture_;}
+	void ChangeDSVHandleType(TheOrderCommand& command,DSV_HANDLE_TYPE type);
 private:
 	
 private:

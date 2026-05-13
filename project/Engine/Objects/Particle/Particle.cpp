@@ -126,7 +126,7 @@ void Particle::Update() {
 			info->worldTransform.get_.Translation() + (info->velocity) * kDeltaTime_);
 
 		// [ ビルボードの処理 ]
-		info->worldTransform.LookAtToVector(CameraSystem::GetInstance()->GetActiveCamera()->GetTranslation());
+		info->worldTransform.LookAtToTarget(CameraSystem::GetInstance()->GetActiveCamera()->GetTranslation());
 
 		// [ *** イージング関係の処理 *** ]
 		// [ Scale ]
@@ -171,7 +171,6 @@ void Particle::Draw() {
 	if (numInstance > 0) {
 		p_fngine_->GetCommand().GetList().GetList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		p_fngine_->GetCommand().GetList().GetList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		//RootSignalの設定
 		p_fngine_->GetCommand().GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("Structured").GetRootSignature().GetRS().Get());
 		p_fngine_->GetCommand().GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO("Structured").GetGPS().Get());

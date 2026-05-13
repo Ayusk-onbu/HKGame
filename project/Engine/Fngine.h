@@ -63,6 +63,8 @@ public:
 	SpotLight& GetSpotLight() { return spotLight_; }
 	AreaLight& GetAreaLight() { return areaLight_; }
 	CameraForGPU& GetCameraForGPU() { return cameraForGPU_; }
+
+	void ChangOSRsDSVHandleType(DSV_HANDLE_TYPE type);
 private:
 	void SettingShader();
 private:

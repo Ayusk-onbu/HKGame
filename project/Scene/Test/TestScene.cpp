@@ -27,8 +27,8 @@ void TestScene::Initialize() {
 	testPlayer_ = std::make_unique<Player>();
 	testPlayer_->Initialize(p_fngine_);
 
-	//particle_ = std::make_unique<Particle>(p_fngine_);
-	//particle_->Initialize(1000,"water");
+	particle_ = std::make_unique<Particle>(p_fngine_);
+	particle_->Initialize(1000,"water");
 
 	ground_ = std::make_unique<ConvenienceModel>();
 	ground_->Initialize(p_fngine_, "ground", "GridLine");
@@ -40,7 +40,7 @@ void TestScene::Update() {
 
 	testPlayer_->Update(1.0f / 60.0f);
 
-	//particle_->Update();
+	particle_->Update();
 
 	if (InputManager::IsJump()) {
 		hasRequestedNextScene_ = true;
@@ -54,10 +54,11 @@ void TestScene::Update() {
 void TestScene::Draw() {
 	
 	ground_->Draw();
-	//particle_->Draw();
 	player_->Draw();
-
 	testPlayer_->Draw();
+
+	p_fngine_->ChangOSRsDSVHandleType(DSV_HANDLE_TYPE::ReadOnly);
+	particle_->Draw();
 }
 
 void TestScene::PauseUpdate() {

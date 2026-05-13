@@ -54,8 +54,8 @@ void Fngine::SettingShader() {
 			 0.0f
 		 },
 		{
-			false,
-			D3D12_DEPTH_WRITE_MASK_ALL,
+			true,
+			D3D12_DEPTH_WRITE_MASK_ZERO,
 			D3D12_COMPARISON_FUNC_LESS_EQUAL,
 			DXGI_FORMAT_D24_UNORM_S8_UINT
 		}
@@ -383,7 +383,7 @@ void Fngine::Initialize() {
 	rtv_.Initialize(&d3d12_, swapChain_);
 	dsv_.InitializeHeap(d3d12_);
 	dsv_.MakeResource(d3d12_, kClienWidth_, kClienHeight_);
-	d3d12_.GetDevice()->CreateDepthStencilView(dsv_.GetResource().Get(), &dsv_.GetDSVDesc(), dsv_.GetHeap().GetHeap()->GetCPUDescriptorHandleForHeapStart());
+	//d3d12_.GetDevice()->CreateDepthStencilView(dsv_.GetResource().Get(), &dsv_.GetDSVDesc(), dsv_.GetHeap().GetHeap()->GetCPUDescriptorHandleForHeapStart());
 	tachyonSync_.GetCGPU().Initialize(d3d12_.GetDevice());
 
 
@@ -451,8 +451,9 @@ void Fngine::BeginFrame() {
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
 	//描画先のRTVとDSVを設定する
-	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsv_.GetHeap().GetHeap()->GetCPUDescriptorHandleForHeapStart();
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle = dsv_.GetCPUHandle(DSV_HANDLE_TYPE::Normal);
 	command_.GetList().GetList()->OMSetRenderTargets(1, &rtv_.GetHandle(backBufferIndex), false, &dsvHandle);
+
 	//指定した色で画面全体をクリアする
 	float clearColor[] = { 1.0f,1.0f,1.0f,0.0f };//RGBAの設定
 	command_.GetList().GetList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);//
@@ -468,8 +469,8 @@ void Fngine::BeginFrame() {
 
 void Fngine::EndFrame() {
 	command_.GetList().GetList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	command_.GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("Grayscale").GetRootSignature().GetRS().Get());
-	command_.GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO("Grayscale").GetGPS().Get());
+	command_.GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("CopyImage").GetRootSignature().GetRS().Get());
+	command_.GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO("CopyImage").GetGPS().Get());
 	//SRVのDescritorTableの先頭を設定。0はrootParameter[0]である
 	command_.GetList().GetList()->SetGraphicsRootDescriptorTable(0, osr_.GetHandleGPU());
 	command_.GetList().GetList()->DrawInstanced(3, 1, 0, 0);
@@ -518,4 +519,8 @@ void Fngine::EndFrame() {
 	assert(SUCCEEDED(hr));
 #pragma endregion
 	////////////////////////////////////////////////////////////
+}
+
+void Fngine::ChangOSRsDSVHandleType(DSV_HANDLE_TYPE type) {
+	osr_.ChangeDSVHandleType(command_, type);
 }

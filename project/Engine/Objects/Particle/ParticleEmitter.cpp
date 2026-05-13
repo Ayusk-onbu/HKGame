@@ -38,7 +38,7 @@ void ParticleEmitter::Emit(Particle* particleSystem) {
 		};
 
 		info->worldTransform.set_.Translation(worldTransform_.transform_.translation_ + spawnOffset);
-		info->worldTransform.LookAtToVector(CameraSystem::GetInstance()->GetActiveCamera()->GetTranslation());
+		info->worldTransform.LookAtToTarget(CameraSystem::GetInstance()->GetActiveCamera()->GetTranslation());
 
 		info->startScale = RandomUtils::GetInstance()->GetHighRandom().GetFloat(1.0f, 1.5f);
 		info->endScale = RandomUtils::GetInstance()->GetHighRandom().GetFloat(0.15f, 0.25f);

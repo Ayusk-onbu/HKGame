@@ -82,7 +82,7 @@ const Vector3 WorldTransform::GetWorldPos()const {
 	return { mat_.m[3][0] ,mat_.m[3][1] ,mat_.m[3][2] };
 }
 
-void WorldTransform::LookAtToVector(const Vector3& target) {
+void WorldTransform::LookAtToTarget(const Vector3& target) {
 
 	Vector3 globalUp = { 0.0f,1.0f,0.0f };
 
@@ -92,7 +92,7 @@ void WorldTransform::LookAtToVector(const Vector3& target) {
 	Vector3 newForward = Normalize(forward);
 
 	// 右ベクトルを計算
-	Vector3 newRight = CrossProduct(globalUp, newRight);
+	Vector3 newRight = CrossProduct(globalUp, newForward);
 
 	newRight = Normalize(newRight);
 
@@ -101,5 +101,30 @@ void WorldTransform::LookAtToVector(const Vector3& target) {
 	Quaternion q = Quaternion::MakeFromBasis(newRight,newUp,newForward);
 
 	set_.Quaternion(Quaternion::Slerp(get_.Quaternion(),q,0.1f));
+}
+
+void WorldTransform::LookAtToDirection(const Vector3& direction) {
+	// 世界の上側
+	Vector3 globalUp = { 0.0f,1.0f,0.0f };
+
+	// 前方ベクトルを計算
+	if (Length(direction) < 1e-6f) {
+		// 値がとても小さかったら計算しない
+		return;
+	}
+	Vector3 forward = direction;
+
+	Vector3 newForward = Normalize(forward);
+
+	// 右ベクトルを計算
+	Vector3 newRight = CrossProduct(globalUp, newForward);
+
+	newRight = Normalize(newRight);
+
+	Vector3 newUp = CrossProduct(newForward, newRight);
+
+	Quaternion q = Quaternion::MakeFromBasis(newRight, newUp, newForward);
+
+	set_.Quaternion(Quaternion::Slerp(get_.Quaternion(), q, 0.1f));
 }
 
