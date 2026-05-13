@@ -42,11 +42,6 @@ void Player::Update(float deltaTime) {
 	collider_->SetWorldPosition(obj_->worldTransform_.get_.Translation());
 	MeshCollider* meshCollider = dynamic_cast<MeshCollider*>(collider_.get());
 	meshCollider->SetWorldMatrix(obj_->worldTransform_.mat_);
-
-	ImGui::DragFloat3("Player Position", &obj_->worldTransform_.get_.Translation().x);
-	ImGui::DragFloat3("Player External Velocity", &externalVelocity_.x);
-	ImGui::DragFloat3("Player My Velocity", &myVelocity_.x);
-	ImGui::DragFloat3("Player Move Amount", &moveAmount_.x);
 }
 
 void Player::Draw() {
