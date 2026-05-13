@@ -4,6 +4,13 @@
 #include "DescriptorHeap.h"
 #include "D3D12System.h"
 
+struct DepthSettings {
+	bool depthEnable = true;
+	D3D12_DEPTH_WRITE_MASK writeMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	D3D12_COMPARISON_FUNC comparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	DXGI_FORMAT formats = DXGI_FORMAT_D24_UNORM_S8_UINT; // フォーマットも指定可能に
+};
+
 class DepthStencil
 {
 public:

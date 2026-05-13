@@ -36,6 +36,8 @@ void ObjectBase::DrawBase(ObjectDrawType type) {
 	fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(8, fngine_->GetAreaLight().GetLTC1GPUHandle());
 	// t2: LTC2
 	fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(9, fngine_->GetAreaLight().GetLTC2GPUHandle());
+	// t3: Environment Light
+	fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(10, TextureManager::GetInstance()->GetTexture("rostock_laage_airport_4k").GetHandleGPU());
 }
 
 void ObjectBase::DrawBase(TheOrderCommand& command, PSO& pso, DirectionLight& light, Texture& tex) {
@@ -134,6 +136,8 @@ void ObjectBase::DrawIndexBase(ObjectDrawType type) {
 	fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(8, fngine_->GetAreaLight().GetLTC1GPUHandle());
 	// t2: LTC2
 	fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(9, fngine_->GetAreaLight().GetLTC2GPUHandle());
+	// t3: Environment Light
+	fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(10, TextureManager::GetInstance()->GetTexture("rostock_laage_airport_4k").GetHandleGPU());
 	// MatrixPalatteの設定
 	//fngine_->GetCommand().GetList().GetList()->SetGraphicsRootDescriptorTable(10, skinCluster_.paletteSrvHandle_.second);
 }

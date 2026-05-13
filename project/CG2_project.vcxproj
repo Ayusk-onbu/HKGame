@@ -157,6 +157,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Engine\Objects\Primitive\SkyBox.cpp" />
     <ClCompile Include="InGame\DynamicObject\Character\Character.cpp" />
     <ClCompile Include="Common\MathUtils\Physics\BVH\BVH.cpp" />
     <ClCompile Include="Common\MathUtils\Physics\PhysicsTriangle\PhysicsTriangle.cpp" />
@@ -170,6 +171,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="InGame\DynamicObject\Character\Player\Player.cpp" />
     <ClCompile Include="InGame\DynamicObject\StatusComponent.cpp" />
     <ClCompile Include="InGame\InputHandler\InputHandler.cpp" />
+    <ClCompile Include="Engine\Objects\Primitive\Base\PrimitiveBaseModel.cpp" />
     <ClCompile Include="Scene\Title\TitleScene.cpp" />
     <ClCompile Include="UsefulTool\Light\AreaLight\AreaLight.cpp" />
     <ClCompile Include="Engine\Objects\Model\Joint.cpp" />
@@ -327,6 +329,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="UsefulTool\UI\UIHEditor\UIHEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Engine\Objects\Primitive\Base\PrimitiveBaseModelData.h" />
+    <ClInclude Include="Engine\Objects\Primitive\SkyBox.h" />
     <ClInclude Include="InGame\DynamicObject\Character\Character.h" />
     <ClInclude Include="Common\MathUtils\Physics\BVH\BVH.h" />
     <ClInclude Include="Common\MathUtils\Physics\PhysicsTriangle\PhysicsTriangle.h" />
@@ -341,6 +345,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="InGame\DynamicObject\Magic\Magic.h" />
     <ClInclude Include="InGame\DynamicObject\StatusComponent.h" />
     <ClInclude Include="InGame\InputHandler\InputHandler.h" />
+    <ClInclude Include="Engine\Objects\Primitive\Base\PrimitiveBaseModel.h" />
     <ClInclude Include="Scene\Title\TitleScene.h" />
     <ClInclude Include="UsefulTool\Light\AreaLight\AreaLight.h" />
     <ClInclude Include="Engine\Game.h" />
@@ -474,6 +479,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <None Include="resources\shaders\Object3d\Object3d.hlsli" />
     <None Include="resources\shaders\Particle\Particle.hlsli" />
     <None Include="resources\shaders\SkinningObject3d\SkinningObject3d.hlsli" />
+    <None Include="resources\shaders\SkyBox\SkyBox.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d\Object3d.PS.hlsl">

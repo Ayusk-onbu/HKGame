@@ -9,6 +9,7 @@ enum class ROOTTYPE {
 	Structured,
 	Skinning,
 	CopyImage,
+	SkyBox,
 };
 
 class RootSignature

@@ -6,6 +6,8 @@ void GameMap::Initialize(Fngine* engine) {
 	obj_->modelName_ = "Map";
 	obj_->Initialize(engine);
 
+	obj_->materialData_->environmentCoefficient = 1.0f;
+
 	// マップの大きさを設定する（したいなら）
 
 	// Matrixを構築

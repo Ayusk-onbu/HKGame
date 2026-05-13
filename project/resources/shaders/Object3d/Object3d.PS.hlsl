@@ -7,6 +7,7 @@ struct Material
     int32_t enableLighting;
     float32_t4x4 uvTransform;
     float32_t shininess;
+    float32_t environmentCoefficient;
 };
 ConstantBuffer<Material> gMaterial : register(b0);
 
@@ -84,6 +85,7 @@ Texture2D<float32_t4> gTexture : register(t0);
 // LTC(t1),(t2)
 Texture2D<float32_t4> gLTC1 : register(t1);
 Texture2D<float32_t4> gLTC2 : register(t2);
+TextureCube<float32_t4> gEnvironmentTexture : register(t3);
 
 SamplerState gSampler : register(s0);
 
@@ -247,7 +249,13 @@ PixelShaderOutPut main(VertexShaderOutput input)
         float32_t3 areaLightResult = (specular + diffuse * textureColor.rgb) * gAreaLight.color.rgb * gAreaLight.intensity;
         
         output.color.rgb = diffuseDirectionalLight + specularDirectionalLight + totalPointDiffuse + totalPointSpecular + totalSpotDiffuse + totalSpotSpecular + areaLightResult;
-        //output.color.rgb = areaLightResult;
+        
+        float32_t3 cameraToPosition = normalize(input.worldPosition - gCamera.worldPosition);
+        float32_t3 reflectedVector = reflect(cameraToPosition, normalize(input.normal));
+        float32_t4 environmentColor = gEnvironmentTexture.Sample(gSampler, reflectedVector);
+        
+        output.color.rgb += environmentColor.rgb * gMaterial.environmentCoefficient;
+        
         output.color.a = gMaterial.color.a * textureColor.a;
     }else{
         output.color = gMaterial.color * textureColor;

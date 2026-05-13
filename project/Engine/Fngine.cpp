@@ -53,7 +53,12 @@ void Fngine::SettingShader() {
 			 0,
 			 0.0f
 		 },
-		 false
+		{
+			false,
+			D3D12_DEPTH_WRITE_MASK_ALL,
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,
+			DXGI_FORMAT_D24_UNORM_S8_UINT
+		}
 		},
 		"Structured"
 	);
@@ -80,7 +85,12 @@ void Fngine::SettingShader() {
 			 0,
 			 0.0f
 		 },
-		true
+		{
+			true,
+			D3D12_DEPTH_WRITE_MASK_ALL,
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,
+			DXGI_FORMAT_D24_UNORM_S8_UINT
+		}
 		},
 		"Object3D"
 	);
@@ -106,7 +116,12 @@ void Fngine::SettingShader() {
 			 0,
 			 0.0f
 		 },
-		true
+		{
+			true,
+			D3D12_DEPTH_WRITE_MASK_ALL,
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,
+			DXGI_FORMAT_D24_UNORM_S8_UINT
+		}
 		},
 		"DebugObject3D"
 	);
@@ -132,7 +147,12 @@ void Fngine::SettingShader() {
 			 0,
 			 0.0f
 		 },
-		true
+		{
+			true,
+			D3D12_DEPTH_WRITE_MASK_ALL,
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,
+			DXGI_FORMAT_D24_UNORM_S8_UINT
+		}
 		},
 		"SpriteObject3D"
 	);
@@ -184,7 +204,12 @@ void Fngine::SettingShader() {
 			 0,
 			 0.0f
 		 },
-		false
+		{
+			false,
+			D3D12_DEPTH_WRITE_MASK_ALL,
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,
+			DXGI_FORMAT_D24_UNORM_S8_UINT
+		}
 		},
 		"CopyImage"
 	);
@@ -211,9 +236,45 @@ void Fngine::SettingShader() {
 			 0,
 			 0.0f
 		 },
-		false
+		{
+			false,
+			D3D12_DEPTH_WRITE_MASK_ALL,
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,
+			DXGI_FORMAT_D24_UNORM_S8_UINT
+		}
 		},
 		"SkinningCS"
+	);
+
+	PSOManager::GetInstance()->CreateNewPSO
+	(
+		{
+			PIPELINETYPE::Graphics,
+			ROOTTYPE::SkyBox,
+			PSOTYPE::SkyBox,
+		 {
+			L"resources/shaders/SkyBox/SkyBox.VS.hlsl",
+			L"resources/shaders/SkyBox/SkyBox.PS.hlsl",
+			L"",
+			L"vs_6_0",
+			L"ps_6_0",
+			L""
+		 },
+		 {
+			 D3D12_CULL_MODE_BACK,
+			 D3D12_FILL_MODE_SOLID,
+			 FALSE,
+			 0,
+			 0.0f
+		 },
+		 {
+			true,
+			D3D12_DEPTH_WRITE_MASK_ZERO,
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,
+			DXGI_FORMAT_D24_UNORM_S8_UINT
+		}
+		},
+		"SkyBox"
 	);
 }
 
