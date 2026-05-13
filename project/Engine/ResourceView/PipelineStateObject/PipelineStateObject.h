@@ -19,6 +19,7 @@ enum class PSOTYPE {
 	Line,
 	Skinning,
 	CopyImage,
+	SkyBox,
 };
 
 struct ShaderCompileSettings {
@@ -46,8 +47,7 @@ struct PSOKey {
 	// ラスタライザ設定
 	RasterizerSettings rasterizerSettings;
 
-	// Depthの設定
-	bool depthFlag;
+	DepthSettings depthSettings;
 };
 
 class PipelineStateObject
@@ -86,7 +86,7 @@ public:
 	// Set 
 	// --------------------------------
 
-	void SetDesc(D3D12System& d3d12, PSOTYPE type);
+	void SetDesc(D3D12System& d3d12, const PSOKey& key);
 
 	RootSignature GetRootSignature() { return rootSignature_; }
 	InputLayout GetInputLayout() { return inputLayoutDesc_; }

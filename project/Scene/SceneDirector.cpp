@@ -148,6 +148,8 @@ void SceneDirector::LoadModelData() {
 }
 
 void SceneDirector::LoadTexture() {
+	TextureManager::GetInstance()->BeginLoad();
+
 	std::string name;
 	name = TextureManager::GetInstance()->LoadTexture("GridLine.png", "resources");
 	name = TextureManager::GetInstance()->LoadTexture("ulthimaSky.png","resources");
@@ -163,6 +165,9 @@ void SceneDirector::LoadTexture() {
 	name = TextureManager::GetInstance()->LoadTexture("Title.png", "resources/Title");
 	name = TextureManager::GetInstance()->LoadTexture("monsterBall.png", "resources");
 	name = TextureManager::GetInstance()->LoadTexture("PlayGuide.png", "resources/Game");
+	name = TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds", "resources");
+
+	TextureManager::GetInstance()->EndLoad();
 }
 
 void SceneDirector::LoadMusic() {

@@ -8,3 +8,7 @@ struct VertexData {
 	Vector2 texcoord;//u座標とv座標のことかな
 	Vector3 normal;//法線ベクトル
 };
+
+struct SkyBoxVertexData {
+	Vector4 position;
+};

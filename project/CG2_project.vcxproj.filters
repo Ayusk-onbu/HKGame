@@ -666,6 +666,12 @@
     <ClCompile Include="InGame\DynamicObject\Character\MovementStates.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Objects\Primitive\Base\PrimitiveBaseModel.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Objects\Primitive\SkyBox.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\imgui\imconfig.h">
@@ -1067,6 +1073,15 @@
     <ClInclude Include="InGame\DynamicObject\Character\States.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Objects\Primitive\Base\PrimitiveBaseModel.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Objects\Primitive\Base\PrimitiveBaseModelData.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Objects\Primitive\SkyBox.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt">
@@ -1084,6 +1099,7 @@
       <Filter>resources\shaders\SkinningObject3d</Filter>
     </None>
     <None Include="resources\shaders\CopyImage\CopyImage.hlsli" />
+    <None Include="resources\shaders\SkyBox\SkyBox.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="resources\shaders\Object3d\Object3d.VS.hlsl">

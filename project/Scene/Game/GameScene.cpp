@@ -8,7 +8,8 @@ GameScene::GameScene()
 	: player_(std::make_unique<Player>()),
 	  boss_(std::make_unique<BossEnemy>()),
 	  collisionManager_(std::make_unique<CollisionManager>()),
-	  gameMap_(std::make_unique<GameMap>())
+	  gameMap_(std::make_unique<GameMap>()),
+	  skyBox_(std::make_unique<SkyBox>())
 {
 
 }
@@ -51,6 +52,7 @@ void GameScene::Initialize() {
 	skySphere_ = std::make_unique<ConvenienceModel>();
 	skySphere_->Initialize(p_fngine_, "ulthimaSky", "ulthimaSky");
 
+	skyBox_->Initialize(p_fngine_, "rostock_laage_airport_4k");
 
 	// ポーズ関係のUI
 	pause_ = std::make_unique<UIContainer>();
@@ -91,7 +93,8 @@ void GameScene::Update(){
 }
 
 void GameScene::Draw() {
-	skySphere_->Draw();
+	//skySphere_->Draw();
+	skyBox_->Draw();
 	gameMap_->Draw();
 
 	//boss_->Draw();
@@ -104,6 +107,7 @@ void GameScene::Draw() {
 	// UI
 	purposeUI_->Draw();
 
+	
 }
 
 void GameScene::CollisionCheck() {

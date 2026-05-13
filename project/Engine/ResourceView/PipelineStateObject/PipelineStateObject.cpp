@@ -18,6 +18,10 @@ static const D3D12_INPUT_ELEMENT_DESC Layout_FullSkinningMesh[] = {
 	{ "INDEX",    0, DXGI_FORMAT_R32G32B32A32_SINT,  1, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 };
 
+static const D3D12_INPUT_ELEMENT_DESC Layout_SkyBox[] = {
+	{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+};
+
 void PipelineStateObject::Initialize(Fngine* fngine, const PSOKey& key) {
 	// DXCを取得
 	dxc_ = &fngine->GetDXC();
@@ -40,6 +44,8 @@ void PipelineStateObject::Initialize(Fngine* fngine, const PSOKey& key) {
 		case PSOTYPE::CopyImage:
 			inputLayoutDesc_.Initialize(nullptr, 0);
 			break;
+		case PSOTYPE::SkyBox:
+			inputLayoutDesc_.Initialize(Layout_SkyBox, _countof(Layout_SkyBox));
 		}
 
 		// BlendStateの設定
@@ -58,7 +64,9 @@ void PipelineStateObject::Initialize(Fngine* fngine, const PSOKey& key) {
 			key.shaderCompileSettings.psProfile);		
 
 		// depthStencil
-		depthStencil_.InitializeDesc(key.depthFlag);
+		depthStencil_.InitializeDesc(key.depthSettings.depthEnable,
+									 key.depthSettings.writeMask,
+									 key.depthSettings.comparisonFunc);
 	}
 	else if (key.pipelineType == PIPELINETYPE::Compute) {
 		// ShaderのデータをCompileして保存
@@ -72,7 +80,7 @@ void PipelineStateObject::Initialize(Fngine* fngine, const PSOKey& key) {
 	MargeDesc();
 
 	// 
-	SetDesc(fngine->GetD3D12System(), key.psoType);
+	SetDesc(fngine->GetD3D12System(), key);
 }
 
 void PipelineStateObject::Compile(
@@ -182,13 +190,13 @@ void PipelineStateObject::MargeDesc() {
 	}
 }
 
-void PipelineStateObject::SetDesc(D3D12System& d3d12, PSOTYPE type) {
+void PipelineStateObject::SetDesc(D3D12System& d3d12, const PSOKey& key) {
 	if (pipelineType_ == PIPELINETYPE::Graphics) {
 		//書きこむRTVの情報
 		graphicsPipelineStateDesc_.NumRenderTargets = 1;
 		graphicsPipelineStateDesc_.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 		//利用するトボロジ（形状）のタイプ。三角形
-		if (type == PSOTYPE::Line) {
+		if (key.psoType == PSOTYPE::Line) {
 			graphicsPipelineStateDesc_.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
 		}
 		else {
@@ -199,7 +207,7 @@ void PipelineStateObject::SetDesc(D3D12System& d3d12, PSOTYPE type) {
 		graphicsPipelineStateDesc_.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 		//DepthStencil
 		graphicsPipelineStateDesc_.DepthStencilState = depthStencil_.GetDesc();
-		graphicsPipelineStateDesc_.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		graphicsPipelineStateDesc_.DSVFormat = key.depthSettings.formats;
 
 		// ---  --------------- ------------ ------ //
 		//  BlendState                              //

@@ -11,6 +11,7 @@
 #include "UIContainer.h"
 #include "GameMap.h"
 #include "Player.h"
+#include "SkyBox.h"
 
 class GameScene 
 	:public Scene
@@ -56,6 +57,7 @@ private:
 	std::unique_ptr<CollisionManager>collisionManager_;
 	std::unique_ptr<GameMap>gameMap_;
 	std::unique_ptr<ConvenienceModel>skySphere_;
+	std::unique_ptr<SkyBox>skyBox_;
 };
 
 
