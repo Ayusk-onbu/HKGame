@@ -93,7 +93,7 @@ void GameScene::Update(){
 }
 
 void GameScene::Draw() {
-	//skySphere_->Draw();
+	skySphere_->Draw();
 	//skyBox_->Draw();
 	gameMap_->Draw();
 

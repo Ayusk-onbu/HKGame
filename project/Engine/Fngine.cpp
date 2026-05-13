@@ -190,7 +190,7 @@ void Fngine::SettingShader() {
 			ROOTTYPE::CopyImage,
 			PSOTYPE::CopyImage,
 		 {
-			L"resources/shaders/CopyImage/CopyImage.VS.hlsl",
+			L"resources/shaders/CopyImage/Fullscreen.VS.hlsl",
 			L"resources/shaders/CopyImage/CopyImage.PS.hlsl",
 			L"",
 			L"vs_6_0",
@@ -214,6 +214,70 @@ void Fngine::SettingShader() {
 		"CopyImage"
 	);
 	PSOManager::GetInstance()->GetPSO("CopyImage").SetBlendState(BLENDMODE::Multiplicative);
+
+	PSOManager::GetInstance()->CreateNewPSO
+	(
+		{
+			PIPELINETYPE::Graphics,
+			ROOTTYPE::CopyImage,
+			PSOTYPE::CopyImage,
+		 {
+			L"resources/shaders/CopyImage/Fullscreen.VS.hlsl",
+			L"resources/shaders/CopyImage/Grayscale.PS.hlsl",
+			L"",
+			L"vs_6_0",
+			L"ps_6_0",
+			L""
+		 },
+		 {
+			 D3D12_CULL_MODE_BACK,
+			 D3D12_FILL_MODE_SOLID,
+			 FALSE,
+			 0,
+			 0.0f
+		 },
+		{
+			false,
+			D3D12_DEPTH_WRITE_MASK_ALL,
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,
+			DXGI_FORMAT_D24_UNORM_S8_UINT
+		}
+		},
+		"Grayscale"
+	);
+	PSOManager::GetInstance()->GetPSO("Grayscale").SetBlendState(BLENDMODE::Multiplicative);
+
+	PSOManager::GetInstance()->CreateNewPSO
+	(
+		{
+			PIPELINETYPE::Graphics,
+			ROOTTYPE::CopyImage,
+			PSOTYPE::CopyImage,
+		 {
+			L"resources/shaders/CopyImage/Fullscreen.VS.hlsl",
+			L"resources/shaders/CopyImage/Sepia.PS.hlsl",
+			L"",
+			L"vs_6_0",
+			L"ps_6_0",
+			L""
+		 },
+		 {
+			 D3D12_CULL_MODE_BACK,
+			 D3D12_FILL_MODE_SOLID,
+			 FALSE,
+			 0,
+			 0.0f
+		 },
+		{
+			false,
+			D3D12_DEPTH_WRITE_MASK_ALL,
+			D3D12_COMPARISON_FUNC_LESS_EQUAL,
+			DXGI_FORMAT_D24_UNORM_S8_UINT
+		}
+		},
+		"Sepia"
+	);
+	PSOManager::GetInstance()->GetPSO("Sepia").SetBlendState(BLENDMODE::Multiplicative);
 
 	PSOManager::GetInstance()->CreateNewPSO
 	(
@@ -404,8 +468,8 @@ void Fngine::BeginFrame() {
 
 void Fngine::EndFrame() {
 	command_.GetList().GetList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	command_.GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("CopyImage").GetRootSignature().GetRS().Get());
-	command_.GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO("CopyImage").GetGPS().Get());
+	command_.GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("Grayscale").GetRootSignature().GetRS().Get());
+	command_.GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO("Grayscale").GetGPS().Get());
 	//SRVのDescritorTableの先頭を設定。0はrootParameter[0]である
 	command_.GetList().GetList()->SetGraphicsRootDescriptorTable(0, osr_.GetHandleGPU());
 	command_.GetList().GetList()->DrawInstanced(3, 1, 0, 0);

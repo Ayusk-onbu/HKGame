@@ -1098,7 +1098,7 @@
     <None Include="resources\shaders\SkinningObject3d\SkinningObject3d.hlsli">
       <Filter>resources\shaders\SkinningObject3d</Filter>
     </None>
-    <None Include="resources\shaders\CopyImage\CopyImage.hlsli" />
+    <None Include="resources\shaders\CopyImage\Fullscreen.hlsli" />
     <None Include="resources\shaders\SkyBox\SkyBox.hlsli" />
   </ItemGroup>
   <ItemGroup>
