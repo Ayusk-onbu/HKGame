@@ -51,7 +51,7 @@ CommandState PlayerController::GetCommandState(CommandState preState) {
 	// YBAX
 	cmd.mainAction = UpdateButtonState(preState.mainAction, (key.PressKey(DIK_Y) || gamepad.IsPress(XINPUT_GAMEPAD_Y)));
 	cmd.subAction = UpdateButtonState(preState.subAction, (key.PressKey(DIK_Y) || gamepad.IsPress(XINPUT_GAMEPAD_B)));
-	cmd.subMove = UpdateButtonState(preState.subMove, (key.PressKey(DIK_Y) || gamepad.IsPress(XINPUT_GAMEPAD_A)));
+	cmd.subMove = UpdateButtonState(preState.subMove, (key.PressKey(DIK_SPACE) || gamepad.IsPress(XINPUT_GAMEPAD_A)));
 	cmd.magicAction = UpdateButtonState(preState.magicAction, (key.PressKey(DIK_Y) || gamepad.IsPress(XINPUT_GAMEPAD_X)));
 
 	// L

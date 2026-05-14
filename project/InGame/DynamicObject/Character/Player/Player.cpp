@@ -17,15 +17,18 @@ void Player::Initialize(Fngine* fngine) {
 	myCollider->SetMyType(COL_Player);
 	myCollider->SetYourType(COL_Static_Map);
 
+	auto aabb = bvh_->GetRoot()->bounds;
+	float lengthX = aabb.GetSize().x / 1.5f;
 	myCollider->SetVertices({
-		{-1.0f, -0.5f, -0.5f}, // 左下
-		{ 1.0f, -0.5f, -0.5f}, // 右下
-		{ 1.0f,  0.8f, -0.5f},  // 右上
-		{ -1.0f,  0.8f, -0.5f }, // 左上
-		{-1.0f, -0.5f, 0.5f}, // 左下
-		{ 1.0f, -0.5f, 0.5f}, // 右下
-		{ 1.0f,  0.8f, 0.5f},  // 右上
-		{ -1.0f,  0.8f, 0.5f }, // 左上
+		{aabb.min.x + lengthX, aabb.min.y, aabb.min.z}, // 左下
+		{aabb.max.x - lengthX, aabb.min.y, aabb.min.z}, // 右下
+		{aabb.max.x - lengthX, aabb.max.y, aabb.min.z}, // 右上
+		{aabb.min.x + lengthX, aabb.max.y, aabb.min.z}, // 左上
+
+		{aabb.min.x + lengthX, aabb.min.y, aabb.max.z}, // 左下
+		{aabb.max.x - lengthX, aabb.min.y, aabb.max.z}, // 右下
+		{aabb.max.x - lengthX, aabb.max.y, aabb.max.z}, // 右上
+		{aabb.min.x + lengthX, aabb.max.y, aabb.max.z}, // 左上
 	});
 
 	myCollider->onCollisionCallBack = [this](Collider* other, const Vector3& pushOut) {

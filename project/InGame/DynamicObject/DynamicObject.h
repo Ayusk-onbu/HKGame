@@ -65,7 +65,7 @@ protected:
 	bool onGround_ = false;// 地面にいるかの判断
 
 	float gravity_ = 9.8f;
-	const float MAX_FALL_VELOCITY = -1.0f;
+	const float MAX_FALL_VELOCITY = -2.5f;
 ///////////////////////////
 /// 
 /// Collider関係
@@ -92,6 +92,7 @@ protected:
 
 protected:
 	std::unique_ptr<Collider>collider_;
+	std::unique_ptr<BVH>bvh_;
 
 };
 

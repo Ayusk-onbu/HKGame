@@ -15,11 +15,18 @@ namespace CharacterState {
 		void GroundBase::Update(float deltaTime) {
 
 			if (character_->OnGround()) {
-
+				if (character_->GetCommand().subMove == ButtonState::Pressed) {
+					character_->Jump();
+					return;
+				}
 			}
+			// 地面から離れていたらの処理
 			else {
-				// 地面から離れていたらの処理
-
+				// 落っこちたのならコヨーテタイム開始
+				character_->ResetCoyoteTime();
+				
+				character_->ChangeMovementState("AirBase");
+				return;
 			}
 		}
 		void GroundBase::Exit() {
@@ -37,11 +44,18 @@ namespace CharacterState {
 		void AirBase::Update(float deltaTime) {
 			if (character_->OnGround()) {
 				// 着地したらの処理
-
+				character_->ChangeMovementState("Idle");
 			}
 			else {
 				// 地面から離れていたらの処理
+				if (character_->GetCoyoteTimer() > 0.0f) {
+					character_->DecreaseCoyoteTimer(deltaTime);
 
+					if (character_->GetCommand().subMove == ButtonState::Pressed) {
+						character_->Jump();
+						return;
+					}
+				}
 			}
 		}
 		void AirBase::Exit() {

@@ -8,6 +8,11 @@ void DynamicObject::Initialize(Fngine* engine, std::string modelName, std::strin
 	obj_->modelName_ = modelName;// 使用するModelの名前
 	obj_->textureName_ = textureName;// 使用するTextureの名前
 	obj_->Initialize(engine);
+	obj_->LocalToWorld();
+
+	bvh_ = std::make_unique<BVH>();
+	auto triangle = obj_->ExtractPhysicsTriangles();
+	bvh_->Build(triangle);
 }
 
 void DynamicObject::Update(float deltaTime) {

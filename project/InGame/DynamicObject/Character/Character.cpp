@@ -41,6 +41,20 @@ void Character::Draw() {
 	DynamicObject::Draw();
 }
 
+///////////////////////////
+/// 
+/// 物理に関する関数
+///
+//////////////////////////
+void Character::Jump() {
+	externalVelocity_.y = status_.GetCurrentSpeed();
+
+	onGround_ = false;
+
+	jumpCoyoteTimer_ = 0.0f;
+
+	ChangeMovementState("AirBase");
+}
 
 ///////////////////////////
 /// 

@@ -31,15 +31,26 @@ protected:
 ///
 //////////////////////////
 public:
-	//void SetMoveDirection(const Vector3& moveDirection) { moveDirection_ = moveDirection; }
-	//Vector3 GetMoveDirection()const { return moveDirection_; }
+	void Jump();
 	void SetEyesDirection(const Vector3& eyesDirection) { eyesDirection_ = eyesDirection; }
 	Vector3 GetEyesDirection()const { return eyesDirection_; }
-
+	
 protected:
 	// 移動制御用の変数
-	//Vector3 moveDirection_;// 移動したい方向
 	Vector3 eyesDirection_;// 視線の方向
+
+///  *================*
+/// 【 操作感に関する 】
+///  *================*
+public:
+	float GetCoyoteTimer()const { return jumpCoyoteTimer_; }
+	void SetCoyoteTimer(float time) { jumpCoyoteTimer_ = time; }
+	void ResetCoyoteTime() { jumpCoyoteTimer_ = JUMP_COYOTE_MAX_TIME; }
+	void DecreaseCoyoteTimer(float deltaTime) { jumpCoyoteTimer_ -= deltaTime; }
+
+protected:
+	float jumpCoyoteTimer_ = 0.0f;// 地面を離れた後もジャンプを受け付ける猶予期間
+	const float JUMP_COYOTE_MAX_TIME = 0.15f;
 
 ///////////////////////////
 /// 

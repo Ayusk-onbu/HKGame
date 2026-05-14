@@ -28,9 +28,7 @@ public:
 
 
 private:
-	// 【 ジャンプ 】
-	float jumpCoyoteTimer_ = 0.0f;// 地面を離れた後もジャンプを受け付ける猶予期間
-	const float JUMP_COYOTE_MAX_TIME = 0.15f;
+	
 
 };
 
