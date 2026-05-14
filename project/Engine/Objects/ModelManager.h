@@ -5,6 +5,11 @@
 
 class ModelManager
 {
+/////////////////////////
+/// 
+/// 
+///
+/////////////////////////
 public:
 	static ModelManager* GetInstance() {
 		if (instance_ == nullptr) {
@@ -13,15 +18,19 @@ public:
 		return instance_.get();
 	}
 	void ReleaseInstance() { instance_.reset(); }
+
+private:
+	static std::unique_ptr<ModelManager>instance_;
+
+/////////////////////////
+/// 
+/// 
+///
+/////////////////////////
 public:
 	void Initialize(Fngine* fngine);
 
-	/// <summary>
-	/// データを送る
-	/// </summary>
-	/// <param name="ID"></param>
-	/// <returns></returns>
-	ModelData& LoadModelData(const std::string& ID);
+	ObjectData& GetObjectData(const std::string& ID);
 
 	/// <summary>
 	/// Modelデータをロードする
@@ -31,12 +40,19 @@ public:
 	/// <param name="type">三角面化してないならType::OBJ</param>
 	/// <returns></returns>
 	std::string LoadObj(const std::string& filename, const std::string& directoryPath = "resources",LoadFileType type = LoadFileType::Assimp);
+
+	void AddObject(const std::string name, const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices);
 private:
-	static std::unique_ptr<ModelManager>instance_;
 	// 図鑑的な存在
-	// [ 最初ModelDataだけでいいかと思ったが、表示したいかもだし別にいいかという判断。ただ、オブジェクトプールしたいから将来的に変更の可能性 ]
-	std::unordered_map<std::string, std::unique_ptr<ModelObject>>models_;
+	std::unordered_map<std::string, std::unique_ptr<ObjectData>>objects_;
+
 	uint32_t modelCount_;
 	Fngine* pFngine_;
+
+private:
+	ModelData LoadObjFile(const std::string& filename, const std::string& directoryPath);
+	ModelData LoadFiles(const std::string& fileName, const std::string& directoryPath);
+	Node ReadNode(aiNode* node);
+	MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename);
 };
 
