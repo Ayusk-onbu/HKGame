@@ -1082,6 +1082,9 @@
     <ClInclude Include="Engine\Objects\Primitive\SkyBox.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Objects\Hear\GuideCurve.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt">

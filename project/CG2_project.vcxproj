@@ -329,6 +329,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="UsefulTool\UI\UIHEditor\UIHEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Engine\Objects\Hear\GuideCurve.h" />
     <ClInclude Include="Engine\Objects\Primitive\Base\PrimitiveBaseModelData.h" />
     <ClInclude Include="Engine\Objects\Primitive\SkyBox.h" />
     <ClInclude Include="InGame\DynamicObject\Character\Character.h" />
