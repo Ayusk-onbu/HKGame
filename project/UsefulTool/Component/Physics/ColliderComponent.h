@@ -11,6 +11,9 @@ public:
     void Initialize() override;
     void Update(float deltaTime) override;
     void DrawUI()override;
+    std::string GetComponentName() const override { return "ColliderComponent"; }
+    json Serialize() const override;
+    void Deserialize(const json& j) override;
 
     // --- コライダーの生成・セット ---
     template <typename T, typename... Args>

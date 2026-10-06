@@ -34,6 +34,10 @@ public:
 	virtual void Draw();
 
 	virtual void DrawUI();
+
+	json Serialize()const;
+
+	void Deserialize(const json& j);
 	
 	WorldTransform& GetTransform(){ return transform_; }
 

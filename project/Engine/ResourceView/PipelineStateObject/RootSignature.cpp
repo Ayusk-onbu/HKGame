@@ -491,7 +491,8 @@ void RootSignatureBuilder::AddStaticSampler(UINT shaderRegister, D3D12_FILTER fi
 
 Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignatureBuilder::Build(ID3D12Device* device) {
 	D3D12_ROOT_SIGNATURE_DESC desc{};
-	desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+	desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | 
+		D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED;
 	desc.NumParameters = static_cast<UINT>(parameters_.size());
 	desc.pParameters = parameters_.data();
 	desc.NumStaticSamplers = static_cast<UINT>(samplers_.size());

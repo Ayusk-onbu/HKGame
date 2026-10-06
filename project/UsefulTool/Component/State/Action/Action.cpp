@@ -17,6 +17,16 @@ void ActionComponent::Update(float deltaTime) {
     }
 }
 
+json ActionComponent::Serialize() const {
+    json j;
+    j["currentActionName"] = GetCurrentActionName();
+    return j;
+}
+
+void ActionComponent::Deserialize(const json& j) {
+    // 必要に応じて状態のロード処理を記述
+}
+
 void ActionComponent::DrawUI() {
 #ifdef USE_IMGUI
     if (ImGui::TreeNode("Action Component")) {

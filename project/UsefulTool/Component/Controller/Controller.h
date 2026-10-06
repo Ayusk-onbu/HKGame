@@ -14,6 +14,9 @@ public:
         }
     }
     void DrawUI() override;
+    std::string GetComponentName() const override { return "ControllerComponent"; }
+    json Serialize() const override;
+    void Deserialize(const json& j) override;
 
     // 脳みその差し替え（PlayerController, HermiteSplineController, AIController 等）
     void SetController(std::unique_ptr<Controller> ctrl, const std::string& name = "Custom") {

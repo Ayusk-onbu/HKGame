@@ -131,11 +131,16 @@ D3D12_PRIMITIVE_TOPOLOGY_TYPE ParseTopologyType(const std::string& str) {
 // 【 DXGIフォーマットの変換 (InputLayout用) 】
 //   ========================================
 DXGI_FORMAT ParseFormat(const std::string& str) {
-    if (str == "R32G32B32A32_FLOAT") return DXGI_FORMAT_R32G32B32A32_FLOAT;
-    if (str == "R32G32B32_FLOAT")    return DXGI_FORMAT_R32G32B32_FLOAT;
-    if (str == "R32G32_FLOAT")       return DXGI_FORMAT_R32G32_FLOAT;
-    if (str == "R32_FLOAT")          return DXGI_FORMAT_R32_FLOAT;
-    if (str == "R32G32B32A32_SINT")  return DXGI_FORMAT_R32G32B32A32_SINT;
+    if (str == "R8G8B8A8_UNORM")      return DXGI_FORMAT_R8G8B8A8_UNORM;
+    if (str == "R8G8B8A8_UNORM_SRGB") return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    if (str == "R16G16B16A16_FLOAT")  return DXGI_FORMAT_R16G16B16A16_FLOAT;
+    if (str == "R32G32B32A32_FLOAT")  return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    if (str == "R32G32B32_FLOAT")     return DXGI_FORMAT_R32G32B32_FLOAT;
+    if (str == "R32G32_FLOAT")        return DXGI_FORMAT_R32G32_FLOAT;
+    if (str == "R32_FLOAT")           return DXGI_FORMAT_R32_FLOAT;
+    if (str == "R32G32B32A32_SINT")   return DXGI_FORMAT_R32G32B32A32_SINT;
+    if (str == "R10G10B10A2_UNORM")   return DXGI_FORMAT_R10G10B10A2_UNORM;
+    if (str == "R11G11B10_FLOAT")     return DXGI_FORMAT_R11G11B10_FLOAT;
     return DXGI_FORMAT_D24_UNORM_S8_UINT;
 }
 
@@ -235,10 +240,10 @@ void PipelineStateObjectManager::LoadPSOsFromJson(const std::string& filepath, c
         // 【 シェーダーのPath情報を取得 】
         //   ============================
         // VSのPathを取得
-        std::string vsRaw = psoJson["shaders"]["vs"];
+        std::string vsRaw = psoJson["shaders"].value("vs", "");
         std::wstring vsPath = ConvertString(vsRaw);
         // PSのPathを取得
-        std::string psRaw = psoJson["shaders"]["ps"];
+        std::string psRaw = psoJson["shaders"].value("ps", "");
         std::wstring psPath = ConvertString(psRaw);
         // データを転送
         builder.SetShaders(vsPath, psPath);
@@ -294,6 +299,20 @@ void PipelineStateObjectManager::LoadPSOsFromJson(const std::string& filepath, c
             if (ds.contains("format"))         depthSettings.formats = ParseFormat(ds["format"]);
         }
         builder.SetDepthSettings(depthSettings);
+
+        RenderTargetSettings rtSettings{};
+        if (psoJson.contains("rtvFormats") && psoJson["rtvFormats"].is_array()) {
+            const auto& rtvArray = psoJson["rtvFormats"];
+            rtSettings.numRenderTargets = static_cast<UINT>(std::min<size_t>(rtvArray.size(), 8));
+            for (UINT i = 0; i < rtSettings.numRenderTargets; ++i) {
+				rtSettings.rtvFormats[i] = ParseFormat(rtvArray[i].get<std::string>());
+            }
+        }
+        else if (psoJson.contains("rtvFormat")) { // 単一指定フォーマットにも対応
+            rtSettings.numRenderTargets = 1;
+            rtSettings.rtvFormats[0] = ParseFormat(psoJson["rtvFormat"].get<std::string>());
+        }
+        builder.SetRenderTargetSettings(rtSettings);
     }
     else if (type == "Compute") {
         // CSの設定 (Builder側に SetComputeShader 等を追加しておく)

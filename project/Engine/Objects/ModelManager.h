@@ -13,12 +13,75 @@ public:
 public:
 	void Initialize(Fngine* fngine);
 
+	//   ===== ======
+	// 【 Model Data 】
+	//   ====== =====
+public:
 	/// <summary>
 	/// データを送る
 	/// </summary>
 	/// <param name="ID"></param>
 	/// <returns></returns>
 	ModelData& LoadModelData(const std::string& ID);
+
+	/// <summary>
+	/// IDに対応したModelDataを取得
+	/// </summary>
+	/// <param name="id"></param>
+	/// <returns></returns>
+	ModelData& GetModelData(uint32_t id);
+
+	/// <summary>
+	/// BaseDirectoryに含まれるModelのデータをすべてLoadする
+	/// </summary>
+	/// <param name="baseDirectory"></param>
+	void LoadAllModels(const std::string& baseDirectory = "Assets");
+
+	/// <summary>
+	/// ファイルからModelデータをロードする
+	/// </summary>
+	/// <param name="filename">ファイルネーム</param>
+	/// <param name="directoryPath"></param>
+	/// <param name="type">三角面化してないならType::OBJ</param>
+	/// <returns></returns>
+	uint32_t LoadObj(const std::string& filename, const std::string& directoryPath = "resources", LoadFileType type = LoadFileType::Assimp);
+
+	//   ======= =====
+	// 【 Object Data 】
+	//   ====== ======
+public:
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="ID"></param>
+	/// <returns></returns>
+	ObjectData& LoadObjectData(const std::string& ID);
+
+	/// <summary>
+	/// IDに対応したObjectDataを取得
+	/// </summary>
+	/// <param name="id"></param>
+	/// <returns></returns>
+	ObjectData& GetObjectData(uint32_t id);
+
+	/// <summary>
+	/// 使用するモデルデータを登録
+	/// </summary>
+	/// <param name="ID"></param>
+	/// <param name="vertices"></param>
+	/// <param name="indices"></param>
+	void AddObject(const std::string& ID, const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices);
+
+	/// <summary>
+	/// 
+	/// </summary>
+	/// <param name="filename"></param>
+	/// <param name="directoryPath"></param>
+	void LoadModelFromFile(const std::string& filename, const std::string& directoryPath = "Assets");
+	//   ====== ===
+	// 【 BVH Data 】
+	//   ====== ===
+public:
 
 	/// <summary>
 	/// IDに対応したBVHを取得する
@@ -28,13 +91,15 @@ public:
 	const BVH* GetBVH(const std::string& ID) const;
 
 	/// <summary>
-	/// ファイルからModelデータをロードする
+	/// IDに対応したBVHを取得する
 	/// </summary>
-	/// <param name="filename">ファイルネーム</param>
-	/// <param name="directoryPath"></param>
-	/// <param name="type">三角面化してないならType::OBJ</param>
+	/// <param name="id"></param>
 	/// <returns></returns>
-	std::string LoadObj(const std::string& filename, const std::string& directoryPath = "resources",LoadFileType type = LoadFileType::Assimp);
+	const BVH* GetBVH(uint32_t id)const;
+
+	// 登録されている BVH モデルの名前一覧を取得（エディタのCombo表示用）
+	std::vector<std::string> GetBVHNames() const;
+
 private:
 	/// <summary>
 	/// 頂点dataやIndexDataから三角形のメッシュを作り出す
@@ -42,31 +107,21 @@ private:
 	/// <returns></returns>
 	std::vector<PhysicsTriangle>ExtractPhysicsTriangles(const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices, const Matrix4x4& mat);
 
-	uint32_t modelCount_;
-	Fngine* pFngine_;
+	Node ReadNode(aiNode* node);
 
-public:
-	ObjectData& LoadObjectData(const std::string& ID);
-
-	void AddObject(const std::string& ID,const std::vector<VertexData>& vertices, const std::vector<uint32_t>& indices);
-
-	// 登録されている BVH モデルの名前一覧を取得（エディタのCombo表示用）
-	std::vector<std::string> GetBVHNames() const {
-		std::vector<std::string> names;
-		for (const auto& [name, _] : bvhs_) {
-			names.push_back(name);
+	template <typename T>
+	void EnsureCapacity(std::vector<T>& vec, uint32_t id) {
+		if (id >= vec.size()) {
+			vec.resize(id + 1);
 		}
-		return names;
 	}
 private:
-	// 図鑑的な存在
-	// [ 最初ModelDataだけでいいかと思ったが、表示したいかもだし別にいいかという判断。ただ、オブジェクトプールしたいから将来的に変更の可能性 ]
-	std::unordered_map<std::string, std::unique_ptr<ModelObject>>models_;
+	Fngine* pFngine_;
+	uint32_t modelCount_;
 
-	// 名前：ModelData
-	std::unordered_map<std::string, std::unique_ptr<ObjectData>>objects_;
-
-	// 名前：BVH
-	std::unordered_map<std::string, std::unique_ptr<BVH>> bvhs_;
+	// ID（配列インデックス）で管理するデータ群
+	std::vector<std::unique_ptr<ModelObject>> models_;
+	std::vector<std::unique_ptr<ObjectData>> objects_;
+	std::vector<std::unique_ptr<BVH>> bvhs_;
 };
 

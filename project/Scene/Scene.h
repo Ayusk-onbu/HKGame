@@ -10,6 +10,7 @@ public:
 public:
 	virtual void Initialize() = 0;
 	virtual void Update() = 0;
+	virtual void DrawDepthPrePass() {};
 	virtual void Draw() = 0;
 	virtual void PauseUpdate() {};
 	virtual void PauseDraw() {};

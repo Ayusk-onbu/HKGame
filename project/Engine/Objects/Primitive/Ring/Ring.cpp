@@ -70,6 +70,9 @@ void PrimitiveRing::Initialize(Fngine* engine, uint32_t numInstance) {
 
 	useModelName_ = "Ring";
 
+	// ==========================
+	// 【 MainPass用　コマンド 】
+	// ==========================
 	SetCommand = [this]() {
 		auto commandList = p_engine_->GetCommand().GetList().GetList();
 		auto object = ModelManager::GetInstance()->LoadObjectData(useModelName_);

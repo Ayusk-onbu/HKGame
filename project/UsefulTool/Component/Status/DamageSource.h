@@ -23,6 +23,9 @@ public:
 
     void Initialize() override;
     void DrawUI()override;
+    std::string GetComponentName() const override { return "DamageSourceComponent"; }
+    json Serialize() const override;
+    void Deserialize(const json& j) override;
 
     // --- 攻撃パラメータの設定 ---
     void SetCalcType(DamageCalcType type) { calcType_ = type; }

@@ -1,0 +1,33 @@
+{
+      "pipelineType": "Compute",
+      "primitiveTopologyType": "Triangle",
+      "shaders": {
+        "cs": "resources/shaders/Particle/EmitParticleSDF.CS.hlsl"
+      },
+      "inputLayout": [
+      ],
+      "rasterizer": {
+        "fillMode": "Solid",
+        "cullMode": "None"
+      },
+      "depthStencilState": {
+        "depthEnable": false,
+        "depthWriteMask": "All",
+        "depthFunc": "LessEqual",
+        "format": "D24"
+      },
+      "blendMode": "AlphaBlend",
+      "rootSignature": [
+       { "type": "UAVTable", "register": 0, "count": 1, "visibility": "All" },
+       { "type": "UAVTable", "register": 1, "count": 1, "visibility": "All" },
+       { "type": "UAVTable", "register": 2, "count": 1, "visibility": "All" },
+       { "type": "CBV", "register": 0, "visibility": "All" },
+       { "type": "CBV", "register": 1, "visibility": "All" },
+       { "type": "CBV", "register": 2, "visibility": "All" },
+       { "type": "SRVTable", "register": 0, "count": 1, "visibility": "All" }
+
+      ],
+      "staticSamplers":[
+        {"register": 0}
+      ]
+}

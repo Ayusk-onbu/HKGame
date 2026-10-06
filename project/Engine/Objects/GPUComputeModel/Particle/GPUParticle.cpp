@@ -1,5 +1,7 @@
 #include "GPUParticle.h"
 #include "ModelManager.h"
+#include "SDFManager.h"
+#include "StringPool.h"
 #include <d3dx12.h>
 
 void GPUParticleSystem::Initialize(Fngine* engine, uint32_t numParticles) {
@@ -35,7 +37,7 @@ void GPUParticleSystem::Initialize(Fngine* engine, uint32_t numParticles) {
             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         commandList->ResourceBarrier(1, &preUAVBarrier);
 
-        auto object = ModelManager::GetInstance()->LoadObjectData("Plane");
+        auto object = ModelManager::GetInstance()->LoadObjectData("plane");
 
         commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         commandList->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO("GPUParticle").GetRootSignature().GetRS().Get());
@@ -101,14 +103,18 @@ void GPUParticleSystem::DispatchInitializeCS(){
 void GPUParticleSystem::DispatchUpdateCS(){
     auto commandList = p_engine_->GetCommand().GetList().GetList();
 
-    commandList->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("EmitParticle.CS").GetRootSignature().GetRS().Get());
-    commandList->SetPipelineState(PSOManager::GetInstance()->GetPSO("EmitParticle.CS").GetCPS().Get());
+    commandList->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("EmitParticleSDF.CS").GetRootSignature().GetRS().Get());
+    commandList->SetPipelineState(PSOManager::GetInstance()->GetPSO("EmitParticleSDF.CS").GetCPS().Get());
 
     commandList->SetComputeRootDescriptorTable(0, dataBuffer_->GetUAVHandleGPU());
     commandList->SetComputeRootDescriptorTable(1, freeListIndexBuffer_->GetUAVHandleGPU());
     commandList->SetComputeRootDescriptorTable(2, freeListBuffer_->GetUAVHandleGPU());
     commandList->SetComputeRootConstantBufferView(3, emitBuffer_->GetGPUVirtualAddress());
     commandList->SetComputeRootConstantBufferView(4, perFrameBuffer_->GetGPUVirtualAddress());
+    uint32_t id = StringPool::GetInstance()->GetStringID("Naira_ExportTest");
+    commandList->SetComputeRootConstantBufferView(5, SDFManager::GetInstance()->tempBakeResources_[id].configBuffer->GetGPUVirtualAddress());
+    commandList->SetComputeRootDescriptorTable(6, SDFManager::GetInstance()->GetSDF("Naira_ExportTest")->texture.GetSRVHandleGPU());
+
     // 今回はちょうど1024個なので
     commandList->Dispatch(1, 1, 1);
 

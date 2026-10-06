@@ -112,21 +112,22 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     if (any(dispatchThreadID >= g_Config.resolution))
         return;
 
-    // ① インデックス (x, y, z) から 3D空間のワールド座標 P を計算
+    //　インデックス (x, y, z) から 3D空間のワールド座標 P を計算
     float3 uvw = ((float3) dispatchThreadID + 0.5f) / (float3) g_Config.resolution;
     float3 P = lerp(g_Config.gridMin, g_Config.gridMax, uvw);
 
-    // ② BVH探索用の初期化
+    // BVH探索用の初期化
     float minDistanceSq = 1e10f; // 十分に大きい値
     float3 closestNormal = float3(0, 1, 0);
     float3 closestPoint = P;
 
-    // 簡易ローカルスタック（最大深さ32まで探索可能）
-    int stack[32];
+    // ローカルスタック
+    static const int stackSize = 64; // 最大スタックサイズ
+    int stack[stackSize];// 探索可能深度
     int stackPtr = 0;
     stack[stackPtr++] = 0; // ルートノード (Index: 0) から開始
 
-    // ③ GPU上での BVH 巡回ループ
+    // GPU上での BVH 巡回ループ
     while (stackPtr > 0)
     {
         int nodeIdx = stack[--stackPtr];
@@ -166,14 +167,14 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
         // 【内部ノードの場合】 子ノードをスタックに追加
         else
         {
-            if (node.leftChildIndex != -1 && stackPtr < 32)
+            if (node.leftChildIndex != -1 && stackPtr < stackSize)
                 stack[stackPtr++] = node.leftChildIndex;
-            if (node.rightChildIndex != -1 && stackPtr < 32)
+            if (node.rightChildIndex != -1 && stackPtr < stackSize)
                 stack[stackPtr++] = node.rightChildIndex;
         }
     }
 
-    // ④ 外側 / 内側 の符号（Sign）判定
+    // 外側 / 内側 の符号（Sign）判定
     float distanceVal = sqrt(minDistanceSq);
     float3 dirToPoint = P - closestPoint;
     
@@ -183,6 +184,6 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
         distanceVal = -distanceVal;
     }
 
-    // ⑤ 3D Volume Texture に書き込み
+    // 3D Volume Texture に書き込み
     g_SDFOutput[dispatchThreadID] = distanceVal;
 }

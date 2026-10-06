@@ -16,7 +16,7 @@
       },
       "depthStencilState": {
         "depthEnable": true,
-        "depthWriteMask": "All",
+        "depthWriteMask": "Zero",
         "depthFunc": "LessEqual",
         "format": "D24"
       },

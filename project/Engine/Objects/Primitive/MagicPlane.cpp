@@ -1,6 +1,6 @@
 #include "MagicPlane.h"
 #include "ModelManager.h"
-#include "Ring/Ring.h"
+#include "DrawManager.h"
 
 void MagicCircle::Initialize(Fngine* engine, uint32_t numInstance) {
 	PrimitiveBaseModel::Initialize(engine, numInstance);
@@ -74,7 +74,7 @@ void MagicCircle::Update() {
 		testUVTransform.set_.Translation({ 0.0f,0.0f,0.0f });
 		testUVTransform.LocalToWorld();
 
-		PrimitiveRing::GetInstance()->AddInstance({
+		DrawManager::GetInstance()->GetRing()->AddInstance({
 			testTransform,
 			testUVTransform,
 			{1.0f,0.0f,0.0f,1.0f}

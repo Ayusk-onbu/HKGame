@@ -51,7 +51,7 @@ void Log::Initialize() {
 }
 
 void Log::View(const std::string& message) {
-	OutputDebugStringA(message.c_str());
+	OutputDebugStringA((message + "\n").c_str());
 }
 
 void Log::ViewFile(const std::string& message) {

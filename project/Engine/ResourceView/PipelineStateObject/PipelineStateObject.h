@@ -6,8 +6,14 @@
 #include "RasterizerState.h"
 #include "DepthStencil.h"
 #include "DXC.h"
+#include <array>
 
 class Fngine;
+
+struct RenderTargetSettings {
+	UINT numRenderTargets = 1;
+	std::array<DXGI_FORMAT, 8> rtvFormats = { DXGI_FORMAT_R8G8B8A8_UNORM_SRGB };
+};
 
 class PipelineStateObject
 {
@@ -20,7 +26,8 @@ public:
 		std::wstring vsPath, std::wstring psPath,
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType,
 		RasterizerSettings rasterizerSettings,
-		DepthSettings depthSettings
+		DepthSettings depthSettings,
+		RenderTargetSettings renderTargetSettings = {}
 		);
 
 	void InitializeDirectlyCompute(
@@ -106,6 +113,7 @@ public:
 	PSOBuilder& SetTopologyType(const D3D12_PRIMITIVE_TOPOLOGY_TYPE& type);
 	PSOBuilder& SetRasterizerSettings(const RasterizerSettings& settings);
 	PSOBuilder& SetDepthSettings(const DepthSettings& settings);
+	PSOBuilder& SetRenderTargetSettings(const RenderTargetSettings& settings);
 
 	// RootSignatureの設定もここにパススルーする
 	PSOBuilder& AddCBV(UINT reg, D3D12_SHADER_VISIBILITY vis) { rsBuilder_.AddCBV(reg, vis); return *this; }
@@ -134,6 +142,7 @@ private:
 	D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType_;
 	RasterizerSettings rasterizerSettings_;
 	DepthSettings depthSettings_;
+	RenderTargetSettings renderTargetSettings_;
 
 	RootSignatureBuilder rsBuilder_;
 };

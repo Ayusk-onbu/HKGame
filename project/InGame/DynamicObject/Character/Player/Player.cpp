@@ -1,7 +1,4 @@
 #include "Player.h"
-#include "../Engine/Objects/Primitive/Box/PrimitiveBox.h"
-#include "../Engine/Objects/Primitive/Ring/Ring.h"
-#include "../Engine/Objects/Primitive/MagicPlane.h"
 #include "DrawManager.h"
 #include "Component/Controller/Controller.h"
 #include "Component/State/Movement/Movement.h"
@@ -18,7 +15,7 @@ Player::Player() {
 
 void Player::Initialize(Fngine* fngine) {
 	DynamicObject::Initialize(fngine, "Naira_ExportTest", "ulthimaSky");
-	transform_.set_.Rotation({ 0.0f,180.0f,0.0f });
+	//transform_.set_.Rotation({ 0.0f,180.0f,0.0f });
 
 	auto* render = AddComponent<RenderComponent>();
 	render->SetProvider<CharacterRenderProvider>();
@@ -86,7 +83,7 @@ void Player::Update(float deltaTime) {
 		effect.currentTime += deltaTime;
 		effect.color.w = 1.0f - (effect.currentTime / effect.lifeTime); // 徐々に透明にする
 
-		PrimitiveBox::GetInstance()->AddInstance({
+		DrawManager::GetInstance()->GetBox()->AddInstance({
 			effect.transform,
 			effect.color
 		});
@@ -100,7 +97,7 @@ void Player::Update(float deltaTime) {
 	/*CameraSystem::GetInstance()->GetActiveCamera()->SetTargetPos(
 		{ obj_->worldTransform_.get_.Translation().x,obj_->worldTransform_.get_.Translation().y + 1.0f ,obj_->worldTransform_.get_.Translation().z }
 	);*/
-	SetHeadPosToCameraTarget();
+	//SetHeadPosToCameraTarget();
 }
 
 void Player::Draw() {

@@ -6,6 +6,43 @@ void DamageSourceComponent::Initialize() {
     // 初期化処理（必要に応じて）
 }
 
+json DamageSourceComponent::Serialize() const {
+    json j;
+    j["calcType"] = static_cast<int>(calcType_);
+    j["basePower"] = basePower_;
+    j["motionMultiplier"] = motionMultiplier_;
+    j["element"] = static_cast<int>(element_);
+
+    json effects = json::array();
+    for (const auto& effect : statusEffects_) {
+        json e;
+        e["statusType"] = static_cast<int>(effect.statusType);
+        e["multiplier"] = effect.multiplier;
+        e["duration"] = effect.duration;
+        effects.push_back(e);
+    }
+    j["statusEffects"] = effects;
+    return j;
+}
+
+void DamageSourceComponent::Deserialize(const json& j) {
+    if (j.contains("calcType")) calcType_ = static_cast<DamageCalcType>(j["calcType"].get<int>());
+    if (j.contains("basePower")) basePower_ = j["basePower"].get<float>();
+    if (j.contains("motionMultiplier")) motionMultiplier_ = j["motionMultiplier"].get<float>();
+    if (j.contains("element")) element_ = static_cast<Element>(j["element"].get<int>());
+
+    statusEffects_.clear();
+    if (j.contains("statusEffects") && j["statusEffects"].is_array()) {
+        for (const auto& e : j["statusEffects"]) {
+            StatusEffect effect{};
+            if (e.contains("statusType")) effect.statusType = static_cast<StatusType>(e["statusType"].get<int>());
+            if (e.contains("multiplier")) effect.multiplier = e["multiplier"].get<float>();
+            if (e.contains("duration")) effect.duration = e["duration"].get<float>();
+            statusEffects_.push_back(effect);
+        }
+    }
+}
+
 void DamageSourceComponent::DrawUI() {
 #ifdef USE_IMGUI
     if (ImGui::TreeNode("Damage Source Component")) {

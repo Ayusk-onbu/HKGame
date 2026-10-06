@@ -20,8 +20,6 @@ import MotionManager;
 
 SceneDirector::~SceneDirector() {
 	delete currentScene_;
-	PrimitiveBox::GetInstance()->ReleaseInstance();
-	PrimitiveRing::GetInstance()->ReleaseInstance();
 }
 
 void SceneDirector::Initialize(Scene& firstScene) {
@@ -33,7 +31,7 @@ void SceneDirector::Initialize(Scene& firstScene) {
 	MotionManager::GetInstance()->LoadMotions("resources/Data/Motion/Hermite/");
 
 	SDFManager::GetInstance()->Initialize(p_fngine_);
-	SDFManager::GetInstance()->LoadAndBake(p_fngine_->GetCommand().GetList().GetList().Get(), "Naira_ExportTest", 64);
+	SDFManager::GetInstance()->BakeAll(p_fngine_->GetCommand().GetList().GetList().Get(),128);
 
 	// 最初のシーンの初期化処理
 	currentScene_ = &firstScene;
@@ -50,8 +48,6 @@ void SceneDirector::Initialize(Scene& firstScene) {
 	ComponentFactory::GetInstance()->Initialize();
 
 	DrawManager::GetInstance()->Initialize(p_fngine_);
-	PrimitiveBox::GetInstance()->Initialize(p_fngine_, 1500);
-	PrimitiveRing::GetInstance()->Initialize(p_fngine_, 1000);
 
 	auto editorMgr = EditorManager::GetInstance();
 	auto* hairEditor = editorMgr->CreateEditor<HairGuideEditor>(p_fngine_->hair_.get());
@@ -68,6 +64,9 @@ void SceneDirector::Update() {
 	p_fngine_->GetCameraForGPU().Update(CameraSystem::GetInstance()->GetActiveCamera()->GetTranslation());
 
 	TimeKeeper::GetInstance()->Update(1.0f / 60.0f);
+
+	// アクティブなSDFを削除
+	SDFManager::GetInstance()->ClearInstances();
 
 	bool pauseNow = PauseSystem::GetInstance()->Update(currentScene_->CanPause());
 
@@ -104,12 +103,18 @@ void SceneDirector::Draw() {
 		// =========================================================
 		// 【Compute Shader パス】全 SkinCluster を一括 Dispatch！
 		// =========================================================
+			//※ リストの物体全てのMatrixをInverseしているためくそくそ重い
+			SDFManager::GetInstance()->UpdateGPUBuffer();
+
 			SkinningManager::GetInstance()->DispatchAll(p_fngine_->GetCommand().GetList().GetList().Get());
 
-			currentScene_->Draw();
+			// 【 DepthだけのPre描画 】
+			currentScene_->DrawDepthPrePass();
+			DrawManager::GetInstance()->Draw(RenderPass::DepthPrePass);
 
-			PrimitiveBox::GetInstance()->DrawInstanced();
-			PrimitiveRing::GetInstance()->DrawInstanced();
+			// 【 メイン描画 】
+			currentScene_->Draw();
+			DrawManager::GetInstance()->Draw(RenderPass::MainColor);
 
 			SkinningManager::GetInstance()->ClearActiveSkinClusters();
 		}
@@ -117,9 +122,8 @@ void SceneDirector::Draw() {
 	// [ ポーズ中 ]
 	else if (pauseNow == true) {
 		currentScene_->PauseDraw();
+		DrawManager::GetInstance()->Draw(RenderPass::MainColor);
 	}
-
-	DrawManager::GetInstance()->Draw();
 }
 
 void SceneDirector::ImGui() {
@@ -176,43 +180,15 @@ void SceneDirector::RequestChangeScene(Scene* newScene) {
 }
 
 void SceneDirector::LoadModelData() {
-	std::string name;
-	name = ModelManager::GetInstance()->LoadObj("cube.obj","resources",LoadFileType::OBJ);
-	name = ModelManager::GetInstance()->LoadObj("axis.obj", "resources", LoadFileType::OBJ);
-	name = ModelManager::GetInstance()->LoadObj("AnimatedCube.gltf", "resources/AnimatedCube");
-	name = ModelManager::GetInstance()->LoadObj("walk.gltf", "resources/Human");
-	name = ModelManager::GetInstance()->LoadObj("sneakWalk.gltf", "resources/Human");
-	name = ModelManager::GetInstance()->LoadObj("simpleSkin.gltf", "resources/simpleSkin");
-	name = ModelManager::GetInstance()->LoadObj("ground.obj", "resources", LoadFileType::OBJ);
-	name = ModelManager::GetInstance()->LoadObj("enemy.obj", "resources/Game", LoadFileType::OBJ);
-	name = ModelManager::GetInstance()->LoadObj("player.obj", "resources/Game", LoadFileType::OBJ);
-	name = ModelManager::GetInstance()->LoadObj("Confuse.obj", "resources/Star", LoadFileType::OBJ);
-	name = ModelManager::GetInstance()->LoadObj("stone.obj", "resources/Game", LoadFileType::OBJ);
-	name = ModelManager::GetInstance()->LoadObj("bullet.obj", "resources", LoadFileType::OBJ);
-	name = ModelManager::GetInstance()->LoadObj("debugBlock.obj", "resources", LoadFileType::OBJ);
-	name = ModelManager::GetInstance()->LoadObj("plane.gltf", "resources");
-	name = ModelManager::GetInstance()->LoadObj("Cylinder.obj", "resources");
-	name = ModelManager::GetInstance()->LoadObj("BoneOctahedron.obj", "resources");
-	name = ModelManager::GetInstance()->LoadObj("Column.obj", "resources");
-	name = ModelManager::GetInstance()->LoadObj("Sphere.obj", "resources");
-	name = ModelManager::GetInstance()->LoadObj("ulthimaSky.obj", "resources", LoadFileType::OBJ);
-	name = ModelManager::GetInstance()->LoadObj("Map_City.obj", "resources/Data/Map");
-	name = ModelManager::GetInstance()->LoadObj("Naira_ExportTest.gltf", "resources/Model/Character/Test");
+	auto modelMgr = ModelManager::GetInstance();
 
-	ModelManager::GetInstance()->AddObject("Cube", ModelManager::GetInstance()->LoadModelData("AnimatedCube").vertices, ModelManager::GetInstance()->LoadModelData("AnimatedCube").indices);
-	ModelManager::GetInstance()->AddObject("Plane", ModelManager::GetInstance()->LoadModelData("plane").vertices, ModelManager::GetInstance()->LoadModelData("plane").indices);
+	modelMgr->LoadAllModels("Assets/Models");
+
 	ModelManager::GetInstance()->AddObject("Ring", MakeObjectVertices(RingData{ 32, 1.0f, 0.5f }), MakeObjectIndices(RingData{ 32, 1.0f, 0.5f }));
-	ModelManager::GetInstance()->AddObject("Sphere", ModelManager::GetInstance()->LoadModelData("Sphere").vertices, ModelManager::GetInstance()->LoadModelData("Sphere").indices);
 	ModelManager::GetInstance()->AddObject("Cylinder", MakeObjectVertices(CylinderData{ 32, 1.0f, 0.5f,1.0f }), MakeObjectIndices(CylinderData{ 32, 1.0f, 0.5f, 1.0f }));
-	//ModelManager::GetInstance()->AddObject("Grass", MakeObjectVertices(CylinderData{ 3, 0.05f * 0.1f, 0.5f * 0.1f,0.5f }), MakeObjectIndices(CylinderData{ 3, 0.05f * 0.1f, 0.5f * 0.1f, 0.5f }));
-	ModelManager::GetInstance()->AddObject("Grass", ModelManager::GetInstance()->LoadModelData("AnimatedCube").vertices, ModelManager::GetInstance()->LoadModelData("AnimatedCube").indices);
-	ModelManager::GetInstance()->AddObject("Column", ModelManager::GetInstance()->LoadModelData("Column").vertices, ModelManager::GetInstance()->LoadModelData("Column").indices);
-	ModelManager::GetInstance()->AddObject("BoneOctahedron", ModelManager::GetInstance()->LoadModelData("BoneOctahedron").vertices, ModelManager::GetInstance()->LoadModelData("BoneOctahedron").indices);
-	ModelManager::GetInstance()->AddObject("Naira_ExportTest", ModelManager::GetInstance()->LoadModelData("Naira_ExportTest").vertices, ModelManager::GetInstance()->LoadModelData("Naira_ExportTest").indices);
+	ModelManager::GetInstance()->AddObject("Grass", MakeObjectVertices(CylinderData{ 3, 0.05f * 0.1f, 0.5f * 0.1f,0.5f }), MakeObjectIndices(CylinderData{ 3, 0.05f * 0.1f, 0.5f * 0.1f, 0.5f }));
 
-
-	//AnimationManager::GetInstance()->LoadAnimationFile("resources/Human", "walk.gltf");
-	AnimationManager::GetInstance()->LoadAnimationFile("resources/Model/Character/Test", "Walk.gltf");
+	AnimationManager::GetInstance()->LoadAnimationFile("Assets/Animations/Naira", "Walk.gltf");
 }
 
 void SceneDirector::LoadTexture() {
@@ -221,21 +197,15 @@ void SceneDirector::LoadTexture() {
 	std::string name;
 	name = TextureManager::GetInstance()->LoadTexture("GridLine.png", "resources");
 	name = TextureManager::GetInstance()->LoadTexture("ulthimaSky.png","resources");
-	name = TextureManager::GetInstance()->LoadTexture("Confuse.png","resources/Star");
 	name = TextureManager::GetInstance()->LoadTexture("bullet.png", "resources");
 	name = TextureManager::GetInstance()->LoadTexture("circle.png", "resources");
 	name = TextureManager::GetInstance()->LoadTexture("Legends_Ground.png", "resources");
-	name = TextureManager::GetInstance()->LoadTexture("GameClear.png", "resources");
 	name = TextureManager::GetInstance()->LoadTexture("GameOver.png", "resources");
-	name = TextureManager::GetInstance()->LoadTexture("Purpose.png", "resources/Title");
-	name = TextureManager::GetInstance()->LoadTexture("UI.png", "resources");
-	name = TextureManager::GetInstance()->LoadTexture("TitleBack.png", "resources/Title");
-	name = TextureManager::GetInstance()->LoadTexture("Title.png", "resources/Title");
 	name = TextureManager::GetInstance()->LoadTexture("Tiles083_1K-PNG_Color.png", "Assets/Textures/Color");
 	name = TextureManager::GetInstance()->LoadTexture("Tiles083_1K-PNG_NormalDX.png", "Assets/Textures/Normal");
 	name = TextureManager::GetInstance()->LoadTexture("monsterBall.png", "resources");
-	name = TextureManager::GetInstance()->LoadTexture("PlayGuide.png", "resources/Game");
 	name = TextureManager::GetInstance()->LoadTexture("rostock_laage_airport_4k.dds", "resources");
+	
 	name = TextureManager::GetInstance()->LoadTexture("magic-circle.png", "resources/Texture/Effect");
 	name = TextureManager::GetInstance()->LoadTexture("RevealTex_Circle.png", "resources/Texture/Effect");
 	name = TextureManager::GetInstance()->LoadTexture("noise0.png", "resources/Texture/Effect");

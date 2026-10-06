@@ -4,6 +4,7 @@
 #include "DrawManager.h"
 #include "EventManager.h"
 #include "Chronos.h"
+#include "SDFManager.h"
 #include "Hair/IHair.h"
 
 #include <d3dx12.h>
@@ -22,6 +23,8 @@ Fngine::~Fngine() {
 	TextureManager::GetInstance()->ReleaseInstance();
 
 	SRVManager::GetInstance()->ReleaseInstance();
+
+	SDFManager::GetInstance()->ReleaseInstance();
 
 	ModelManager::GetInstance()->ReleaseInstance();
 

@@ -11,6 +11,9 @@ public:
 
     void Update(float deltaTime) override;
     void DrawUI() override;
+    std::string GetComponentName() const override { return "ActionComponent"; }
+    json Serialize() const override;
+    void Deserialize(const json& j) override;
 
     // --- アクションの切り替え ---
     template <typename TState, typename... Args>

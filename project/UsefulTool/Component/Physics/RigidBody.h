@@ -16,6 +16,14 @@ public:
     void Initialize() override;
     void Update(float deltaTime) override;
     void DrawUI()override;
+    // コンポーネントの種類名
+    std::string GetComponentName()const override;
+    // jsonに値を保存
+    json Serialize()const override;
+    // jsonから値を取得
+    void Deserialize(const json& j)override;
+
+public:
 
     // 外力を加える（Dynamic用）
     void AddForce(const Vector3& force);

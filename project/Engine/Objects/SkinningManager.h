@@ -13,9 +13,18 @@ public:
 	friend class ISingleton<SkinningManager>;
 
 public:
+    // --- IDベース登録関数 ---
+    void RegisterFromAssimp(uint32_t id, const aiScene* scene, uint32_t numVertices);
+    void RegisterFromModelData(
+        uint32_t id,
+        const Node& rootNode,
+        const std::map<std::string, JointWeightData>& skinClusterData,
+        uint32_t numVertices
+    );
+
     /// <summary>
-        /// AssimpのSceneからスキニング静的データを解析・一括登録する
-        /// </summary>
+    /// AssimpのSceneからスキニング静的データを解析・一括登録する
+    /// </summary>
     void RegisterFromAssimp(const std::string& id, const aiScene* scene, uint32_t numVertices);
 
     /// <summary>
@@ -47,6 +56,10 @@ public:
     }
 
     // データ取得関数
+    const SkeletonTemplate* GetSkeletonTemplate(uint32_t id) const;
+    const SkinningStaticData* GetSkinningStaticData(uint32_t id) const;
+    bool HasSkinningData(uint32_t id) const;
+
     const SkeletonTemplate* GetSkeletonTemplate(const std::string& id) const;
     const SkinningStaticData* GetSkinningStaticData(const std::string& id) const;
     bool HasSkinningData(const std::string& id) const;
@@ -55,8 +68,16 @@ private:
     // aiNode 階層から SkeletonTemplate を再帰構築する内部関数
     int32_t CreateJointTemplate(const aiNode* node, const std::optional<int32_t>& parent, SkeletonTemplate& outTemplate);
     int32_t CreateJointTemplateFromNode(const Node& node, const std::optional<int32_t>& parent, SkeletonTemplate& outTemplate);
+
+    template <typename T>
+    void EnsureCapacity(std::vector<T>& vec, uint32_t id) {
+        if (id >= vec.size()) {
+            vec.resize(id + 1);
+        }
+    }
 private:
-    std::unordered_map<std::string, SkeletonTemplate> skeletonTemplates_;
-    std::unordered_map<std::string, SkinningStaticData> skinningStaticDatas_;
+    std::vector<SkeletonTemplate> skeletonTemplates_;
+    std::vector<SkinningStaticData> skinningStaticDatas_;
+    std::vector<bool> hasSkinningDataFlags_;
     std::vector<SkinCluster*> activeSkinClusters_;
 };

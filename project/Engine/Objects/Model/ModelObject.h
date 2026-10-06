@@ -54,6 +54,8 @@ private:
 	void InitializeResource(D3D12System& d3d12,const std::string& filename, const std::string& directoryPath, LoadFileType type);
 	void InitializeResource(D3D12System& d3d12, ModelData& modelData);
 	void InitializeData();
+
+public:
 	Node ReadNode(aiNode* node);
 	MaterialData LoadMaterialTemplateFile(const std::string& directoryPath, const std::string& filename);
 private:

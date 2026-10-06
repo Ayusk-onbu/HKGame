@@ -66,4 +66,9 @@ public:
     const char* GetName() const override {
         return editorName_.c_str();
     }
+
+	void ClearHistory() {
+		commandHistory_.clear();
+		currentCommandIndex_ = 0;
+	}
 };

@@ -1,0 +1,35 @@
+{
+      "pipelineType": "Graphics",
+      "primitiveTopologyType": "Triangle",
+      "shaders": {
+        "vs": "resources/shaders/Primitive/NormalMesh/NormalMesh.VS.hlsl",
+        "ps": "resources/shaders/Primitive/NormalMesh/NormalMesh.PS.hlsl"
+      },
+      "inputLayout": [
+        { "semanticName": "POSITION", "semanticIndex": 0, "format": "R32G32B32A32_FLOAT", "inputSlot": 0 },
+        { "semanticName": "TEXCOORD", "semanticIndex": 0, "format": "R32G32_FLOAT", "inputSlot": 0 },
+        { "semanticName": "NORMAL", "semanticIndex": 0, "format": "R32G32B32_FLOAT", "inputSlot": 0 }
+      ],
+      "rasterizer": {
+        "fillMode": "Solid",
+        "cullMode": "NONE"
+      },
+      "depthStencilState": {
+        "depthEnable": true,
+        "depthWriteMask": "Zero",
+        "depthFunc": "LessEqual",
+        "format": "D24"
+      },
+      "blendMode": "AlphaBlend",
+      "rootSignature": [
+       { "type": "SRVTable", "register": 0, "count": 1, "visibility": "Vertex" },
+       { "type": "SRVTable", "register": 0, "count": 1, "visibility": "Pixel" },
+       { "type": "Constants", "register": 0, "count": 4, "visibility": "Pixel" },
+       { "type": "Constants", "register": 0, "count": 1, "visibility": "Vertex" }
+      ],
+      "staticSamplers":[
+        {
+      "register": 0
+        }
+      ]
+}

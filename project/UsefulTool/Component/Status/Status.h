@@ -11,6 +11,9 @@ public:
     void Initialize() override;
     void Update(float deltaTime) override;
     void DrawUI() override;
+    std::string GetComponentName() const override { return "StatusComponent"; }
+    json Serialize() const override;
+    void Deserialize(const json& j) override;
 	
     // --- 効果の追加 ---
     void AddEffect(const StatusEffect& effect);

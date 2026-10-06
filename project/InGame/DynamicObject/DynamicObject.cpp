@@ -107,3 +107,74 @@ void DynamicObject::DrawUI() {
     }
 #endif
 }
+
+json DynamicObject::Serialize() const {
+    json j;
+
+    // オブジェクト基本情報（名前、Transformなど）
+    j["name"] = name_;
+    j["transform"] = {
+        {"position", {transform_.transform_.translation_.x, transform_.transform_.translation_.y, transform_.transform_.translation_.z}},
+        {"rotation", {transform_.transform_.rotation_.x, transform_.transform_.rotation_.y, transform_.transform_.rotation_.z}},
+        {"scale",    {transform_.transform_.scale_.x, transform_.transform_.scale_.y, transform_.transform_.scale_.z}}
+    };
+
+    // アタッチされている全コンポーネントの書き出し
+    json componentsJson = json::array();
+    for (const auto& comp : components_) {
+        json compJson;
+        compJson["type"] = comp->GetComponentName(); // コンポーネントの種類
+        compJson["data"] = comp->Serialize();        // コンポーネントの中身
+        componentsJson.push_back(compJson);
+    }
+    j["components"] = componentsJson;
+
+    return j;
+}
+
+void DynamicObject::Deserialize(const json& j) {
+    // オブジェクトの情報を復元
+    if (j.contains("name")) {
+        name_ = j["name"].get<std::string>();
+    }
+    transform_.Initialize();
+    if (j.contains("transform")) {
+        const auto& transformJson = j["transform"];
+        transform_.set_.Translation({
+            transformJson["position"][0].get<float>(),
+            transformJson["position"][1].get<float>(),
+            transformJson["position"][2].get<float>()
+        });
+        transform_.set_.Rotation({
+            transformJson["rotation"][0].get<float>(),
+            transformJson["rotation"][1].get<float>(),
+            transformJson["rotation"][2].get<float>()
+        });
+        transform_.set_.Scale({
+            transformJson["scale"][0].get<float>(),
+            transformJson["scale"][1].get<float>(),
+            transformJson["scale"][2].get<float>()
+        });
+        transform_.LocalToWorld();
+    }
+
+    // コンポーネント群の再構築・復元
+    if (j.contains("components") && j["components"].is_array()) {
+        components_.clear(); // 既存のコンポーネントをクリアして再ロード
+
+        for (const auto& compJson : j["components"]) {
+            if (!compJson.contains("type")) continue;
+            std::string type = compJson["type"].get<std::string>();
+
+            // Factory 経由で生成
+            auto newComp = ComponentFactory::GetInstance()->Create(type);
+            if (newComp) {
+                newComp->master_ = this;
+                if (compJson.contains("data")) {
+                    newComp->Deserialize(compJson["data"]);
+                }
+                components_.push_back(std::move(newComp));
+            }
+        }
+    }
+}

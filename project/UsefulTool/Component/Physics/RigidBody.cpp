@@ -29,6 +29,30 @@ void RigidBody::DrawUI() {
 #endif // USE_IMGUI
 }
 
+std::string RigidBody::GetComponentName() const {
+    return "RigidBody";
+}
+
+json RigidBody::Serialize() const {
+    json j;
+    j["bodyType"] = static_cast<int>(bodyType_);
+    j["useGravity"] = useGravity_;
+    j["mass"] = mass_;
+    j["restitution"] = restitution_;
+    j["friction"] = friction_;
+    j["orientToMovement"] = orientToMovement_;
+    return j;
+}
+
+void RigidBody::Deserialize(const json& j) {
+    if (j.contains("bodyType")) bodyType_ = static_cast<BodyType>(j["bodyType"].get<int>());
+    if (j.contains("useGravity")) useGravity_ = j["useGravity"].get<bool>();
+    if (j.contains("mass")) mass_ = j["mass"].get<float>();
+    if (j.contains("restitution")) restitution_ = j["restitution"].get<float>();
+    if (j.contains("friction")) friction_ = j["friction"].get<float>();
+    if (j.contains("orientToMovement")) orientToMovement_ = j["orientToMovement"].get<bool>();
+}
+
 void RigidBody::Initialize() {
     myVelocity_ = { 0, 0, 0 };
     externalVelocity_ = { 0, 0, 0 };
@@ -75,6 +99,8 @@ void RigidBody::Update(float deltaTime) {
     // 自身の速度 ＋ 外部速度 を合成して 1 フレームの移動量を算出
     Vector3 totalVelocity = myVelocity_ + externalVelocity_;
     Vector3 moveAmount = totalVelocity * deltaTime;
+
+    myVelocity_ = { 0.0f,0.0f,0.0f };
 
     // Transform の座標を更新
     Vector3 currentPos = master_->GetTransform().get_.Translation();

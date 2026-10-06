@@ -14,15 +14,8 @@ struct PrimitiveBoxData {
 };
 
 class PrimitiveBox :
-	public PrimitiveBaseModel<PrimitiveBoxForGPU, PrimitiveBoxData>, 
-	public ISingleton<PrimitiveBox>
+	public PrimitiveBaseModel<PrimitiveBoxForGPU, PrimitiveBoxData>
 {
-	// シングルトン
-private:
-	PrimitiveBox() = default;// 勝手にNewをされないように
-	// 親クラスにPriveteを覗かれてもいいようにカギを渡す役割(上記のようにコンストラクタを触れないのを防ぐため)
-	friend class ISingleton<PrimitiveBox>;
-
 public:
 	void Initialize(Fngine* engine, uint32_t numInstance)override;
 private:

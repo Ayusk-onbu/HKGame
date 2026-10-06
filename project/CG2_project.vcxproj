@@ -171,6 +171,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Engine\Objects\Primitive\Grass\Grass.cpp" />
     <ClCompile Include="Engine\Objects\Primitive\Line\Line.cpp" />
     <ClCompile Include="Engine\Objects\Primitive\MagicPlane.cpp" />
+    <ClCompile Include="Engine\Objects\Primitive\Mesh\NormalMesh.cpp" />
     <ClCompile Include="Engine\Objects\Primitive\Ring\Ring.cpp" />
     <ClCompile Include="Engine\Objects\Primitive\SkyBox.cpp" />
     <ClCompile Include="Engine\Objects\Primitive\Sphere\PrimitiveSphere.cpp" />
@@ -381,6 +382,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="UsefulTool\OSR\OffScreenRendering.cpp" />
     <ClCompile Include="UsefulTool\Pause\PauseSystem.cpp" />
     <ClCompile Include="UsefulTool\Random\RandomUtils.cpp" />
+    <ClCompile Include="UsefulTool\StringPool.cpp" />
     <ClCompile Include="UsefulTool\Time\Chronos.cpp" />
     <ClCompile Include="Engine\WinApp.cpp" />
     <ClCompile Include="UsefulTool\UI\UIHAnimation\UIHAnimation.cpp" />
@@ -404,6 +406,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Engine\Objects\Primitive\Grass\Grass.h" />
     <ClInclude Include="Engine\Objects\Primitive\Line\Line.h" />
     <ClInclude Include="Engine\Objects\Primitive\MagicPlane.h" />
+    <ClInclude Include="Engine\Objects\Primitive\Mesh\NormalMesh.h" />
     <ClInclude Include="Engine\Objects\Primitive\Ring\Ring.h" />
     <ClInclude Include="Engine\Objects\Primitive\SkyBox.h" />
     <ClInclude Include="Engine\Objects\Primitive\Sphere\PrimitiveSphere.h" />
@@ -582,6 +585,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="UsefulTool\OSR\OffScreenRendering.h" />
     <ClInclude Include="UsefulTool\Pause\PauseSystem.h" />
     <ClInclude Include="UsefulTool\Random\RandomUtils.h" />
+    <ClInclude Include="UsefulTool\StringPool.h" />
     <ClInclude Include="UsefulTool\Time\Chronos.h" />
     <ClInclude Include="Engine\WinApp.h" />
     <ClInclude Include="UsefulTool\UI\UIHAnimation\UIHAnimation.h" />
@@ -611,6 +615,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <None Include="resources\shaders\Primitive\Character\Character.hlsli" />
     <None Include="resources\shaders\Primitive\Column\Column.hlsli" />
     <None Include="resources\shaders\Primitive\Grass\Grass.hlsli" />
+    <None Include="resources\shaders\Primitive\NormalMesh\NormalMesh.hlsli" />
     <None Include="resources\shaders\Ring\Ring.hlsli" />
     <None Include="resources\shaders\SkinningObject3d\SkinningObject3d.hlsli" />
     <None Include="resources\shaders\SkyBox\SkyBox.hlsli" />

@@ -1,45 +1,28 @@
 #include "DrawManager.h"
 
 void DrawManager::Initialize(Fngine* engine) {
-	sphere_ = std::make_unique<PrimitiveSphere>();
-	sphere_->Initialize(engine,5000);
-
-	cylinder_ = std::make_unique<PrimitiveCylinder>();
-	cylinder_->Initialize(engine,5000);
-
-	line_ = std::make_unique<PrimitiveLine>();
-	line_->Initialize(engine, 10000);
-
-	magicCircle_ = std::make_unique<MagicCircle>();
-	magicCircle_->Initialize(engine, 100);
-
-	grass_ = std::make_unique<Grass>();
-	grass_->Initialize(engine, 5500);
-
-	column_ = std::make_unique<Column>();
-	column_->Initialize(engine, 100);
-
-	bone_ = std::make_unique<BoneDrawer>();
-	bone_->Initialize(engine, 100);
-
-	character_ = std::make_unique<PrimitiveCharacter>();
-	character_->Initialize(engine, 10);
+	CreateAndRegister(box_, engine, 1500);
+	CreateAndRegister(ring_, engine, 1000);
+	CreateAndRegister(sphere_, engine, 5000);
+	CreateAndRegister(cylinder_, engine, 5000);
+	CreateAndRegister(line_, engine, 10000);
+	CreateAndRegister(magicCircle_, engine, 100);
+	CreateAndRegister(grass_, engine, 5500);
+	CreateAndRegister(column_, engine, 100);
+	CreateAndRegister(bone_, engine, 100);
+	CreateAndRegister(character_, engine, 10);
+	CreateAndRegister(normalMesh_, engine, 5000);
 }
 
-void DrawManager::Draw() {
-	character_->DrawInstanced();
-
-	grass_->DrawInstanced();
-
-	column_->DrawInstanced();
-
-	line_->DrawInstanced();
-
-	sphere_->DrawInstanced();
-
-	bone_->DrawInstanced();
-
-	magicCircle_->DrawInstanced();
-
-	cylinder_->DrawInstanced();
+void DrawManager::Draw(RenderPass pass) {
+	if (pass == RenderPass::DepthPrePass) {
+		for (auto* model : models_) {
+			model->DrawInstancedPrePass();
+		}
+	}
+	else if (pass == RenderPass::MainColor) {
+		for (auto* model : models_) {
+			model->DrawInstanced();
+		}
+	}
 }

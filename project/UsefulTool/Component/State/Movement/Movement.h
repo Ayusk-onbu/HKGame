@@ -14,6 +14,9 @@ public:
 
     void Update(float deltaTime) override;
     void DrawUI() override;
+    std::string GetComponentName() const override { return "MovementComponent"; }
+    json Serialize() const override;
+    void Deserialize(const json& j) override;
 
     // --- MoveType / Target 設定用のインターフェース ---
     void SetMoveType(MoveType type) { moveType_ = type; }

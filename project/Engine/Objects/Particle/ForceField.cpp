@@ -9,7 +9,7 @@
 void GravityForceField::Initialize(Fngine* fngine) {
 	obj_ = std::make_unique<ModelObject>();
 	obj_->textureName_ = "GridLine";
-	obj_->modelName_ = "debugBlock";
+	obj_->modelName_ = "cube";
 	obj_->Initialize(fngine);
 }
 

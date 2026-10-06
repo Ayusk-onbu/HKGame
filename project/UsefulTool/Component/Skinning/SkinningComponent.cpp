@@ -59,7 +59,23 @@ void SkinningComponent::Update(float deltaTime) {
 
     SkinningManager::GetInstance()->RegisterActiveSkinCluster(&skinCluster_);
 
-    StopAnimation();
+    //StopAnimation();
+}
+
+json SkinningComponent::Serialize() const {
+    json j;
+    j["modelID"] = modelID_;
+    j["currentAnimationName"] = currentAnimationName_;
+    j["playbackSpeed"] = playbackSpeed_;
+    j["isLoop"] = isLoop_;
+    return j;
+}
+
+void SkinningComponent::Deserialize(const json& j) {
+    if (j.contains("modelID")) modelID_ = j["modelID"].get<std::string>();
+    if (j.contains("currentAnimationName")) currentAnimationName_ = j["currentAnimationName"].get<std::string>();
+    if (j.contains("playbackSpeed")) playbackSpeed_ = j["playbackSpeed"].get<float>();
+    if (j.contains("isLoop")) isLoop_ = j["isLoop"].get<bool>();
 }
 
 void SkinningComponent::DispatchCS(ID3D12GraphicsCommandList* commandList) {

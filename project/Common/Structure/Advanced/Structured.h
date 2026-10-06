@@ -273,6 +273,8 @@ public:
         this->srvAllocation_ = srvAlloc;
     }
 
+	uint32_t GetSrvIndex() const { return srvAllocation_.index; }
+
     D3D12_GPU_DESCRIPTOR_HANDLE GetUAVHandleGPU() const { return uavAllocation_.gpu; }
     D3D12_GPU_DESCRIPTOR_HANDLE GetSRVHandleGPU() const { return srvAllocation_.gpu; }
     ID3D12Resource* GetResource() const { return resource_.Get(); }

@@ -58,6 +58,35 @@ void MovementComponent::Update(float deltaTime) {
     }
 }
 
+json MovementComponent::Serialize() const {
+    json j;
+    j["moveType"] = static_cast<int>(moveType_);
+
+    json actionList = json::array();
+    for (const auto& action : actions_) {
+        actionList.push_back(action->GetName());
+    }
+    j["actions"] = actionList;
+    return j;
+}
+
+void MovementComponent::Deserialize(const json& j) {
+    if (j.contains("moveType")) moveType_ = static_cast<MoveType>(j["moveType"].get<int>());
+
+    actions_.clear();
+    currentAction_ = nullptr;
+    if (j.contains("actions") && j["actions"].is_array()) {
+        for (const auto& nameJson : j["actions"]) {
+            std::string name = nameJson.get<std::string>();
+            if (name == "Idle") AddAction<IdleMovementAction>();
+            else if (name == "Walk") AddAction<WalkMovementAction>();
+            else if (name == "Jump") AddAction<JumpMovementAction>();
+            else if (name == "Air") AddAction<AirMovementAction>();
+            else if (name == "SplineFollow") AddAction<SplineFollowMovementAction>();
+        }
+    }
+}
+
 void MovementComponent::DrawUI() {
 #ifdef USE_IMGUI
     if (ImGui::TreeNode("Movement Component")) {

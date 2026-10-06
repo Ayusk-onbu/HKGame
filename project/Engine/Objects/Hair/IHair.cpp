@@ -3,6 +3,7 @@
 #include "CameraSystem.h"
 #include "Chronos.h"
 #include "SDFManager.h"
+#include "StringPool.h"
 #include "../Engine/Objects/Primitive/Box/PrimitiveBox.h"
 #include "FileSystem.h"
 #include <pix3.h>
@@ -272,7 +273,7 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	// 【 髪への光に関する情報 】
 	// ------------------------
 	HairLightingParams lightingConfig;
-	lightingConfig.lightDirection = { 0.01f, -1.0f, -0.76f };
+	lightingConfig.lightDirection = { 0.51f, -0.5f, 0.66f };
 	lightingConfig.lightColor = { 1.0f, 1.0f, 1.0f };
 	lightingConfig.lightIntensity = 8.0f;
 	lightingConfig.ambientColor = { 0.05f, 0.05f, 0.05f };
@@ -462,7 +463,8 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	dxrCmdList_->SetComputeRootConstantBufferView(0, gpuPhysicsConfigBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootConstantBufferView(1, gpuFrameConfigBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootConstantBufferView(2, gpuConfigBuffer_->GetGPUVirtualAddress());
-	dxrCmdList_->SetComputeRootConstantBufferView(3, SDFManager::GetInstance()->configBuffer_->GetGPUVirtualAddress());
+	uint32_t id = StringPool::GetInstance()->GetStringID("Naira_ExportTest");
+	dxrCmdList_->SetComputeRootConstantBufferView(3, SDFManager::GetInstance()->tempBakeResources_[id].configBuffer->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootDescriptorTable(4, guideInfoBuffer_->GetSRVHandleGPU());
 	dxrCmdList_->SetComputeRootDescriptorTable(5, SDFManager::GetInstance()->GetSDF("Naira_ExportTest")->texture.GetSRVHandleGPU());
 	dxrCmdList_->SetComputeRootDescriptorTable(6, gpuGuideBuffer_->GetUAVHandleGPU());
@@ -1107,7 +1109,8 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	dxrCmdList_->SetComputeRootConstantBufferView(0, gpuPhysicsConfigBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootConstantBufferView(1, gpuFrameConfigBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootConstantBufferView(2, gpuConfigBuffer_->GetGPUVirtualAddress());
-	dxrCmdList_->SetComputeRootConstantBufferView(3, SDFManager::GetInstance()->configBuffer_->GetGPUVirtualAddress());
+	uint32_t id = StringPool::GetInstance()->GetStringID("Naira_ExportTest");
+	dxrCmdList_->SetComputeRootConstantBufferView(3, SDFManager::GetInstance()->tempBakeResources_[id].configBuffer->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootDescriptorTable(4, guideInfoBuffer_->GetSRVHandleGPU());
 	dxrCmdList_->SetComputeRootDescriptorTable(5, SDFManager::GetInstance()->GetSDF("Naira_ExportTest")->texture.GetSRVHandleGPU());
 	dxrCmdList_->SetComputeRootDescriptorTable(6, gpuGuideBuffer_->GetUAVHandleGPU());

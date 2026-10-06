@@ -29,15 +29,8 @@ std::vector<VertexData> MakeObjectVertices(const RingData& data);
 std::vector<uint32_t> MakeObjectIndices(const RingData& data);
 
 class PrimitiveRing :
-	public PrimitiveBaseModel<PrimitiveRingForGPU, PrimitiveRingData>,
-	public ISingleton<PrimitiveRing>
+	public PrimitiveBaseModel<PrimitiveRingForGPU, PrimitiveRingData>
 {
-	// シングルトン
-private:
-	PrimitiveRing() = default;// 勝手にNewをされないように
-	// 親クラスにPriveteを覗かれてもいいようにカギを渡す役割(上記のようにコンストラクタを触れないのを防ぐため)
-	friend class ISingleton<PrimitiveRing>;
-
 public:
 	void Initialize(Fngine* engine, uint32_t numInstance)override;
 private:

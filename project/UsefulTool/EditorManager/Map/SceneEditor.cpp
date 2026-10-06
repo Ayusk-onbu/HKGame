@@ -83,16 +83,50 @@ void SceneEditor::DrawUI() {
 
 	// UI描画前に最新のオブジェクトリストに同期
 	SyncFromSceneMap();
-	// targetObjects_ の参照（BaseEditorのメンバ）
 	auto& objects_ = targetObjects_;
 
 	// ---------------------------------------------------
-	// 全体操作：新規オブジェクト生成ボタン
+	// 1. シーン全体設定 & セーブ・ロード (JSON)
+	// ---------------------------------------------------
+	if (ImGui::CollapsingHeader("Scene Settings & File IO", ImGuiTreeNodeFlags_DefaultOpen)) {
+		// マップ名の編集
+		char mapNameBuf[128];
+		strncpy_s(mapNameBuf, sceneMap_->GetMapName().c_str(), sizeof(mapNameBuf));
+		if (ImGui::InputText("Map Name", mapNameBuf, sizeof(mapNameBuf))) {
+			sceneMap_->SetMapName(mapNameBuf);
+		}
+
+		// ---------------------------------------------------
+		// セーブ・ロード処理 (FileSystemのダイアログを使用しDrawUI内で処理)
+		// ---------------------------------------------------
+		if (ImGui::Button("Save Scene...")) {
+			std::string savePath = FileSystem::ShowSaveFileDialogJson();
+			if (!savePath.empty()) {
+				sceneMap_->SaveToFile(savePath);
+			}
+		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Button("Load Scene...")) {
+			std::string loadPath = FileSystem::ShowOpenFileDialogJson();
+			if (!loadPath.empty()) {
+				if (sceneMap_->LoadFromFile(loadPath, nullptr)) {
+					selectedObjectIndex_ = -1;
+					SyncFromSceneMap();
+				}
+			}
+		}
+	}
+
+	ImGui::Separator();
+
+	// ---------------------------------------------------
+	// 2. 編集操作 & ギズモモード切替
 	// ---------------------------------------------------
 	if (ImGui::Button("Add Object 追加")) {
-		// SceneMap を渡してコマンドを発行
 		ExecuteCommand(std::make_unique<SceneObjectAddCommand>(sceneMap_, "New Object"));
-		SyncFromSceneMap(); // 即時同期
+		SyncFromSceneMap();
 	}
 
 	ImGui::SameLine();
@@ -100,38 +134,6 @@ void SceneEditor::DrawUI() {
 	ImGui::SameLine();
 	if (ImGui::Button("Redo")) { Redo(); SyncFromSceneMap(); }
 
-	ImGui::Separator();
-
-	// ---------------------------------------------------
-	// セーブ・ロード処理 (JSON)
-	// ---------------------------------------------------
-	if (ImGui::Button("Load Scene...")) {
-		json loadedJson;
-		if (FileSystem::LoadWithDialog(loadedJson)) {
-			// 生ポインタの delete はせず、SceneMap に完全クリアさせる
-			sceneMap_->Clear();
-
-			for (const auto& item : loadedJson) {
-				// SceneMap 経由で生成
-				auto* newObj = sceneMap_->SpawnObject("LoadedObject");
-				newObj->SetPosition({ item["position"][0], item["position"][1], item["position"][2] });
-				newObj->SetRotation({ item["rotation"][0], item["rotation"][1], item["rotation"][2] });
-				newObj->SetScale({ item["scale"][0], item["scale"][1], item["scale"][2] });
-
-				if (item.contains("components")) {
-					for (const auto& compName : item["components"]) {
-						newObj->AddComponent(compName.get<std::string>());
-					}
-				}
-			}
-			selectedObjectIndex_ = -1;
-			SyncFromSceneMap();
-		}
-	}
-
-	ImGui::Separator();
-
-	// ギズモ操作モード切替ラジオボタン
 	ImGui::RadioButton("Translate", &gizmoOperation_, 0); ImGui::SameLine();
 	ImGui::RadioButton("Rotate", &gizmoOperation_, 1); ImGui::SameLine();
 	ImGui::RadioButton("Scale", &gizmoOperation_, 2);
@@ -139,28 +141,28 @@ void SceneEditor::DrawUI() {
 	ImGui::Separator();
 
 	// ---------------------------------------------------
-	// オブジェクト一覧（Hierarchy）と Transform / Component 編集
+	// 3. オブジェクト一覧（Hierarchy）と Transform / Component 編集
 	// ---------------------------------------------------
 	for (int i = 0; i < (int)objects_.size(); ++i) {
-
-
 		ImGui::PushID(i);
 
+		// オブジェクト削除ボタン
 		if (ImGui::Button("X")) {
-			ExecuteCommand(std::make_unique<SceneObjectDeleteCommand>(sceneMap_, objects_[i]));ImGui::PopID();
+			ExecuteCommand(std::make_unique<SceneObjectDeleteCommand>(sceneMap_, objects_[i]));
+			if (selectedObjectIndex_ == i) selectedObjectIndex_ = -1;
+			ImGui::PopID();
 			break;
 		}
 		ImGui::SameLine();
 
-		if (ImGui::TreeNode(("Object " + std::to_string(i)).c_str())) {
+		std::string nodeName = objects_[i]->GetName() + " ##" + std::to_string(i);
+		if (ImGui::TreeNode(nodeName.c_str())) {
 
-
-			if (ImGui::Selectable("Select", selectedObjectIndex_ == i)) {
-
+			if (ImGui::Selectable("Select Object", selectedObjectIndex_ == i)) {
 				selectedObjectIndex_ = i;
 			}
 
-			// --- 1. Transform 編集 ---
+			// --- Transform 編集 ---
 			TransformState oldState{
 				objects_[i]->GetTransform().get_.Translation(),
 				objects_[i]->GetTransform().get_.Rotation(),
@@ -181,10 +183,8 @@ void SceneEditor::DrawUI() {
 			if (ImGui::DragFloat3("Scale", &scale.x, 0.1f)) { objects_[i]->SetScale(scale); }
 			if (ImGui::IsItemDeactivatedAfterEdit()) isEdited = true;
 
-			// 数値ドラッグが離された瞬間に Command 発行して Undo 登録[cite: 8]
+			// ドラッグ終了時に Undo コマンド発行
 			if (isEdited) {
-
-
 				TransformState newState{
 					objects_[i]->GetTransform().get_.Translation(),
 					objects_[i]->GetTransform().get_.Rotation(),
@@ -197,9 +197,7 @@ void SceneEditor::DrawUI() {
 				ExecuteCommand(std::make_unique<DynamicObjectTransformCommand>(objects_[i], oldState, newState));
 			}
 
-			// ---------------------------------------------------
-			// --- 2. Component 管理セクション (★新規追加) ---
-			// ---------------------------------------------------
+			// --- Component 管理 ---
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Text("Attached Components:");
@@ -211,12 +209,10 @@ void SceneEditor::DrawUI() {
 
 				ImGui::PushID(static_cast<int>(c));
 
-				// 型名を判定して表示（"class " を取り除いて綺麗に表示）
-				std::string compTypeName = typeid(*comp).name();
-				if (compTypeName.find("class ") == 0) compTypeName = compTypeName.substr(6);
+				// GetComponentName() を使用してコンポーネント名を表示
+				std::string compName = comp->GetComponentName();
 
-				if (ImGui::TreeNode(compTypeName.c_str())) {
-					// コンポーネントで設定したUIの表示
+				if (ImGui::TreeNode(compName.c_str())) {
 					comp->DrawUI();
 					ImGui::TreePop();
 				}
@@ -225,7 +221,7 @@ void SceneEditor::DrawUI() {
 
 			ImGui::Spacing();
 
-			// Component 追加ボタン & ドロップダウンポップアップ
+			// Component 追加ポップアップ
 			if (ImGui::Button("Add Component +")) {
 				ImGui::OpenPopup("AddComponentPopup");
 			}
@@ -234,7 +230,6 @@ void SceneEditor::DrawUI() {
 				auto registeredNames = ComponentFactory::GetInstance()->GetRegisteredNames();
 				for (const auto& compName : registeredNames) {
 					if (ImGui::Selectable(compName.c_str())) {
-						// Command 経由でコンポーネントを追加 (Undo/Redo対応)
 						ExecuteCommand(std::make_unique<AddComponentCommand>(objects_[i], compName));
 					}
 				}
@@ -247,7 +242,7 @@ void SceneEditor::DrawUI() {
 	}
 
 	// ---------------------------------------------------
-	// ImGuizmo の3D操作と確定検知ロジック
+	// 4. ImGuizmo 操作
 	// ---------------------------------------------------
 	if (selectedObjectIndex_ < 0 || selectedObjectIndex_ >= (int)objects_.size()) return;
 
@@ -257,22 +252,18 @@ void SceneEditor::DrawUI() {
 
 	float viewMatrix[16], projectionMatrix[16];
 	for (int r = 0; r < 4; ++r) {
-
 		for (int c = 0; c < 4; ++c) {
-
 			viewMatrix[r * 4 + c] = viewMat.m[r][c];
 			projectionMatrix[r * 4 + c] = projMat.m[r][c];
 		}
 	}
 
 	DynamicObject* selectedObj = objects_[selectedObjectIndex_];
-	Matrix4x4 worldMat = selectedObj->GetTransform().mat_; // ワールド行列[cite: 8]
+	Matrix4x4 worldMat = selectedObj->GetTransform().mat_;
 
 	float gizmoMatrix[16];
 	for (int r = 0; r < 4; ++r) {
-
 		for (int c = 0; c < 4; ++c) {
-
 			gizmoMatrix[r * 4 + c] = worldMat.m[r][c];
 		}
 	}
@@ -281,7 +272,6 @@ void SceneEditor::DrawUI() {
 	ImGuiIO& io = ImGui::GetIO();
 	ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 
-	// モード切り替え (Translate, Rotate, Scale)[cite: 8]
 	ImGuizmo::OPERATION op = ImGuizmo::TRANSLATE;
 	if (gizmoOperation_ == 1) op = ImGuizmo::ROTATE;
 	if (gizmoOperation_ == 2) op = ImGuizmo::SCALE;
@@ -289,12 +279,7 @@ void SceneEditor::DrawUI() {
 	ImGuizmo::Manipulate(viewMatrix, projectionMatrix, op, ImGuizmo::WORLD, gizmoMatrix);
 
 	if (ImGuizmo::IsUsing()) {
-
-
-		// 操作開始の1フレーム目：元の状態をバックアップ[cite: 8]
 		if (!isGizmoUsingLastFrame_) {
-
-
 			gizmoOldState_ = {
 				selectedObj->GetTransform().get_.Translation(),
 				selectedObj->GetTransform().get_.Rotation(),
@@ -302,7 +287,6 @@ void SceneEditor::DrawUI() {
 			};
 		}
 
-		// 行列から位置・回転・スケールを抽出してリアルタイム反映[cite: 8]
 		Vector3 translation, rotation, scale;
 		ImGuizmo::DecomposeMatrixToComponents(gizmoMatrix, &translation.x, &rotation.x, &scale.x);
 
@@ -313,17 +297,13 @@ void SceneEditor::DrawUI() {
 		isGizmoUsingLastFrame_ = true;
 	}
 	else {
-		// 操作を終えて手を離した瞬間：Commandを発行して確定！[cite: 8]
 		if (isGizmoUsingLastFrame_) {
-
-
 			TransformState gizmoNewState = {
 				selectedObj->GetTransform().get_.Translation(),
 				selectedObj->GetTransform().get_.Rotation(),
 				selectedObj->GetTransform().get_.Scale()
 			};
 
-			// 一旦触る前に戻してから Command 実行に任せる[cite: 8]
 			selectedObj->SetPosition(gizmoOldState_.position);
 			selectedObj->SetRotation(gizmoOldState_.rotation);
 			selectedObj->SetScale(gizmoOldState_.scale);

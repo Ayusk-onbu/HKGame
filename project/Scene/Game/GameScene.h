@@ -25,6 +25,7 @@ public:
 public:// Sceneにまつわる関数
 	void Initialize()override;
 	void Update()override;
+	void DrawDepthPrePass()override;
 	void Draw()override;
 	void PauseUpdate()override;
 	void PauseDraw()override;
@@ -57,12 +58,10 @@ private:
 	//std::unique_ptr<Player3D>player_;
 	std::unique_ptr<Player>player_;
 	std::unique_ptr<BossEnemy>boss_;
-	std::unique_ptr<GameMap>gameMap_;
 	std::unique_ptr<SceneMap>sceneMap_;
 	std::unique_ptr<ConvenienceModel>skySphere_;
 	std::unique_ptr<SkyBox>skyBox_;
 	std::unique_ptr<Particle>particle_;
-	std::unique_ptr<AnimModel>rotationBox_;
 
 	std::unique_ptr<GrassField>grassField_;
 

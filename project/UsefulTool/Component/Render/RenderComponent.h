@@ -14,8 +14,24 @@ public:
     }
     void Update(float deltaTime)override;
     void DrawUI()override;
-    /*void Draw() override;*/
+    std::string GetComponentName() const override { return "Render"; }
+    json Serialize() const override;
+    void Deserialize(const json& j) override;
 
 private:
     std::unique_ptr<IRenderProvider> provider_;
+
+    // ------------------
+    // SDF関係のコード
+    // ------------------
+public:
+
+    void SetCastSDFShadow(bool enable) { castSDFShadow_ = enable; }
+    bool IsCastSDFShadowEnable()const { return castSDFShadow_; }
+
+    void SendToDrawManager();
+
+private:
+    uint32_t modelID_ = 0;
+    bool castSDFShadow_ = true;
 };

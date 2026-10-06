@@ -1,6 +1,24 @@
 #include "Controller.h"
 #include "ImGuiManager.h"
 
+json ControllerComponent::Serialize() const {
+    json j;
+    j["controllerName"] = controllerName_;
+    return j;
+}
+
+void ControllerComponent::Deserialize(const json& j) {
+    if (j.contains("controllerName")) {
+        controllerName_ = j["controllerName"].get<std::string>();
+        if (controllerName_ == "PlayerController") {
+            SetController(std::make_unique<PlayerController>(), controllerName_);
+        }
+        else if (controllerName_ == "HermiteSplineController") {
+            SetController(std::make_unique<HermiteSplineController>(), controllerName_);
+        }
+    }
+}
+
 void ControllerComponent::DrawUI() {
 #ifdef USE_IMGUI
     if (ImGui::TreeNode("Controller Component")) {

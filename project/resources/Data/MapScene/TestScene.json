@@ -1,0 +1,123 @@
+{
+    "mapName": "NewMap",
+    "objects": [
+        {
+            "components": [
+                {
+                    "data": {
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Column",
+                            "textureIndex": 11
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    6.791303634643555,
+                    0.4930241107940674,
+                    2.2968106269836426
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 9
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    0.0,
+                    -0.5,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    13.0,
+                    1.0,
+                    13.399999618530273
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "BoneOctahedron",
+                            "textureIndex": 5
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    7.9137983322143555,
+                    1.8458670377731323,
+                    1.316277027130127
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.399999976158142,
+                    2.0,
+                    3.0999999046325684
+                ]
+            }
+        }
+    ],
+    "objectsCount": 3
+}

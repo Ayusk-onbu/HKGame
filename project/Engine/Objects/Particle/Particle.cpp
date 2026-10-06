@@ -2,8 +2,7 @@
 #include "CameraSystem.h"
 #include "TextureManager.h"
 #include "Easing.h"
-#include "../Engine/Objects/Primitive/Box/PrimitiveBox.h"
-#include "../Engine/Objects/Primitive/Ring/Ring.h"
+#include "DrawManager.h"
 
 using json = nlohmann::json;
 
@@ -137,8 +136,7 @@ void Particle::Update() {
 		// [ Color ]
 		info->color = Easing_Vector4(info->startColor, info->endColor, info->currentTime, info->lifeTime, EASINGTYPE::None);
 
-		PrimitiveBox::GetInstance()->AddInstance({ {info->worldTransform}, {info->color} });
-		//PrimitiveRing::GetInstance()->AddInstance({ {info->worldTransform},{info->worldTransform}, {info->color} });
+		DrawManager::GetInstance()->GetBox()->AddInstance({{info->worldTransform}, {info->color}});
 
 		// [ *** 死亡判定 ***]
 		if (info->lifeTime <= info->currentTime) {

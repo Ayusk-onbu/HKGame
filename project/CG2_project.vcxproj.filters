@@ -212,6 +212,8 @@
     <ClCompile Include="UsefulTool\UI\UIHEditor\UIHEditor.cpp" />
     <ClCompile Include="UsefulTool\Component\Render\Providers.cpp" />
     <ClCompile Include="Engine\Objects\Primitive\Character\PrimitiveCharcter.cpp" />
+    <ClCompile Include="UsefulTool\StringPool.cpp" />
+    <ClCompile Include="Engine\Objects\Primitive\Mesh\NormalMesh.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\MathUtils\Physics\Collider\CollisionLayerManager.h" />
@@ -413,6 +415,8 @@
     <ClInclude Include="UsefulTool\UI\UIElement.h" />
     <ClInclude Include="UsefulTool\UI\UIHEditor\UIHEditor.h" />
     <ClInclude Include="Engine\Objects\Primitive\Character\PrimitiveCharcter.h" />
+    <ClInclude Include="UsefulTool\StringPool.h" />
+    <ClInclude Include="Engine\Objects\Primitive\Mesh\NormalMesh.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -432,6 +436,7 @@
     <None Include="resources\shaders\SkyBox\SkyBox.hlsli" />
     <None Include="resources\shaders\Sphere\Sphere.hlsli" />
     <None Include="resources\shaders\Primitive\Character\Character.hlsli" />
+    <None Include="resources\shaders\Primitive\NormalMesh\NormalMesh.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

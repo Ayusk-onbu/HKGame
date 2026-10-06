@@ -27,16 +27,7 @@ public:
     }
 
     // オブジェクトの追加・削除
-    DynamicObject* SpawnObject(const std::string& name = "New Object") {
-        auto newObj = std::make_unique<DynamicObject>();
-        DynamicObject* ptr = newObj.get();
-        
-        ptr->Initialize(nullptr);
-        ptr->SetName(name);
-
-        objects_.push_back(std::move(newObj));
-        return ptr;
-    }
+    DynamicObject* SpawnObject(const std::string& name = "New Object");
 
     // オブジェクトの所有権を抽出して渡す（SceneMapのリストからは外れるがメモリは解放されない）
     std::unique_ptr<DynamicObject> ExtractObject(DynamicObject* target) {
@@ -80,6 +71,13 @@ public:
         return rawList;
     }
 
+    // --- シーン全体の保存 / 読み込み ---
+    bool SaveToFile(const std::string& filepath) const;
+    bool LoadFromFile(const std::string& filepath, Fngine* engine);
+
+    const std::string& GetMapName() const { return mapName_; }
+    void SetMapName(const std::string& name) { mapName_ = name; }
 private:
+    std::string mapName_ = "NewMap";
     std::vector<std::unique_ptr<DynamicObject>> objects_;
 };

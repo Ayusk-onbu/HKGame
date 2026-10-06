@@ -11,7 +11,7 @@ Camera::Camera()
 	, xAxis_({ 1.0f,0.0f,0.0f})
 	, yAxis_({ 0.0f,1.0f,0.0f })
 	, zAxis_({ 0.0f,0.0f,1.0f })
-	, projection_({0.45f,1280.0f / 720.0f,0.1f,500.0f})
+	, projection_({0.45f,1280.0f / 720.0f,0.1f,1000.0f})
 	, targetPos_({ 0.0f,0.0f,0.0f })
 {}
 

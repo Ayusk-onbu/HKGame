@@ -138,6 +138,44 @@ void ColliderComponent::Initialize() {
     SetupCollider();
 }
 
+json ColliderComponent::Serialize() const {
+    json j;
+    j["attribute"] = attribute_;
+    j["mask"] = mask_;
+
+    if (dynamic_cast<MeshCollider*>(collider_.get())) {
+        j["colliderType"] = "Mesh";
+    }
+    else if (auto* bvhCol = dynamic_cast<BVHCollider*>(collider_.get())) {
+        j["colliderType"] = "BVH";
+        j["bvhModelName"] = bvhCol->GetModelName();
+    }
+    else {
+        j["colliderType"] = "None";
+    }
+    return j;
+}
+
+void ColliderComponent::Deserialize(const json& j) {
+    if (j.contains("attribute")) attribute_ = j["attribute"].get<uint32_t>();
+    if (j.contains("mask")) mask_ = j["mask"].get<uint32_t>();
+
+    if (j.contains("colliderType")) {
+        std::string type = j["colliderType"].get<std::string>();
+        if (type == "Mesh") {
+            CreateCollider<MeshCollider>();
+        }
+        else if (type == "BVH") {
+            auto* bvhCol = CreateCollider<BVHCollider>();
+            if (j.contains("bvhModelName") && bvhCol) {
+                bvhCol->SetModelName(j["bvhModelName"].get<std::string>());
+                bvhCol->UpdateAABB();
+            }
+        }
+    }
+    SetupCollider();
+}
+
 void ColliderComponent::SetupCollider() {
     if (!collider_) return;
 

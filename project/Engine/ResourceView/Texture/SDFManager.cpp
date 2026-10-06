@@ -1,6 +1,7 @@
 #include "SDFManager.h"
 #include "PipelineStateObjectManager.h"
 #include "Constant.h"
+#include "StringPool.h"
 
 void SDFManager::Initialize(Fngine* fngine) {
     pFngine_ = fngine;
@@ -11,37 +12,32 @@ bool SDFManager::LoadAndBake(
     const std::string& modelID,
     uint32_t resolution)
 {
+    uint32_t id = StringPool::GetInstance()->GetStringID(modelID);
+    return LoadAndBake(commandList, id, resolution);
+}
+
+bool SDFManager::LoadAndBake(
+    ID3D12GraphicsCommandList* commandList,
+    uint32_t modelID,
+    uint32_t resolution)
+{
     auto modelMgr = ModelManager::GetInstance();
-
-    // 1. ModelManager から BVH を取得
+    // ModelManager から BVH を取得
     const BVH* bvh = modelMgr->GetBVH(modelID);
-    if (!bvh) {
-        Log::View("\n[SDFManager] Failed: BVH not found for ID: " + modelID);
+
+    if (!bvh || !bvh->GetRoot()) {
+        Log::View("\n[SDFManager] Failed: BVH or Root is null for ID: " + StringPool::GetInstance()->GetStringFromID(modelID));
         return false;
     }
 
-    // 2. ModelManager から ModelData を取得して AABB (Min/Max) を自動計算
-    const auto& modelData = modelMgr->LoadModelData(modelID);
-    if (modelData.vertices.empty()) {
-        Log::View("\n[SDFManager] Failed: Vertices empty for ID: " + modelID);
-        return false;
-    }
+    // BVH Root の AABB から座標をダイレクトに取得
+    const Vector3& minBounds = bvh->GetRoot()->bounds.min;
+    const Vector3& maxBounds = bvh->GetRoot()->bounds.max;
 
-    Vector3 minBounds(FLT_MAX, FLT_MAX, FLT_MAX);
-    Vector3 maxBounds(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-
-    for (const auto& vertex : modelData.vertices) {
-        minBounds.x = (std::min)(minBounds.x, vertex.position.x);
-        minBounds.y = (std::min)(minBounds.y, vertex.position.y);
-        minBounds.z = (std::min)(minBounds.z, vertex.position.z);
-        maxBounds.x = (std::max)(maxBounds.x, vertex.position.x);
-        maxBounds.y = (std::max)(maxBounds.y, vertex.position.y);
-        maxBounds.z = (std::max)(maxBounds.z, vertex.position.z);
-    }
-
-    // 3. 準備できたデータを渡してベイク処理
+    // 準備できたデータを渡してベイク処理
     return BakeAndRegister(commandList, modelID, bvh, minBounds, maxBounds, resolution);
 }
+
 
 bool SDFManager::BakeAndRegister(
     ID3D12GraphicsCommandList* commandList,
@@ -51,9 +47,21 @@ bool SDFManager::BakeAndRegister(
     const Vector3& modelMaxBounds,
     uint32_t resolution)
 {
+	uint32_t id = StringPool::GetInstance()->GetStringID(modelID);
+	return BakeAndRegister(commandList, id, bvh, modelMinBounds, modelMaxBounds, resolution);
+}
+
+bool SDFManager::BakeAndRegister(
+    ID3D12GraphicsCommandList* commandList,
+    uint32_t modelID,
+    const BVH* bvh,
+    const Vector3& modelMinBounds,
+    const Vector3& modelMaxBounds,
+    uint32_t resolution)
+{
     if (!bvh) return false;
 
-    // 1. SDFData の生成
+    // SDFData の生成
     auto sdfData = std::make_unique<SDFData>();
     sdfData->resolution = resolution;
 
@@ -66,7 +74,7 @@ bool SDFManager::BakeAndRegister(
     sdfData->texture.Initialize(pFngine_, resolution, resolution, resolution);
     sdfData->texture.GetResource()->SetName(L"SDFData");
 
-    // 2. BVHの平坦化 ＆ GPU用バッファ作成
+    // BVHの平坦化 ＆ GPU用バッファ作成
     std::vector<GPUBVHNode> gpuNodes;
     std::vector<GPUPolygon> gpuPolygons;
     bvh->Flatten(gpuNodes, gpuPolygons);
@@ -74,24 +82,24 @@ bool SDFManager::BakeAndRegister(
     if (gpuNodes.empty() || gpuPolygons.empty()) return false;
 
     // =========================================================
-    // 【修正】 メンバ変数として生成・データ更新する
+    // 生成・データ更新
     // =========================================================
-    nodeBuffer_ = std::make_unique<Structured<GPUBVHNode>>(pFngine_);
-    nodeBuffer_->Initialize(static_cast<uint32_t>(gpuNodes.size()));
-    std::memcpy(nodeBuffer_->GetMappedData(), gpuNodes.data(), sizeof(GPUBVHNode) * gpuNodes.size());
+    auto nodeBuffer = std::make_unique<Structured<GPUBVHNode>>(pFngine_);
+    nodeBuffer->Initialize(static_cast<uint32_t>(gpuNodes.size()));
+    std::memcpy(nodeBuffer->GetMappedData(), gpuNodes.data(), sizeof(GPUBVHNode) * gpuNodes.size());
 
-    polygonBuffer_ = std::make_unique<Structured<GPUPolygon>>(pFngine_);
-    polygonBuffer_->Initialize(static_cast<uint32_t>(gpuPolygons.size()));
-    std::memcpy(polygonBuffer_->GetMappedData(), gpuPolygons.data(), sizeof(GPUPolygon) * gpuPolygons.size());
+    auto polygonBuffer = std::make_unique<Structured<GPUPolygon>>(pFngine_);
+    polygonBuffer->Initialize(static_cast<uint32_t>(gpuPolygons.size()));
+    std::memcpy(polygonBuffer->GetMappedData(), gpuPolygons.data(), sizeof(GPUPolygon) * gpuPolygons.size());
 
-    configBuffer_ = std::make_unique<ConstantBuffer<SDFBakeConfig>>(pFngine_);
-    configBuffer_->Initialize();
-    configBuffer_->GetMappedData()->gridMin = sdfData->gridMin;
-    configBuffer_->GetMappedData()->gridMax = sdfData->gridMax;
-    configBuffer_->GetMappedData()->resolution[0] = resolution;
-    configBuffer_->GetMappedData()->resolution[1] = resolution;
-    configBuffer_->GetMappedData()->resolution[2] = resolution;
-    configBuffer_->GetMappedData()->totalNodes = static_cast<uint32_t>(gpuNodes.size());
+    auto configBuffer = std::make_unique<ConstantBuffer<SDFBakeConfig>>(pFngine_);
+    configBuffer->Initialize();
+    configBuffer->GetMappedData()->gridMin = sdfData->gridMin;
+    configBuffer->GetMappedData()->gridMax = sdfData->gridMax;
+    configBuffer->GetMappedData()->resolution[0] = resolution;
+    configBuffer->GetMappedData()->resolution[1] = resolution;
+    configBuffer->GetMappedData()->resolution[2] = resolution;
+    configBuffer->GetMappedData()->totalNodes = static_cast<uint32_t>(gpuNodes.size());
 
     ID3D12DescriptorHeap* ppHeaps[] = { SRVManager::GetInstance()->GetHeap() };
     // コマンドリストにヒープをセット（テーブルをセットするより【前】に呼ぶ！）
@@ -106,21 +114,21 @@ bool SDFManager::BakeAndRegister(
 
     commandList->ResourceBarrier(1, &preBarrier);
 
-    // 3. Dispatch 実行
+    // Dispatch 実行
     auto PSO = PSOManager::GetInstance();
     commandList->SetComputeRootSignature(PSO->GetPSO("BakeSDF.CS").GetRootSignature().GetRS().Get());
     commandList->SetPipelineState(PSO->GetPSO("BakeSDF.CS").GetCPS().Get());
 
-    commandList->SetComputeRootDescriptorTable(0, nodeBuffer_->GetSRVHandleGPU());
-    commandList->SetComputeRootDescriptorTable(1, polygonBuffer_->GetSRVHandleGPU());
+    commandList->SetComputeRootDescriptorTable(0, nodeBuffer->GetSRVHandleGPU());
+    commandList->SetComputeRootDescriptorTable(1, polygonBuffer->GetSRVHandleGPU());
     commandList->SetComputeRootDescriptorTable(2, sdfData->texture.GetUAVHandleGPU());
-    commandList->SetComputeRootConstantBufferView(3, configBuffer_->GetGPUVirtualAddress());
+    commandList->SetComputeRootConstantBufferView(3, configBuffer->GetGPUVirtualAddress());
 
     // Dispatch (8x8x8スレッドグループ前提)
     uint32_t group = (resolution + 7) / 8;
     commandList->Dispatch(group, group, group);
 
-    // 4. バリア設定 (書き込みUAV状態から読み込みSRV状態へ遷移)
+    // バリア設定 (書き込みUAV状態から読み込みSRV状態へ遷移)
     D3D12_RESOURCE_BARRIER barrier{};
     barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
     barrier.Transition.pResource = sdfData->texture.GetResource();
@@ -130,17 +138,47 @@ bool SDFManager::BakeAndRegister(
 
     commandList->ResourceBarrier(1, &barrier);
 
-    // 5. マップに保存
-    sdfMap_[modelID] = std::move(sdfData);
-    Log::View("SDF Successfully Baked & Registered for Model: " + modelID);
+    // マップに保存
+	EnsureCapacity(sdfList_, modelID);
+	sdfList_[modelID] = std::move(sdfData);
+    Log::View("SDF Successfully Baked & Registered for Model: " + std::to_string(modelID));
+
+    TempBakeResource tempRes;
+    tempRes.nodeBuffer = std::move(nodeBuffer);
+    tempRes.polygonBuffer = std::move(polygonBuffer);
+    tempRes.configBuffer = std::move(configBuffer);
+
+    tempBakeResources_.push_back(std::move(tempRes));
 
     return true;
 }
 
+void SDFManager::BakeAll(ID3D12GraphicsCommandList* commandList, uint32_t resolution) {
+    auto modelMgr = ModelManager::GetInstance();
+    // すべてのModel名を取得
+    auto modelNames = modelMgr->GetBVHNames();
+
+    Log::View("[SDFManager] Starting Bake for" + std::to_string(modelNames.size()) + "models...");
+
+    for (const auto& name : modelNames) {
+        uint32_t id = StringPool::GetInstance()->GetStringID(name);
+        if (!GetSDF(id)) {
+            // 生成していなかったら実行
+            LoadAndBake(commandList, id, resolution);
+        }
+    }
+
+    Log::View("[SDFManager] Bake Completed");
+}
+
 const SDFData* SDFManager::GetSDF(const std::string& modelID) const {
-    auto it = sdfMap_.find(modelID);
-    if (it != sdfMap_.end()) {
-        return it->second.get();
+    uint32_t id = StringPool::GetInstance()->GetStringID(modelID);
+    return GetSDF(id);
+}
+
+const SDFData* SDFManager::GetSDF(uint32_t modelID) const {
+    if (modelID < sdfList_.size()) {
+        return sdfList_[modelID].get();
     }
     return nullptr;
 }
@@ -162,7 +200,7 @@ void SDFManager::ExportToDDS(
     uint32_t resolution = sdfData->resolution;
 
     // -------------------------------------------------------------
-    // Step 1. GPUメモリ上のレイアウト（RowPitch, SlicePitch）を取得
+    // GPUメモリ上のレイアウト（RowPitch, SlicePitch）を取得
     // -------------------------------------------------------------
     D3D12_RESOURCE_DESC resDesc = srcResource->GetDesc();
     D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint{};
@@ -173,7 +211,7 @@ void SDFManager::ExportToDDS(
     device->GetCopyableFootprints(&resDesc, 0, 1, 0, &footprint, &numRows, &rowSizeInBytes, &totalBytes);
 
     // -------------------------------------------------------------
-    // Step 2. Readback バッファの作成
+    // Readback バッファの作成
     // -------------------------------------------------------------
     D3D12_HEAP_PROPERTIES heapProps{};
     heapProps.Type = D3D12_HEAP_TYPE_READBACK;
@@ -194,7 +232,7 @@ void SDFManager::ExportToDDS(
         D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&readbackBuffer));
 
     // -------------------------------------------------------------
-    // Step 3. 3Dテクスチャから Readback バッファへ転送 (GPUコマンド)
+    // 3Dテクスチャから Readback バッファへ転送 (GPUコマンド)
     // -------------------------------------------------------------
     // バリア: SRV/UAV 状態 -> COPY_SOURCE 状態
     D3D12_RESOURCE_BARRIER barrier{};
@@ -224,7 +262,7 @@ void SDFManager::ExportToDDS(
     commandList->ResourceBarrier(1, &barrier);
 
     // -------------------------------------------------------------
-    // Step 4. コマンドリストを閉じて実行＆完了待ち (Fence Sync)
+    // コマンドリストを閉じて実行＆完了待ち (Fence Sync)
     // -------------------------------------------------------------
     // ※ 既存のエンジン側のコマンドリスト実行 ＆ GPU完了待ち関数があれば読み替えてください
     commandList->Close();
@@ -244,7 +282,7 @@ void SDFManager::ExportToDDS(
     CloseHandle(eventHandle);
 
     // -------------------------------------------------------------
-    // Step 5. CPUでデータを詰めて DirectXTex で DDS に保存
+    // CPUでデータを詰めて DirectXTex で DDS に保存
     // -------------------------------------------------------------
     BYTE* mappedData = nullptr;
     readbackBuffer->Map(0, nullptr, reinterpret_cast<void**>(&mappedData));
@@ -282,4 +320,56 @@ void SDFManager::ExportToDDS(
     else {
         Log::View("[SDFManager] Failed to save DDS file.");
     }
+}
+
+//
+// 【 InstanceData関係 】
+//
+
+void SDFManager::ClearInstances() {
+    activeInstances_.clear();
+}
+
+void SDFManager::AddInstance(uint32_t modelID, const Matrix4x4& worldMatrix) {
+    // 該当モデルの SDF がベイク済みか確認
+    const SDFData* sdf = GetSDF(modelID);
+    if (!sdf) {
+        Log::View("Not Found SDF the Number is " + std::to_string(modelID) + " : name / " + StringPool::GetInstance()->GetStringFromID(modelID));
+        return; // SDF が未ベイクのモデルはスキップ
+    }
+
+    activeInstances_.push_back({ modelID, worldMatrix });
+}
+
+void SDFManager::UpdateGPUBuffer() {
+    if (activeInstances_.empty()) return;
+
+    uint32_t currentCount = static_cast<uint32_t>(activeInstances_.size());
+
+    // バッファ容量が足りない、または未作成の場合は再作成・拡張
+    if (!instanceBuffer_ || currentCount > maxInstanceCapacity_) {
+        maxInstanceCapacity_ = (currentCount + 31) & ~31; // 32のアライメント単位で確保
+        instanceBuffer_ = std::make_unique<Structured<SDFInstanceGPU>>(pFngine_);
+        instanceBuffer_->Initialize(maxInstanceCapacity_);
+    }
+
+    // GPU (MappedData) へデータ書き込み
+    SDFInstanceGPU* mappedData = instanceBuffer_->GetMappedData();
+
+    for (size_t i = 0; i < activeInstances_.size(); ++i) {
+        const auto& inst = activeInstances_[i];
+        const SDFData* sdf = GetSDF(inst.modelID);
+
+        SDFInstanceGPU gpuData{};
+        // ワールド行列の逆行列を CPU 側で事前計算
+        gpuData.worldInverse = Matrix4x4::Inverse(inst.worldMatrix);
+        gpuData.gridMin = sdf->gridMin;
+        gpuData.textureIndex = sdf->GetSRVIndex();
+        gpuData.gridMax = sdf->gridMax;
+        gpuData.padding = 0.0f;
+
+        mappedData[i] = gpuData;
+    }
+
+    //Log::View("Now Active SDF Count : " + std::to_string(GetActiveInstanceCount()));
 }

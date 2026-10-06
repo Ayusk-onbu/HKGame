@@ -31,21 +31,33 @@ Microsoft::WRL::ComPtr < IDxcBlob> PipelineStateObject::CompileShader(
 	IDxcCompiler3* dxcCompiler,
 	IDxcIncludeHandler* includeHandler)
 {
-	// ここの中身をこの後書いていく
-	// １，hlslファイルを読む
+	// ファイルが空の場合は終了
+	if (filePath.empty()) {
+		return nullptr;
+	}
+
+	// hlslファイルを読む
 	//これからシェーダーをコンパイルする旨をログに出す
 	Log::View(ConvertString(std::format(L"Begin CompileShader,path:{}, profile:{}\n", filePath, profile)));
+	
 	//hlslファイルを読み込む
 	IDxcBlobEncoding* shaderSource = nullptr;
 	HRESULT hr = dxcUtils->LoadFile(filePath.c_str(), nullptr, &shaderSource);
-	//読めなかったら止める
-	assert(SUCCEEDED(hr));
+	
+	// パス間違いなどでファイルが開けなかった場合のログ出力
+	if (FAILED(hr)) {
+		Log::View(ConvertString(std::format(L"Failed to LoadFile: {}\n", filePath)));
+		assert(false);
+		return nullptr;
+	}
+	
 	//読み込んだファイルの内容を設定する
 	DxcBuffer shaderSourceBuffer;
 	shaderSourceBuffer.Ptr = shaderSource->GetBufferPointer();
 	shaderSourceBuffer.Size = shaderSource->GetBufferSize();
 	shaderSourceBuffer.Encoding = DXC_CP_UTF8;//UTF8の文字コードであることを通知
-	// ２，Compileする
+	
+	// Compileする
 	LPCWSTR arguments[] = {
 		filePath.c_str(),
 		L"-E",L"main",
@@ -55,7 +67,7 @@ Microsoft::WRL::ComPtr < IDxcBlob> PipelineStateObject::CompileShader(
 		L"-Zpr",
 	};
 	//実際にShaderをコンパイルする
-	IDxcResult* shaderResult = nullptr;
+	Microsoft::WRL::ComPtr <IDxcResult> shaderResult = nullptr;
 	hr = dxcCompiler->Compile(
 		&shaderSourceBuffer,
 		arguments,
@@ -66,25 +78,25 @@ Microsoft::WRL::ComPtr < IDxcBlob> PipelineStateObject::CompileShader(
 	//コンパイルエラーではなくdxcが起動できないなど致命的な状況
 	assert(SUCCEEDED(hr));
 
-	// ３，警告・エラーが惰ていないか確認する
+	// 警告・エラーが惰ていないか確認する
 	//警告・エラーが出ていたらログに出して止める
-	IDxcBlobUtf8* shaderError = nullptr;
+	Microsoft::WRL::ComPtr <IDxcBlobUtf8> shaderError = nullptr;
 	shaderResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&shaderError), nullptr);
 	if (shaderError != nullptr && shaderError->GetStringLength() != 0) {
 		Log::View(shaderError->GetStringPointer());
 		//警告エラーダメ絶対
 		assert(false);
 	}
-	// ４，Compile結果を受け取って返す
+	
+	// Compile結果を受け取って返す
 	//コンパイル結果から実行用のバイナリ部分を取得
-	Microsoft::WRL::ComPtr < IDxcBlob> shaderBlob = nullptr;
+	Microsoft::WRL::ComPtr<IDxcBlob> shaderBlob = nullptr;
 	hr = shaderResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
 	assert(SUCCEEDED(hr));
+	
 	//成功したログを出す
 	Log::View(ConvertString(std::format(L"CompileSucceeded, path:{},profile:{}\n", filePath, profile)));
-	//もう使わないリソースを開放
-	shaderSource->Release();
-	shaderResult->Release();
+	
 	//実行用のバイナリを返却
 	return shaderBlob;
 }
@@ -118,7 +130,8 @@ void PipelineStateObject::InitializeDirectly(
 	std::wstring vsPath, std::wstring psPath,
 	D3D12_PRIMITIVE_TOPOLOGY_TYPE topologyType,
 	RasterizerSettings rasterizerSettings,
-	DepthSettings depthSettings
+	DepthSettings depthSettings,
+	RenderTargetSettings renderTargetSettings
 	) 
 {
 	//////////////////////
@@ -141,13 +154,28 @@ void PipelineStateObject::InitializeDirectly(
 	// ラスタライザ <= まだ
 	rasterizer_.SetDesc(rasterizerSettings);
 
-	vertexShaderBlob_ = CompileShader(vsPath, L"vs_6_0",
-		dxc_->GetUtils().Get(), dxc_->GetCompiler().Get(), dxc_->GetIncludeHandle().Get());
+	vertexShaderBlob_ = CompileShader(
+		vsPath, 
+		L"vs_6_6",
+		dxc_->GetUtils().Get(), 
+		dxc_->GetCompiler().Get(), 
+		dxc_->GetIncludeHandle().Get()
+	);
 	assert(vertexShaderBlob_ != nullptr);
 
-	pixelShaderBlob_ = CompileShader(psPath, L"ps_6_0",
-		dxc_->GetUtils().Get(), dxc_->GetCompiler().Get(), dxc_->GetIncludeHandle().Get());
-	assert(pixelShaderBlob_ != nullptr);
+	if (!psPath.empty()) {
+		pixelShaderBlob_ = CompileShader(
+			psPath,
+			L"ps_6_6",
+			dxc_->GetUtils().Get(), 
+			dxc_->GetCompiler().Get(), 
+			dxc_->GetIncludeHandle().Get()
+		);
+		assert(pixelShaderBlob_ != nullptr);
+	}
+	else {
+		pixelShaderBlob_ = nullptr;
+	}
 
 	depthStencil_.InitializeDesc(depthSettings.depthEnable,
 								depthSettings.writeMask,
@@ -156,14 +184,30 @@ void PipelineStateObject::InitializeDirectly(
 	graphicsPipelineStateDesc_.pRootSignature = rootSignature_.GetRS().Get();//RootSignature
 	graphicsPipelineStateDesc_.InputLayout = inputLayoutDesc_.GetDesc();//InputLayout
 	graphicsPipelineStateDesc_.RasterizerState = rasterizer_.GetDesc();//RasterizerState
+	
 	graphicsPipelineStateDesc_.VS = { vertexShaderBlob_->GetBufferPointer(),
 	vertexShaderBlob_->GetBufferSize() };// VertexShader
-	graphicsPipelineStateDesc_.PS = { pixelShaderBlob_->GetBufferPointer(),
-	pixelShaderBlob_->GetBufferSize() };//PixelShader
-
-	//書きこむRTVの情報
-	graphicsPipelineStateDesc_.NumRenderTargets = 1;
-	graphicsPipelineStateDesc_.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+	
+	if (pixelShaderBlob_ != nullptr) {
+		graphicsPipelineStateDesc_.PS = { 
+			pixelShaderBlob_->GetBufferPointer(),
+			pixelShaderBlob_->GetBufferSize() 
+		};//PixelShader
+		//書きこむRTVの情報
+		graphicsPipelineStateDesc_.NumRenderTargets = renderTargetSettings.numRenderTargets;
+		for (UINT i = 0; i < renderTargetSettings.numRenderTargets; ++i) {
+			graphicsPipelineStateDesc_.RTVFormats[i] = renderTargetSettings.rtvFormats[i];
+		}
+	}
+	else {
+		graphicsPipelineStateDesc_.PS = {
+			nullptr,
+			0
+		};//PixelShader
+		//書きこむRTVの情報
+		graphicsPipelineStateDesc_.NumRenderTargets = 0;
+		graphicsPipelineStateDesc_.RTVFormats[0] = DXGI_FORMAT_UNKNOWN;
+	}
 	
 	//利用するトボロジ（形状）のタイプ。三角形
 	graphicsPipelineStateDesc_.PrimitiveTopologyType = topologyType;
@@ -178,13 +222,22 @@ void PipelineStateObject::InitializeDirectly(
 	// ---  --------------- ------------ ------ //
 	//  BlendState                              //
 	//  -------- -------- -------  -- --------- //
+	auto& d3d12 = engine->GetD3D12System();
+	HRESULT hr;
+
+	if (pixelShaderBlob_ == nullptr) {
+		blendState_.SetBlendMode(BLENDMODE::None);
+		graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();
+
+		hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
+			IID_PPV_ARGS(&graphicsPipelineState_));
+		assert(SUCCEEDED(hr));
+		return;
+	}
+
 	blendState_.SetBlendMode(startBlendMode);
 	graphicsPipelineStateDesc_.BlendState = blendState_.GetDesc();//BlendState
 
-	auto d3d12 = engine->GetD3D12System();
-
-	//実際に生成
-	HRESULT hr;
 	hr = d3d12.GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc_,
 		IID_PPV_ARGS(&graphicsPipelineState_));
 	assert(SUCCEEDED(hr));
@@ -317,19 +370,35 @@ PSOBuilder& PSOBuilder::SetDepthSettings(const DepthSettings& settings) {
 	return *this;
 }
 
+PSOBuilder& PSOBuilder::SetRenderTargetSettings(const RenderTargetSettings& settings) {
+	renderTargetSettings_ = settings;
+	return *this;
+}
+
 void PSOBuilder::Build() {
-	// 1. RootSignatureをビルド
+	// RootSignatureをビルド
 	auto rootSignature = rsBuilder_.Build(fngine_->GetD3D12System().GetDevice().Get());
 
 	PSO newPSO;
 
 	if (pipelineType_ == "Graphics") {
-		newPSO.InitializeDirectly(fngine_, rootSignature, pInputElements_, numInputElements_, blendMode_, vsPath_, psPath_, topologyType_, rasterizerSettings_, depthSettings_);
+		newPSO.InitializeDirectly(
+			fngine_, 
+			rootSignature, 
+			pInputElements_, 
+			numInputElements_, 
+			blendMode_, 
+			vsPath_, psPath_, 
+			topologyType_, 
+			rasterizerSettings_, 
+			depthSettings_,
+			renderTargetSettings_
+		);
 	}
 	else if (pipelineType_ == "Compute") {
 		newPSO.InitializeDirectlyCompute(fngine_, rootSignature, pInputElements_, numInputElements_, csPath_);
 	}
 
-	// 3. マネージャーのマップに登録
+	// マネージャーのマップに登録
 	PipelineStateObjectManager::GetInstance()->RegisterPSO(name_, std::move(newPSO));
 }

@@ -13,8 +13,34 @@ void PrimitiveBox::Initialize(Fngine* engine, uint32_t numInstance) {
 	materialData_->uvTransform = Matrix4x4::Make::Identity();
 	materialData_->shininess = 0.0f;
 
-	useModelName_ = "Plane";
+	useModelName_ = "cube";
 
+	// =========================
+	// 【 PrePass用　コマンド 】
+	// =========================
+	SetCommandPrePass = [this]() {
+		auto commandList = p_engine_->GetCommand().GetList().GetList();
+		auto object = ModelManager::GetInstance()->LoadObjectData(useModelName_);
+
+		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		auto& prePassPSO = PSOManager::GetInstance()->GetPSO("DepthPrePass");
+		commandList->SetGraphicsRootSignature(prePassPSO.GetRootSignature().GetRS().Get());
+		commandList->SetPipelineState(prePassPSO.GetGPS().Get());
+
+		// 形状データのセット
+		commandList->IASetVertexBuffers(0, 1, &object.GetVertexBufferView());
+		commandList->IASetIndexBuffer(&object.GetIndexBufferView());
+
+		commandList->SetGraphicsRootDescriptorTable(0, instancingBuffer_->GetSRVHandleGPU());
+
+		// マテリアルやテクスチャのバインドは省略！
+		commandList->DrawIndexedInstanced(object.GetIndexCount(), UINT(instanceDataList_.size()), 0, 0, 0);
+	};
+
+	// ==========================
+	// 【 MainPass用　コマンド 】
+	// ==========================
 	SetCommand = [this]() {
 		auto commandList = p_engine_->GetCommand().GetList().GetList();
 		auto object = ModelManager::GetInstance()->LoadObjectData(useModelName_);

@@ -10,7 +10,6 @@
 GameScene::GameScene()
 	: player_(std::make_unique<Player>()),
 	  boss_(std::make_unique<BossEnemy>()),
-	  gameMap_(std::make_unique<GameMap>()),
 	  skyBox_(std::make_unique<SkyBox>())
 {
 
@@ -22,8 +21,6 @@ GameScene::~GameScene() {
 
 void GameScene::Initialize() {
 	player_->Initialize(p_fngine_);
-	//boss_->Initialize(p_fngine_,player_.get());
-	gameMap_->Initialize(p_fngine_);
 
 	toGameTimer_ = 0.0f;
 	// Fade関係のUI
@@ -40,7 +37,7 @@ void GameScene::Initialize() {
 	fadeDown_->SetColor({ 0.0f,0.0f,0.0f,1.0f });
 
 	purposeUI_ = std::make_unique<SpriteObject>(p_fngine_);
-	purposeUI_->Initialize("Purpose");
+	purposeUI_->Initialize("GridLine");
 	purposeUI_->worldTransform_.set_.Translation({ 640.0f,180.0f,0.0f });
 	purposeUI_->worldTransform_.set_.Scale({ 1.0f, 1.0f,0.0f });
 	purposeUI_->SetColor({ 1.0f,1.0f,1.0f,1.0f });
@@ -50,12 +47,6 @@ void GameScene::Initialize() {
 	playUI_->worldTransform_.set_.Translation({ 1280.0f - 128.0f - 40.0f,64.0f + 50.0f,0.0f });
 	playUI_->worldTransform_.set_.Scale({ 0.65f, 0.65f,0.0f });
 	playUI_->SetColor({ 1.0f,1.0f,1.0f,1.0f });
-
-	skySphere_ = std::make_unique<ConvenienceModel>();
-	skySphere_->Initialize(p_fngine_, "ulthimaSky", "ulthimaSky");
-
-	rotationBox_ = std::make_unique<AnimModel>();
-	rotationBox_->Initialize(p_fngine_, "AnimatedCube", "GridLine", "resources/AnimatedCube/", "AnimatedCube.gltf");
 
 	skyBox_->Initialize(p_fngine_, "rostock_laage_airport_4k");
 
@@ -68,9 +59,6 @@ void GameScene::Initialize() {
 	playGuide_->Initialize(p_fngine_);
 	playGuide_->LoadbyFile("PlayGuide");
 	playGuide_->Play({ {"PlayGuide","PlayGuideFadeInAnim"} }, false);
-
-	particle_ = std::make_unique<Particle>(p_fngine_);
-	particle_->Initialize(1000, "FireVer2");
 
 	grassField_ = std::make_unique<GrassField>();
 	grassField_->Initialize(p_fngine_, 5000, "RevealTex_Circle");
@@ -109,10 +97,7 @@ void GameScene::Update(){
 		// -----------------
 
 		player_->Update(deltaTime);
-		rotationBox_->Update();
-		//boss_->Update();
 
-		gameMap_->Update();
 		sceneMap_->Update();
 
 		CollisionCheck();
@@ -123,24 +108,25 @@ void GameScene::Update(){
 
 		//column_->Update();
 
-		//gpuParticle_->Update(deltaTime);
+		gpuParticle_->Update(deltaTime);
 
 		//particle_->Update();
 	}
+}
+
+void GameScene::DrawDepthPrePass() {
+
 }
 
 void GameScene::Draw() {
 
 	//skySphere_->Draw();
 	skyBox_->Draw();
-	gameMap_->Draw();
-
-	//rotationBox_->Draw();
 
 	//boss_->Draw();
 	player_->Draw();
 	//particle_->Draw();
-	//gpuParticle_->Draw();
+	gpuParticle_->Draw();
 	//playUI_->Draw();
 	// Fade
 	//fadeUp_->Draw();
@@ -227,8 +213,6 @@ void GameScene::PauseUpdate() {
 }
 
 void GameScene::PauseDraw() {
-	gameMap_->Draw();
-	//boss_->Draw();
 	player_->Draw();
 
 	pause_->Draw();
