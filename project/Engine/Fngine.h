@@ -46,6 +46,8 @@
 
 class Hair;
 
+class RWTexture2D;
+
 struct PostEffectConfig
 {
 	Matrix4x4 projectionInverse;
@@ -89,7 +91,7 @@ public:
 	AreaLight& GetAreaLight() { return areaLight_; }
 	CameraForGPU& GetCameraForGPU() { return cameraForGPU_; }
 
-	void ChangOSRsDSVHandleType(DSV_HANDLE_TYPE type);
+	void ChangeOSRsDSVHandleType(DSV_HANDLE_TYPE type);
 private:
 
 	int32_t kClienWidth_ = 1280;
@@ -109,7 +111,7 @@ private:
 	DSV dsv_;
 	// 複数のPSOを作らないといけないのでManagerを作成する
 	DXC dxc_;
-	OffScreenRendering osr_;
+	RenderTargetGroup osrGroup_;
 	D3D12_VIEWPORT viewport_;
 	D3D12_RECT scissorRect_;
 	SwapChain swapChain_;
@@ -125,6 +127,9 @@ private:
 public:
 	// 髪の毛
 	std::unique_ptr<Hair> hair_ = nullptr;
+
+	std::unique_ptr<RWTexture2D> intermediate_;
+	std::unique_ptr<RWTexture2D> finalOutputColor_;
 
 //////////////////
 /// 

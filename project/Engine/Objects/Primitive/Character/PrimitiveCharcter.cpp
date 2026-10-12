@@ -4,7 +4,7 @@
 
 void PrimitiveCharacter::Initialize(Fngine* engine, uint32_t numInstance) {
     PrimitiveBaseModel::Initialize(engine, numInstance);
-    useModelName_ = "Naira_ExportTest";
+    useModelName_ = "Naira";
 
     SetCommandPrePass = [this]() {
         if (instanceDataList_.empty()) return;
@@ -86,6 +86,12 @@ CharacterForGPU PrimitiveCharacter::ConvertToGPUData(const CharacterObjectData& 
     // テクスチャインデックスを取得
     returnData.colorTextureIndex = TextureManager::GetInstance()->GetTexture(data.colorTextureName).GetSrvIndex();
     returnData.normalTextureIndex = TextureManager::GetInstance()->GetTexture(data.normalTextureName).GetSrvIndex();
+    returnData.skinMask1TextureIndex = TextureManager::GetInstance()->GetTexture(data.skinMask1TextureName).GetSrvIndex();
+    returnData.skinMask2TextureIndex = TextureManager::GetInstance()->GetTexture(data.skinMask2TextureName).GetSrvIndex();
+    returnData.melaninScale = data.melaninScale;
+    returnData.bloodVolumeScale = data.bloodVolumeScale;
+    returnData.roughnessScale = data.roughnessScale;
+    returnData.sssScale = data.sssScale;
 
     return returnData;
 }

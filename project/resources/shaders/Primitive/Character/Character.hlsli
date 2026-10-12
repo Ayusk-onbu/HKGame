@@ -9,4 +9,10 @@ struct VertexShaderOutput
     // 整数インデックス群（補間禁止）
     nointerpolation uint32_t colorTextureIndex : TEXCOORD1;
     nointerpolation uint32_t normalTextureIndex : TEXCOORD2;
+    nointerpolation uint32_t skinMask1TextureIndex : TEXCOORD3;
+    nointerpolation uint32_t skinMask2TextureIndex : TEXCOORD4;
+    nointerpolation float32_t melaninScale : TEXCOORD5;
+    nointerpolation float32_t bloodVolumeScale : TEXCOORD6;
+    nointerpolation float32_t roughnessScale : TEXCOORD7;
+    nointerpolation float32_t sssScale : TEXCOORD8;
 };

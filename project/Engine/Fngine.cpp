@@ -6,6 +6,7 @@
 #include "Chronos.h"
 #include "SDFManager.h"
 #include "Hair/IHair.h"
+#include "Structured.h"
 
 #include <d3dx12.h>
 
@@ -140,8 +141,23 @@ void Fngine::Initialize() {
 	postPerfectForGPU_->GetMappedData()->enableLuminanceOutline = 0;
 	postPerfectForGPU_->GetMappedData()->enableDepthOutline = 0;
 
-	osr_.Initialize(d3d12_, float(kClienWidth_), float(kClienHeight_));
+	float clearColor[4] = { 0.0f,0.0f,0.0f,1.0f };
+	float sssClearColor[4] = { 0.0f,0.0f,0.0f,1.0f };
+
+	std::vector<RenderTargetSlotDesc> slots = {
+		// [Format], [doClear], [clearColor(RGBA)]
+		RenderTargetSlotDesc(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, true, clearColor),
+		RenderTargetSlotDesc(DXGI_FORMAT_R8G8B8A8_UNORM, true, sssClearColor)
+	};
+	osrGroup_.Initialize(d3d12_, 1280.0f, 720.0f, slots, false);
+	
 	hair_ = std::make_unique<Hair>();
+
+	intermediate_ = std::make_unique<RWTexture2D>();
+	intermediate_->Initialize(this,1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM);
+
+	finalOutputColor_ = std::make_unique<RWTexture2D>();
+	finalOutputColor_->Initialize(this,1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM);
 
 	EventManager::GetInstance()->RegisterAction(
 		EVENTCATEGORY::EFFECT, 10, this, &Fngine::UseBoxFilter
@@ -195,29 +211,126 @@ void Fngine::BeginOSRFrame() {
 		postPerfectForGPU_->GetMappedData()->enableRandom = 0;
 	}
 
-	ResourceBarrier barrierO = {};
-	barrierO.SetBarrier(command_.GetList().GetList().Get(), osr_.GetResource().Get(),
-		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	osr_.Begin(command_);
+	osrGroup_.Begin(command_);
+	
 	ID3D12DescriptorHeap* descriptorHeaps[] = { SRVManager::GetInstance()->GetHeap()};
 	command_.GetList().GetList()->SetDescriptorHeaps(1, descriptorHeaps);
 	/////////////////////////////////////////////////////////////////////////
 	//描画0200
-	command_.GetList().GetList()->RSSetViewports(1, &viewport_);
-	command_.GetList().GetList()->RSSetScissorRects(1, &scissorRect_);
+	/*command_.GetList().GetList()->RSSetViewports(1, &viewport_);
+	command_.GetList().GetList()->RSSetScissorRects(1, &scissorRect_);*/
 }
 
 void Fngine::EndOSRFrame() {
 	//osr_.End(command_);
 
-	hair_->PreHair(osr_.GetResource().Get(), D3D12_RESOURCE_STATE_RENDER_TARGET,osr_.GetDSVResource().Get());
-	hair_->Render(osr_.GetDSVDepthHandleGPU());
-	hair_->PostHair(osr_.GetResource().Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, osr_.GetDSVResource().Get());
+	hair_->PreHair(
+        osrGroup_.GetResource(RenderTargetType::Albedo).Get(),
+        D3D12_RESOURCE_STATE_RENDER_TARGET,
+        osrGroup_.GetDSVResource().Get()
+    );
 
-	ResourceBarrier barrier = {};
-	//barrier.SetTransition(command_.GetList().GetList().Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	barrier.SetBarrier(command_.GetList().GetList().Get(), osr_.GetResource().Get(),
-		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+    hair_->Render(osrGroup_.GetDSVDepthHandleGPU());
+
+    hair_->PostHair(
+        osrGroup_.GetResource(RenderTargetType::Albedo).Get(),
+        D3D12_RESOURCE_STATE_RENDER_TARGET,
+        osrGroup_.GetDSVResource().Get()
+    );
+
+    osrGroup_.End(command_);
+
+	UINT dispatchX = (1280 + 7) / 8; // 8切り上げ
+	UINT dispatchY = (720 + 7) / 8;
+
+	auto commandList = command_.GetList().GetList().Get();
+
+	// --- Dispatch 前に、入力テクスチャを Compute Shader で読める状態に遷移させる ---
+	D3D12_RESOURCE_BARRIER inputBarriers[] = {
+		// Albedo テクスチャを PIXEL_SHADER ➔ NON_PIXEL_SHADER へ遷移
+		CD3DX12_RESOURCE_BARRIER::Transition(
+			osrGroup_.GetResource(RenderTargetType::Albedo).Get(), // Albedoのリソースを取得
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+		),
+			// SSS テクスチャも同様に遷移（必要な場合）
+			CD3DX12_RESOURCE_BARRIER::Transition(
+				osrGroup_.GetResource(RenderTargetType::SSS).Get(),
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+			),
+			CD3DX12_RESOURCE_BARRIER::Transition(
+			osrGroup_.GetDSVResource().Get(),
+				D3D12_RESOURCE_STATE_DEPTH_WRITE,
+			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+		),
+			// 中間テクスチャを UAV 書き込み状態へ
+			CD3DX12_RESOURCE_BARRIER::Transition(
+				intermediate_->GetResource(),
+				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, // または現在の状態
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+			),
+
+			// 中間テクスチャを UAV 書き込み状態に遷移
+			CD3DX12_RESOURCE_BARRIER::Transition(
+				finalOutputColor_->GetResource(),
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+				D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+			)
+	};
+	commandList->ResourceBarrier(_countof(inputBarriers), inputBarriers);
+
+	commandList->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("SkinHorizontalSSSCS").GetRootSignature().GetRS().Get());
+	commandList->SetPipelineState(PSOManager::GetInstance()->GetPSO("SkinHorizontalSSSCS").GetCPS().Get());
+
+	commandList->SetComputeRootDescriptorTable(0, osrGroup_.GetSRVGPUHandle(RenderTargetType::Albedo));
+	commandList->SetComputeRootDescriptorTable(1, osrGroup_.GetSRVGPUHandle(RenderTargetType::SSS));
+	commandList->SetComputeRootDescriptorTable(2, osrGroup_.GetDSVDepthHandleGPU());
+	commandList->SetComputeRootDescriptorTable(3, intermediate_->GetUAVHandleGPU());
+	commandList->Dispatch(dispatchX, dispatchY, 1);
+
+	D3D12_RESOURCE_BARRIER passSyncBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		intermediate_->GetResource(),
+		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+	);
+	commandList->ResourceBarrier(1, &passSyncBarrier);
+
+	commandList->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("SkinVerticalSSSCS").GetRootSignature().GetRS().Get());
+	commandList->SetPipelineState(PSOManager::GetInstance()->GetPSO("SkinVerticalSSSCS").GetCPS().Get());
+
+	commandList->SetComputeRootDescriptorTable(0, intermediate_->GetSRVHandleGPU());
+	commandList->SetComputeRootDescriptorTable(1, osrGroup_.GetSRVGPUHandle(RenderTargetType::SSS));
+	commandList->SetComputeRootDescriptorTable(2, osrGroup_.GetDSVDepthHandleGPU());
+	commandList->SetComputeRootDescriptorTable(3, finalOutputColor_->GetUAVHandleGPU());
+	commandList->Dispatch(dispatchX, dispatchY, 1);
+
+	// --- 後処理: 状態を元に戻す ---
+	D3D12_RESOURCE_BARRIER postBarriers[] = {
+		// Albedo テクスチャを PIXEL_SHADER ➔ NON_PIXEL_SHADER へ遷移
+		CD3DX12_RESOURCE_BARRIER::Transition(
+			osrGroup_.GetResource(RenderTargetType::Albedo).Get(), // Albedoのリソースを取得
+			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		),
+			// SSS テクスチャも同様に遷移（必要な場合）
+			CD3DX12_RESOURCE_BARRIER::Transition(
+				osrGroup_.GetResource(RenderTargetType::SSS).Get(),
+				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+				D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+			),
+		CD3DX12_RESOURCE_BARRIER::Transition(
+			finalOutputColor_->GetResource(),
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		),
+		CD3DX12_RESOURCE_BARRIER::Transition(
+			osrGroup_.GetDSVResource().Get(),
+			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_DEPTH_WRITE
+		)
+	};
+	commandList->ResourceBarrier(_countof(postBarriers), postBarriers);
 }
 
 void Fngine::BeginFrame() {
@@ -248,7 +361,7 @@ void Fngine::EndFrame() {
 	// Pre 
 	if (usePostEffectName_ == "DepthBasedOutline"){
 		auto transitionDepth = CD3DX12_RESOURCE_BARRIER::Transition(
-			osr_.GetDSVResource().Get(),
+			osrGroup_.GetDSVResource().Get(),
 			D3D12_RESOURCE_STATE_DEPTH_WRITE,                  // 元の状態
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE      // レイトレ(Compute)で読める状態
 		);
@@ -261,7 +374,7 @@ void Fngine::EndFrame() {
 	}
 	else if (usePostEffectName_ == "PostPerfect") {
 		auto transitionDepth = CD3DX12_RESOURCE_BARRIER::Transition(
-			osr_.GetDSVResource().Get(),
+			osrGroup_.GetDSVResource().Get(),
 			D3D12_RESOURCE_STATE_DEPTH_WRITE,                  // 元の状態
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE      // レイトレ(Compute)で読める状態
 		);
@@ -276,10 +389,11 @@ void Fngine::EndFrame() {
 	command_.GetList().GetList()->SetGraphicsRootSignature(PSOManager::GetInstance()->GetPSO(usePostEffectName_).GetRootSignature().GetRS().Get());
 	command_.GetList().GetList()->SetPipelineState(PSOManager::GetInstance()->GetPSO(usePostEffectName_).GetGPS().Get());
 	//SRVのDescritorTableの先頭を設定。0はrootParameter[0]である
-	command_.GetList().GetList()->SetGraphicsRootDescriptorTable(0, osr_.GetHandleGPU());
+	//command_.GetList().GetList()->SetGraphicsRootDescriptorTable(0, osrGroup_.GetSRVGPUHandle(RenderTargetType::Albedo));
+	command_.GetList().GetList()->SetGraphicsRootDescriptorTable(0, finalOutputColor_->GetSRVHandleGPU());
 	if(usePostEffectName_ == "DepthBasedOutline")
 	{
-		command_.GetList().GetList()->SetGraphicsRootDescriptorTable(1, osr_.GetDSVDepthHandleGPU());
+		command_.GetList().GetList()->SetGraphicsRootDescriptorTable(1, osrGroup_.GetDSVDepthHandleGPU());
 		command_.GetList().GetList()->SetGraphicsRootConstantBufferView(2, outlineForGPU_->GetGPUVirtualAddress());
 	}
 	else if (usePostEffectName_ == "Dissolve") {
@@ -290,7 +404,7 @@ void Fngine::EndFrame() {
 		command_.GetList().GetList()->SetGraphicsRootConstantBufferView(1, randomForGPU_->GetGPUVirtualAddress());
 	}
 	else if (usePostEffectName_ == "PostPerfect") {
-		command_.GetList().GetList()->SetGraphicsRootDescriptorTable(1, osr_.GetDSVDepthHandleGPU());
+		command_.GetList().GetList()->SetGraphicsRootDescriptorTable(1, osrGroup_.GetDSVDepthHandleGPU());
 		command_.GetList().GetList()->SetGraphicsRootConstantBufferView(2, postPerfectForGPU_->GetGPUVirtualAddress());
 	}
 
@@ -300,7 +414,7 @@ void Fngine::EndFrame() {
 	if (usePostEffectName_ == "DepthBasedOutline")
 	{
 		auto depthTransition = CD3DX12_RESOURCE_BARRIER::Transition(
-			osr_.GetDSVResource().Get(),
+			osrGroup_.GetDSVResource().Get(),
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			D3D12_RESOURCE_STATE_DEPTH_WRITE
 		);
@@ -308,7 +422,7 @@ void Fngine::EndFrame() {
 	}
 	else if (usePostEffectName_ == "PostPerfect") {
 		auto depthTransition = CD3DX12_RESOURCE_BARRIER::Transition(
-			osr_.GetDSVResource().Get(),
+			osrGroup_.GetDSVResource().Get(),
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
 			D3D12_RESOURCE_STATE_DEPTH_WRITE
 		);
@@ -361,6 +475,6 @@ void Fngine::EndFrame() {
 	////////////////////////////////////////////////////////////
 }
 
-void Fngine::ChangOSRsDSVHandleType(DSV_HANDLE_TYPE type) {
-	osr_.ChangeDSVHandleType(command_, type);
+void Fngine::ChangeOSRsDSVHandleType(DSV_HANDLE_TYPE type) {
+	osrGroup_.ChangeDSVHandleType(command_, type);
 }

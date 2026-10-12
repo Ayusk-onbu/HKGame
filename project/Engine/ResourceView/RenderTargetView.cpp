@@ -29,22 +29,22 @@ void RenderTargetView::MakeHandle(Microsoft::WRL::ComPtr <ID3D12Device>& device,
 	device->CreateRenderTargetView(swapChain.GetResource(1).Get(), &desc_, handles_[1]);
 }
 #pragma endregion
-
-void OffRTV::Initialize(D3D12System* d3d12, Microsoft::WRL::ComPtr <ID3D12Resource> resource,DXGI_FORMAT fmt, D3D12_RTV_DIMENSION dimension) {
-	descriptorHeap_.CreateDescriptorHeap(d3d12->GetDevice().Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1, false);
-	MakeDesc(fmt, dimension);
-	MakeHandle(d3d12->GetDevice(),resource);
-}
-
-void OffRTV::MakeDesc(DXGI_FORMAT fmt, D3D12_RTV_DIMENSION dimension) {
-	desc_.Format = fmt;//出力結果をSRGBに変換して書き込む
-	desc_.ViewDimension = dimension;//２Dテクスチャッとして書き込む
-	desc_.Texture2D.MipSlice = 0;
-	desc_.Texture2D.PlaneSlice = 0;
-}
-
-void OffRTV::MakeHandle(Microsoft::WRL::ComPtr <ID3D12Device> device,Microsoft::WRL::ComPtr <ID3D12Resource> resource) {
-	startHandle_ = descriptorHeap_.descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
-	handle_ = startHandle_;
-	device->CreateRenderTargetView(resource.Get(), &desc_, handle_);
-}
+//
+//void OffRTV::Initialize(D3D12System* d3d12, Microsoft::WRL::ComPtr <ID3D12Resource> resource,DXGI_FORMAT fmt, D3D12_RTV_DIMENSION dimension) {
+//	descriptorHeap_.CreateDescriptorHeap(d3d12->GetDevice().Get(), D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1, false);
+//	MakeDesc(fmt, dimension);
+//	MakeHandle(d3d12->GetDevice(),resource);
+//}
+//
+//void OffRTV::MakeDesc(DXGI_FORMAT fmt, D3D12_RTV_DIMENSION dimension) {
+//	desc_.Format = fmt;//出力結果をSRGBに変換して書き込む
+//	desc_.ViewDimension = dimension;//２Dテクスチャッとして書き込む
+//	desc_.Texture2D.MipSlice = 0;
+//	desc_.Texture2D.PlaneSlice = 0;
+//}
+//
+//void OffRTV::MakeHandle(Microsoft::WRL::ComPtr <ID3D12Device> device,Microsoft::WRL::ComPtr <ID3D12Resource> resource) {
+//	startHandle_ = descriptorHeap_.descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+//	handle_ = startHandle_;
+//	device->CreateRenderTargetView(resource.Get(), &desc_, handle_);
+//}

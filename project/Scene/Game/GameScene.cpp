@@ -73,6 +73,8 @@ void GameScene::Initialize() {
 
 	auto editorMgr = EditorManager::GetInstance();
 	auto* sceneEditor = editorMgr->CreateEditor<SceneEditor>(sceneMap_.get());
+
+	sceneMap_->LoadFromFile("Assets/Data/Map/KimoiDSVBaguHassei.json", p_fngine_);
 }
 
 void GameScene::Update(){

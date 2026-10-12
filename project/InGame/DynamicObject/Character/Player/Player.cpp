@@ -14,8 +14,8 @@ Player::Player() {
 }
 
 void Player::Initialize(Fngine* fngine) {
-	DynamicObject::Initialize(fngine, "Naira_ExportTest", "ulthimaSky");
-	//transform_.set_.Rotation({ 0.0f,180.0f,0.0f });
+	DynamicObject::Initialize(fngine, "Naira", "ulthimaSky");
+	transform_.set_.Translation({ 0.0f,1.4f,0.0f });
 
 	auto* render = AddComponent<RenderComponent>();
 	render->SetProvider<CharacterRenderProvider>();
@@ -40,7 +40,7 @@ void Player::Initialize(Fngine* fngine) {
 	// =========================================================
 	auto* rb = AddComponent<RigidBody>();
 	rb->SetBodyType(BodyType::Kinematic); // キャラクター物理
-	rb->SetUseGravity(false);
+	rb->SetUseGravity(true);
 
 	auto* status = AddComponent<StatusComponent>();
 	status->SetBaseStats(1000.0f, 100.0f, 50.0f, 6.0f); // HP, ATK, DEF, Speed
@@ -60,6 +60,8 @@ void Player::Initialize(Fngine* fngine) {
 	auto* col = AddComponent<ColliderComponent>();
 	col->SetLayer("Player");
 	col->SetTargetLayers({ "Enemy", "StaticMap" });
+	auto collider = col->CreateCollider<BVHCollider>();
+	collider->SetModelName("Naira");
 
 	EventManager::GetInstance()->RegisterAction(
 		EVENTCATEGORY::EFFECT, 0, this, &Player::MakeHitEffect

@@ -5,6 +5,10 @@
         "vs": "resources/shaders/Primitive/Character/Character.VS.hlsl",
         "ps": "resources/shaders/Primitive/Character/Character.PS.hlsl"
       },
+      "rtvFormats": [
+        "R8G8B8A8_UNORM_SRGB",
+        "R8G8B8A8_UNORM"
+      ],
       "inputLayout": [
         { "semanticName": "POSITION", "semanticIndex": 0, "format": "R32G32B32A32_FLOAT", "inputSlot": 0 },
         { "semanticName": "TEXCOORD", "semanticIndex": 0, "format": "R32G32_FLOAT", "inputSlot": 0 },

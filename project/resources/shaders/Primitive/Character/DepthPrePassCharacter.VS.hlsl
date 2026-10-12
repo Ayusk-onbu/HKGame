@@ -8,7 +8,12 @@ struct InstanceData
     float32_t4 color;
     uint32_t colorTextureIndex;
     uint32_t normalTextureIndex;
-    float32_t2 padding;
+    uint32_t skinMask1TextureIndex;
+    uint32_t skinMask2TextureIndex;
+    float32_t melaninScale;
+    float32_t bloodVolumeScale;
+    float32_t roughnessScale;
+    float32_t sssScale;
 };
 
 StructuredBuffer<InstanceData> gInstanceData : register(t0);

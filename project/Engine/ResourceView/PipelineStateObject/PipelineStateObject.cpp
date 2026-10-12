@@ -297,7 +297,7 @@ void PipelineStateObject::InitializeDirectlyCompute(
 	inputLayoutDesc_.Initialize(inputElement, numInputElement);
 
 	// CSなら
-	computeShaderBlob_ = CompileShader(csPath, L"cs_6_0",
+	computeShaderBlob_ = CompileShader(csPath, L"cs_6_6",
 		dxc_->GetUtils().Get(), dxc_->GetCompiler().Get(), dxc_->GetIncludeHandle().Get());
 	assert(computeShaderBlob_ != nullptr);
 	 

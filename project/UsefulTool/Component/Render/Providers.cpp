@@ -60,6 +60,11 @@ void CharacterRenderProvider::SendToDrawManager(DynamicObject* owner) {
     // ワールドトランスフォームを設定
     data.worldTransform = owner->GetTransform();
 
+	data.melaninScale = data.melaninScale; // ここで必要に応じてスケールを設定
+	data.bloodVolumeScale = data.bloodVolumeScale;
+	data.roughnessScale = data.roughnessScale;
+	data.sssScale = data.sssScale;
+
     // SkinningComponent が存在するかチェック
     if (auto* skinning = owner->GetComponent<SkinningComponent>()) {
         data.modelName = skinning->GetModelID();
@@ -83,6 +88,11 @@ void CharacterRenderProvider::DrawUI() {
 
         // カラーピッカー
         ImGui::ColorEdit4("Color", &data.color.x);
+
+		ImGui::DragFloat("Melanin Scale", &data.melaninScale, 0.01f, 0.0f, 2.0f);
+		ImGui::DragFloat("Blood Volume Scale", &data.bloodVolumeScale, 0.01f, 0.0f, 2.0f);
+		ImGui::DragFloat("Roughness Scale", &data.roughnessScale, 0.01f, 0.0f, 1.0f);
+		ImGui::DragFloat("SSS Scale", &data.sssScale, 0.01f, 0.0f, 2.0f);
 
         ImGui::TreePop();
     }

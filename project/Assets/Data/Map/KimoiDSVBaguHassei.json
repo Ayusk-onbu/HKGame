@@ -1,0 +1,146 @@
+{
+    "mapName": "NewMap",
+    "objects": [
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "cube",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": true
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "cube",
+                        "colliderType": "BVH",
+                        "mask": 4294967282
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    0.0,
+                    0.27694302797317505,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    18.700000762939453,
+                    1.0,
+                    11.199999809265137
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "Column",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Column",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    0.0,
+                    1.2741997241973877,
+                    0.0
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "BoneOctahedron",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ],
+                            "modelName": "BoneOctahedron",
+                            "textureIndex": 10
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    -0.019694089889526367,
+                    6.565662384033203,
+                    -0.13018548488616943
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        }
+    ],
+    "objectsCount": 3
+}

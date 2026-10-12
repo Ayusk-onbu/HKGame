@@ -57,7 +57,7 @@ void TestScene::Draw() {
 	player_->Draw();
 	testPlayer_->Draw();
 
-	p_fngine_->ChangOSRsDSVHandleType(DSV_HANDLE_TYPE::ReadOnly);
+	p_fngine_->ChangeOSRsDSVHandleType(DSV_HANDLE_TYPE::ReadOnly);
 	particle_->Draw();
 }
 

@@ -38,6 +38,9 @@ json RenderComponent::Serialize() const {
     }
 
     j["castSDFShadow"] = castSDFShadow_;
+
+	j["ShadowModelName"] = StringPool::GetInstance()->GetStringFromID(modelID_);
+
     return j;
 }
 
@@ -57,6 +60,10 @@ void RenderComponent::Deserialize(const json& j) {
 
     if(j.contains("providerData")) {
         provider_->Deserialize(j["providerData"]);
+    }
+    if (j.contains("ShadowModelName")) {
+        std::string modelName = j["ShadowModelName"].get<std::string>();
+        modelID_ = StringPool::GetInstance()->GetStringID(modelName);
     }
 }
 

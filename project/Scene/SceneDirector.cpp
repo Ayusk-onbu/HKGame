@@ -33,6 +33,8 @@ void SceneDirector::Initialize(Scene& firstScene) {
 	SDFManager::GetInstance()->Initialize(p_fngine_);
 	SDFManager::GetInstance()->BakeAll(p_fngine_->GetCommand().GetList().GetList().Get(),128);
 
+	ComponentFactory::GetInstance()->Initialize();
+
 	// 最初のシーンの初期化処理
 	currentScene_ = &firstScene;
 	currentScene_->FngineSetUp(*p_fngine_);
@@ -44,8 +46,6 @@ void SceneDirector::Initialize(Scene& firstScene) {
 	CameraSystem::GetInstance()->MakeCamera("DebugCamera", CameraType::Debug);
 	CameraSystem::GetInstance()->MakeCamera("GameCamera", CameraType::Game);
 	CameraSystem::GetInstance()->SetActiveCamera("DebugCamera");
-
-	ComponentFactory::GetInstance()->Initialize();
 
 	DrawManager::GetInstance()->Initialize(p_fngine_);
 
@@ -210,6 +210,9 @@ void SceneDirector::LoadTexture() {
 	name = TextureManager::GetInstance()->LoadTexture("RevealTex_Circle.png", "resources/Texture/Effect");
 	name = TextureManager::GetInstance()->LoadTexture("noise0.png", "resources/Texture/Effect");
 	name = TextureManager::GetInstance()->LoadTexture("gradationLine.png", "resources/Texture/Effect");
+
+	name = TextureManager::GetInstance()->LoadTexture("Masks_Melanin_Blood_Ratio_SSS.png", "Assets/Textures/Character");
+
 	TextureManager::GetInstance()->EndLoad();
 
 	//Created using <asset name> from ambientCG.com,
