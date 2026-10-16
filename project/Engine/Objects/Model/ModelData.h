@@ -84,6 +84,17 @@ public:
 		auto it = jointMap_.find(jointName);
 		return (it != jointMap_.end()) ? it->second : -1;
 	}
+
+	size_t GetNumJoints() const { return joints_.size(); }
+
+	const auto& GetJointMap() const {
+		return jointMap_;
+	}
+
+	const Joint& GetJoint(int index) const {
+		return joints_[index];
+	}
+
 private:
 	int32_t CreateJoint(const Node& node, const std::optional<int32_t>& parent, std::vector<Joint>& joints);
 public:

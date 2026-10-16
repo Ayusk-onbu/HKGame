@@ -2,13 +2,10 @@
 #include "Fngine.h"
 #include "Scene.h"
 #include "WorldTransform.h"
-#include "Player3D.h"
-#include "Enemy.h"
 #include "SpriteObject.h"
 #include "Particle.h"
 #include "Ground.h"
 #include "UIContainer.h"
-#include "GameMap.h"
 #include "Player.h"
 #include "SkyBox.h"
 #include "GrassField.h"
@@ -55,9 +52,7 @@ private:
 	std::unique_ptr<SpriteObject>purposeUI_;
 private:
 
-	//std::unique_ptr<Player3D>player_;
 	std::unique_ptr<Player>player_;
-	std::unique_ptr<BossEnemy>boss_;
 	std::unique_ptr<SceneMap>sceneMap_;
 	std::unique_ptr<ConvenienceModel>skySphere_;
 	std::unique_ptr<SkyBox>skyBox_;

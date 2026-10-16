@@ -85,10 +85,10 @@ void Player::Update(float deltaTime) {
 		effect.currentTime += deltaTime;
 		effect.color.w = 1.0f - (effect.currentTime / effect.lifeTime); // 徐々に透明にする
 
-		DrawManager::GetInstance()->GetBox()->AddInstance({
+		/*DrawManager::GetInstance()->GetBox()->AddInstance({
 			effect.transform,
 			effect.color
-		});
+		});*/
 	}
 
 	hitEffect_.erase(std::remove_if(hitEffect_.begin(), hitEffect_.end(),

@@ -244,133 +244,133 @@ float3 MoveWithSDFRayMarch(float3 startPos, float3 targetPos, float hairRadius)
     return currentPos;
 }
 
-//[numthreads(64, 1, 1)]
-//void main(uint3 dispatchThreadID : SV_DispatchThreadID)
-//{
-//    uint guideIdx = dispatchThreadID.x;
-//    if (guideIdx >= gHairConfig.numGuides)
-//        return;
+[numthreads(64, 1, 1)]
+void main(uint3 dispatchThreadID : SV_DispatchThreadID)
+{
+    uint guideIdx = dispatchThreadID.x;
+    if (guideIdx >= gHairConfig.numGuides)
+        return;
     
-//    GuideInfo info = g_GuideInfos[guideIdx];
-//    if (info.vertexCount < 2)
-//        return;
+    GuideInfo info = g_GuideInfos[guideIdx];
+    if (info.vertexCount < 2)
+        return;
 
-//    float dt = gFrameConfig.deltaTime;
+    float dt = gFrameConfig.deltaTime;
     
-//    // --------------------------------------------------
-//    // 事前準備: ガイドの全物理長 (totalLength) を計算する
-//    // --------------------------------------------------
-//    float totalLength = 0.0f;
-//    for (uint k = 0; k < info.vertexCount - 1; ++k)
-//    {
-//        totalLength += g_GuideBuffer[info.vertexStartIndex + k].nextToLength;
-//    }
+    // --------------------------------------------------
+    // 事前準備: ガイドの全物理長 (totalLength) を計算する
+    // --------------------------------------------------
+    float totalLength = 0.0f;
+    for (uint k = 0; k < info.vertexCount - 1; ++k)
+    {
+        totalLength += g_GuideBuffer[info.vertexStartIndex + k].nextToLength;
+    }
     
-//    // --------------------------------------------------
-//    // 各頂点での風の計算
-//    // --------------------------------------------------
-//    float currentAccumulatedLength = 0.0f; // 根元からの累積距離
+    // --------------------------------------------------
+    // 各頂点での風の計算
+    // --------------------------------------------------
+    float currentAccumulatedLength = 0.0f; // 根元からの累積距離
 
-//    // 移動量（長さ）と方向を安全に計算
-//    float moveLen = length(gFrameConfig.moveDirection);
+    // 移動量（長さ）と方向を安全に計算
+    float moveLen = length(gFrameConfig.moveDirection);
 
-//    // 停止時（moveLenがほぼゼロ）のゼロ除算を回避
-//    float3 moveDir = (moveLen > 0.0001f) ? (gFrameConfig.moveDirection / moveLen) : float3(0, 0, 0);
+    // 停止時（moveLenがほぼゼロ）のゼロ除算を回避
+    float3 moveDir = (moveLen > 0.0001f) ? (gFrameConfig.moveDirection / moveLen) : float3(0, 0, 0);
 
-//    // 慣性係数（効き具合の調整用パラメータ）
-//    float inertiaStrength = 0.125f;
+    // 慣性係数（効き具合の調整用パラメータ）
+    float inertiaStrength = 0.125f;
 
-//    // スピードに応じた慣性力を設定（過大になりすぎる場合は上限を設定）
-//    float3 inertia = -moveDir * min(moveLen, 0.5f) * inertiaStrength;
+    // スピードに応じた慣性力を設定（過大になりすぎる場合は上限を設定）
+    float3 inertia = -moveDir * min(moveLen, 0.5f) * inertiaStrength;
     
-//    // =========================================================
-//    // ステップ1: 外力（重力・風・慣性・復元力）の計算と位置更新
-//    // =========================================================
-//    for (uint i = 0; i < info.vertexCount; ++i)
-//    {
-//        uint currentIdx = info.vertexStartIndex + i;
-//        ControllerPoint p = g_GuideBuffer[currentIdx];
+    // =========================================================
+    // ステップ1: 外力（重力・風・慣性・復元力）の計算と位置更新
+    // =========================================================
+    for (uint i = 0; i < info.vertexCount; ++i)
+    {
+        uint currentIdx = info.vertexStartIndex + i;
+        ControllerPoint p = g_GuideBuffer[currentIdx];
 
-//        // 根元（physicsWeight = 0）は固定のため物理計算をスキップ
-//        if (p.physicsWeight <= 0.0001f)
-//            continue;
+        // 根元（physicsWeight = 0）は固定のため物理計算をスキップ
+        if (p.physicsWeight <= 0.0001f)
+            continue;
         
-//        // 直前の関節の長さを足して「根元から何センチか」を更新
-//        // この処理の場合はここに書かないと二回分次の長さになってしまう、もしくは一個前の長さになってしまう
-//        currentAccumulatedLength += g_GuideBuffer[currentIdx - 1].nextToLength;
+        // 直前の関節の長さを足して「根元から何センチか」を更新
+        // この処理の場合はここに書かないと二回分次の長さになってしまう、もしくは一個前の長さになってしまう
+        currentAccumulatedLength += g_GuideBuffer[currentIdx - 1].nextToLength;
         
-//        // 根元(0.0) 〜 毛先(1.0) の相対位置を計算
-//        // ( vertexCount - 1 で割ることで、毛先がぴったり 1.0 になる )
-//        float normalizedDepth = (float) i / (float) (info.vertexCount - 1);
+        // 根元(0.0) 〜 毛先(1.0) の相対位置を計算
+        // ( vertexCount - 1 で割ることで、毛先がぴったり 1.0 になる )
+        float normalizedDepth = (float) i / (float) (info.vertexCount - 1);
 
-//        // 重力
-//        float3 gravity = gFrameConfig.gravity * p.physicsWeight;
+        // 重力
+        float3 gravity = gFrameConfig.gravity * p.physicsWeight;
 
-//        // 風: 根元から毛先に向かって波が伝わるように (i を使用)
+        // 風: 根元から毛先に向かって波が伝わるように (i を使用)
 
-//        // 正規化された位置を使って風の波（位相）を計算
-//        // 【実際の距離ベースの風】
-//        // 例: 1メートル（1.0）あたり 15 ラジアン進む波
-//        float wavePhase = gFrameConfig.time * 6.0f - currentAccumulatedLength * 15.0f;
+        // 正規化された位置を使って風の波（位相）を計算
+        // 【実際の距離ベースの風】
+        // 例: 1メートル（1.0）あたり 15 ラジアン進む波
+        float wavePhase = gFrameConfig.time * 6.0f - currentAccumulatedLength * 15.0f;
 
-//        // 風の力（長い髪ほど毛先の影響を強くするなどの調整も totalLength で可能）
-//        float3 wind = gFrameConfig.windDirection * sin(wavePhase) * p.physicsWeight;
+        // 風の力（長い髪ほど毛先の影響を強くするなどの調整も totalLength で可能）
+        float3 wind = gFrameConfig.windDirection * sin(wavePhase) * p.physicsWeight;
         
-//        // 復元力: 初期姿勢（homePosition）へ戻ろうとする力
-//        float3 toHome = (p.homePosition - p.position) * gHairPhysicsConfig.restoringForce * (1.0f - p.physicsWeight);
+        // 復元力: 初期姿勢（homePosition）へ戻ろうとする力
+        float3 toHome = (p.homePosition - p.position) * gHairPhysicsConfig.restoringForce * (1.0f - p.physicsWeight);
 
-//        // 外力の合算
-//        float3 totalForce = gravity + wind + toHome;
+        // 外力の合算
+        float3 totalForce = gravity + wind + toHome;
 
-//        // 速度・位置の加算（deltaTimeを反映）
-//        float3 velocity = (inertia + totalForce * dt) * gHairPhysicsConfig.damping;
-//        p.position += velocity;
+        // 速度・位置の加算（deltaTimeを反映）
+        float3 velocity = (inertia + totalForce * dt) * gHairPhysicsConfig.damping;
+        p.position += velocity;
 
-//        g_GuideBuffer[currentIdx] = p;
-//    }
+        g_GuideBuffer[currentIdx] = p;
+    }
     
     
-//    // =========================================================
-//    // PBD長さ拘束 & 衝突判定の反復ループ
-//    // =========================================================
-//    for (uint iteration = 0; iteration < 5; ++iteration)
-//    {
-//        // --- 順方向パス (根元 -> 毛先) ---
-//        for (uint j = 1; j < info.vertexCount; ++j)
-//        {
-//            uint pIdx = info.vertexStartIndex + j - 1;
-//            uint cIdx = info.vertexStartIndex + j;
+    // =========================================================
+    // PBD長さ拘束 & 衝突判定の反復ループ
+    // =========================================================
+    for (uint iteration = 0; iteration < 5; ++iteration)
+    {
+        // --- 順方向パス (根元 -> 毛先) ---
+        for (uint j = 1; j < info.vertexCount; ++j)
+        {
+            uint pIdx = info.vertexStartIndex + j - 1;
+            uint cIdx = info.vertexStartIndex + j;
 
-//            ApplyConstraint(pIdx, cIdx);
-//        }
+            ApplyConstraint(pIdx, cIdx);
+        }
         
-//        for (uint b = 1; b < info.vertexCount - 1; ++b)
-//        {
-//            uint prev = info.vertexStartIndex + b - 1;
-//            uint curr = info.vertexStartIndex + b;
-//            uint next = info.vertexStartIndex + b + 1;
+        for (uint b = 1; b < info.vertexCount - 1; ++b)
+        {
+            uint prev = info.vertexStartIndex + b - 1;
+            uint curr = info.vertexStartIndex + b;
+            uint next = info.vertexStartIndex + b + 1;
         
-//        // 剛性パラメータ（0.2f〜0.4fで調整。高いほど固い髪になる）
-//            ApplyBendingConstraint(prev, curr, next, 0.25f);
-//        }
+        // 剛性パラメータ（0.2f〜0.4fで調整。高いほど固い髪になる）
+            ApplyBendingConstraint(prev, curr, next, 0.25f);
+        }
         
-//        // SDF 
-//        for (uint c = 1; c < info.vertexCount; ++c) // 根元 (c=0) は固定なので c=1 から
-//        {
-//            uint idx = info.vertexStartIndex + c;
-//            float3 pos = g_GuideBuffer[idx].position;
+        // SDF 
+        for (uint c = 1; c < info.vertexCount; ++c) // 根元 (c=0) は固定なので c=1 から
+        {
+            uint idx = info.vertexStartIndex + c;
+            float3 pos = g_GuideBuffer[idx].position;
 
-//            // 髪の毛の太さ
-//            float hairRadius = g_GuideBuffer[idx].radius * 0.5f;
+            // 髪の毛の太さ
+            float hairRadius = g_GuideBuffer[idx].radius * 1.0f;
 
-//            if (ResolveSDFCollision(pos, hairRadius))
-//            {
-//                g_GuideBuffer[idx].position = pos;
-//            }
-//        }
+            if (ResolveSDFCollision(pos, hairRadius))
+            {
+                g_GuideBuffer[idx].position = pos;
+            }
+        }
      
-//    }
-//}
+    }
+}
 
 //[numthreads(64, 1, 1)]
 //void main(uint3 dispatchThreadID : SV_DispatchThreadID)
@@ -429,8 +429,8 @@ float3 MoveWithSDFRayMarch(float3 startPos, float3 targetPos, float hairRadius)
 //        uint cIdx = info.vertexStartIndex + c;
 
 //        float3 parentPos = g_GuideBuffer[pIdx].position;
-//        float3 childPos  = g_GuideBuffer[cIdx].position;
-//        float targetLen  = g_GuideBuffer[pIdx].nextToLength;
+//        float3 childPos = g_GuideBuffer[cIdx].position;
+//        float targetLen = g_GuideBuffer[pIdx].nextToLength;
 //        float hairRadius = g_GuideBuffer[cIdx].radius * 0.5f;
 
 //        // 1. 親を中心とする球面上（長さ targetLen）の目標地点をセット
@@ -462,114 +462,114 @@ float3 MoveWithSDFRayMarch(float3 startPos, float3 targetPos, float hairRadius)
 //    }
 //}
 
-[numthreads(64, 1, 1)]
-void main(uint3 dispatchThreadID : SV_DispatchThreadID)
-{
-    uint guideIdx = dispatchThreadID.x;
-    if (guideIdx >= gHairConfig.numGuides)
-        return;
+//[numthreads(64, 1, 1)]
+//void main(uint3 dispatchThreadID : SV_DispatchThreadID)
+//{
+//    uint guideIdx = dispatchThreadID.x;
+//    if (guideIdx >= gHairConfig.numGuides)
+//        return;
     
-    GuideInfo info = g_GuideInfos[guideIdx];
-    if (info.vertexCount < 2)
-        return;
+//    GuideInfo info = g_GuideInfos[guideIdx];
+//    if (info.vertexCount < 2)
+//        return;
 
-    float dt = gFrameConfig.deltaTime;
+//    float dt = gFrameConfig.deltaTime;
     
-    float currentAccumulatedLength = 0.0f;
-    float moveLen = length(gFrameConfig.moveDirection);
-    float3 moveDir = (moveLen > 0.0001f) ? (gFrameConfig.moveDirection / moveLen) : float3(0, 0, 0);
-    float inertiaStrength = 0.125f;
-    float3 inertia = -moveDir * min(moveLen, 0.5f) * inertiaStrength;
+//    float currentAccumulatedLength = 0.0f;
+//    float moveLen = length(gFrameConfig.moveDirection);
+//    float3 moveDir = (moveLen > 0.0001f) ? (gFrameConfig.moveDirection / moveLen) : float3(0, 0, 0);
+//    float inertiaStrength = 0.125f;
+//    float3 inertia = -moveDir * min(moveLen, 0.5f) * inertiaStrength;
     
-    // =========================================================
-    // ステップ1: 外力計算（★体表付近での体内押し込み力を事前に殺す）
-    // =========================================================
-    for (uint i = 0; i < info.vertexCount; ++i)
-    {
-        uint currentIdx = info.vertexStartIndex + i;
-        ControllerPoint p = g_GuideBuffer[currentIdx];
+//    // =========================================================
+//    // ステップ1: 外力計算（★体表付近での体内押し込み力を事前に殺す）
+//    // =========================================================
+//    for (uint i = 0; i < info.vertexCount; ++i)
+//    {
+//        uint currentIdx = info.vertexStartIndex + i;
+//        ControllerPoint p = g_GuideBuffer[currentIdx];
 
-        if (p.physicsWeight <= 0.0001f)
-            continue;
+//        if (p.physicsWeight <= 0.0001f)
+//            continue;
         
-        currentAccumulatedLength += g_GuideBuffer[currentIdx - 1].nextToLength;
+//        currentAccumulatedLength += g_GuideBuffer[currentIdx - 1].nextToLength;
 
-        float wavePhase = gFrameConfig.time * 6.0f - currentAccumulatedLength * 15.0f;
-        float3 gravity = gFrameConfig.gravity * p.physicsWeight;
-        float3 wind = gFrameConfig.windDirection * sin(wavePhase) * p.physicsWeight;
-        float3 toHome = (p.homePosition - p.position) * gHairPhysicsConfig.restoringForce * (1.0f - p.physicsWeight);
+//        float wavePhase = gFrameConfig.time * 6.0f - currentAccumulatedLength * 15.0f;
+//        float3 gravity = gFrameConfig.gravity * p.physicsWeight;
+//        float3 wind = gFrameConfig.windDirection * sin(wavePhase) * p.physicsWeight;
+//        float3 toHome = (p.homePosition - p.position) * gHairPhysicsConfig.restoringForce * (1.0f - p.physicsWeight);
 
-        float3 totalForce = gravity + wind + toHome;
+//        float3 totalForce = gravity + wind + toHome;
 
-        // ★ 対策1: 体表付近（マージン0.005m）にいる場合、体内へ向かう力をゼロにして滑らせる
-        float3 sdfNormal;
-        float sdfDist = SampleSDF(p.position, sdfNormal);
-        float hairRadius = p.radius * 0.5f;
+//        // ★ 対策1: 体表付近（マージン0.005m）にいる場合、体内へ向かう力をゼロにして滑らせる
+//        float3 sdfNormal;
+//        float sdfDist = SampleSDF(p.position, sdfNormal);
+//        float hairRadius = p.radius * 0.5f;
 
-        if (sdfDist < hairRadius + 0.005f)
-        {
-            float forceDot = dot(totalForce, sdfNormal);
-            if (forceDot < 0.0f)
-            {
-                totalForce -= sdfNormal * forceDot; // 体内へ向かう力だけ除去
-            }
-        }
+//        if (sdfDist < hairRadius + 0.005f)
+//        {
+//            float forceDot = dot(totalForce, sdfNormal);
+//            if (forceDot < 0.0f)
+//            {
+//                totalForce -= sdfNormal * forceDot; // 体内へ向かう力だけ除去
+//            }
+//        }
 
-        float3 velocity = (inertia + totalForce * dt) * gHairPhysicsConfig.damping;
-        p.position += velocity;
+//        float3 velocity = (inertia + totalForce * dt) * gHairPhysicsConfig.damping;
+//        p.position += velocity;
 
-        g_GuideBuffer[currentIdx] = p;
-    }
+//        g_GuideBuffer[currentIdx] = p;
+//    }
     
-    // =========================================================
-    // ステップ2: FTL ＋ カプセル（線分）SDF衝突回避（★微小マージン付き）
-    // =========================================================
-    for (uint c = 1; c < info.vertexCount; ++c)
-    {
-        uint pIdx = info.vertexStartIndex + c - 1;
-        uint cIdx = info.vertexStartIndex + c;
+//    // =========================================================
+//    // ステップ2: FTL ＋ カプセル（線分）SDF衝突回避（★微小マージン付き）
+//    // =========================================================
+//    for (uint c = 1; c < info.vertexCount; ++c)
+//    {
+//        uint pIdx = info.vertexStartIndex + c - 1;
+//        uint cIdx = info.vertexStartIndex + c;
 
-        float3 parentPos = g_GuideBuffer[pIdx].position;
-        float3 childPos = g_GuideBuffer[cIdx].position;
-        float targetLen = g_GuideBuffer[pIdx].nextToLength;
-        float hairRadius = g_GuideBuffer[cIdx].radius * 0.5f;
+//        float3 parentPos = g_GuideBuffer[pIdx].position;
+//        float3 childPos = g_GuideBuffer[cIdx].position;
+//        float targetLen = g_GuideBuffer[pIdx].nextToLength;
+//        float hairRadius = g_GuideBuffer[cIdx].radius * 0.5f;
 
-        // ① まず親を中心とする正確な長さ（targetLen）の位置に置く
-        float3 delta = childPos - parentPos;
-        float dist = length(delta);
-        float3 dir = (dist > 0.0001f) ? (delta / dist) : float3(0, -1, 0);
-        childPos = parentPos + dir * targetLen;
+//        // ① まず親を中心とする正確な長さ（targetLen）の位置に置く
+//        float3 delta = childPos - parentPos;
+//        float dist = length(delta);
+//        float3 dir = (dist > 0.0001f) ? (delta / dist) : float3(0, -1, 0);
+//        childPos = parentPos + dir * targetLen;
 
-        // ② カプセルSDF判定
-        const float sampleT[2] = { 0.5f, 1.0f };
+//        // ② カプセルSDF判定
+//        const float sampleT[2] = { 0.5f, 1.0f };
 
-        for (int s = 0; s < 2; ++s)
-        {
-            float t = sampleT[s];
-            float3 samplePos = lerp(parentPos, childPos, t);
+//        for (int s = 0; s < 2; ++s)
+//        {
+//            float t = sampleT[s];
+//            float3 samplePos = lerp(parentPos, childPos, t);
 
-            float3 normal;
-            float sdfDist = SampleSDF(samplePos, normal);
-            float penetration = hairRadius - sdfDist;
+//            float3 normal;
+//            float sdfDist = SampleSDF(samplePos, normal);
+//            float penetration = hairRadius - sdfDist;
 
-            // ★ 対策2: わずかに境界へ浮かせる安全マージン（0.0005m）を追加
-            if (penetration > -0.0005f)
-            {
-                float pushAmount = penetration + 0.0005f;
-                float pushFactor = 1.0f / max(t, 0.2f);
+//            // ★ 対策2: わずかに境界へ浮かせる安全マージン（0.0005m）を追加
+//            if (penetration > -0.0005f)
+//            {
+//                float pushAmount = penetration + 0.0005f;
+//                float pushFactor = 1.0f / max(t, 0.2f);
                 
-                childPos += normal * (pushAmount * pushFactor);
+//                childPos += normal * (pushAmount * pushFactor);
 
-                // 押し出し後の長さ再投影
-                float3 newDelta = childPos - parentPos;
-                float newDist = length(newDelta);
-                if (newDist > 0.0001f)
-                {
-                    childPos = parentPos + (newDelta / newDist) * targetLen;
-                }
-            }
-        }
+//                // 押し出し後の長さ再投影
+//                float3 newDelta = childPos - parentPos;
+//                float newDist = length(newDelta);
+//                if (newDist > 0.0001f)
+//                {
+//                    childPos = parentPos + (newDelta / newDist) * targetLen;
+//                }
+//            }
+//        }
 
-        g_GuideBuffer[cIdx].position = childPos;
-    }
-}
+//        g_GuideBuffer[cIdx].position = childPos;
+//    }
+//}

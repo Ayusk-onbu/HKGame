@@ -1,0 +1,346 @@
+{
+    "mapName": "NewMap",
+    "objects": [
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "cube",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": true
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "cube",
+                        "colliderType": "BVH",
+                        "mask": 4294967282
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    1.1920928955078125e-07,
+                    0.27694302797317505,
+                    1.1920928955078125e-07
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    25.0,
+                    1.0,
+                    25.0
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "Column",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Column",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "Column",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    -2.3437600135803223,
+                    1.2734224796295166,
+                    4.6994476318359375
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.9950991272926331,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "BoneOctahedron",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ],
+                            "modelName": "BoneOctahedron",
+                            "textureIndex": 10
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    -4.44533634185791,
+                    1.3985055685043335,
+                    -0.13018548488616943
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "Slope",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Slope",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": true
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "Slope",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    0.5367094278335571,
+                    2.7128310203552246,
+                    0.00516284815967083
+                ],
+                "rotation": [
+                    -179.99989318847656,
+                    0.21880808472633362,
+                    -179.99989318847656
+                ],
+                "scale": [
+                    3.5000879764556885,
+                    2.900085926055908,
+                    11.500107765197754
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "cube",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 10.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "cube",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    0.7119941711425781,
+                    2.6982510089874268,
+                    15.385958671569824
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    10.615131378173828,
+                    1.4244221448898315,
+                    9.62399959564209
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "Column",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Column",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": true
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "Column",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    3.35524320602417,
+                    1.273542046546936,
+                    4.761858940124512
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        }
+    ],
+    "objectsCount": 6
+}

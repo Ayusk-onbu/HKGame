@@ -31,6 +31,7 @@ void SceneDirector::Initialize(Scene& firstScene) {
 	MotionManager::GetInstance()->LoadMotions("resources/Data/Motion/Hermite/");
 
 	SDFManager::GetInstance()->Initialize(p_fngine_);
+
 	SDFManager::GetInstance()->BakeAll(p_fngine_->GetCommand().GetList().GetList().Get(),128);
 
 	ComponentFactory::GetInstance()->Initialize();

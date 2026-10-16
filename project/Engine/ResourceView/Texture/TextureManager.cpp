@@ -43,7 +43,7 @@ std::string TextureManager::LoadTexture(const std::string& filename, const std::
 Texture& TextureManager::GetTexture(const std::string& name) {
 	auto it = textures_.find(name);
 	if (it == textures_.end()) {
-		Log::View("Not found" + name);
+		Log::View("Not found Texture: " + name);
 		return *textures_.begin()->second.get();
 	}
 	return *it->second.get();

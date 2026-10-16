@@ -5,7 +5,7 @@
 
 void SkinCluster::Create(Fngine* engine, const Skeleton& skeleton, const ModelData& modelData) {
 	uint32_t numVertices = static_cast<uint32_t>(modelData.vertices.size());
-	uint32_t numJoints = static_cast<uint32_t>(skeleton.joints_.size());
+	uint32_t numJoints = static_cast<uint32_t>(skeleton.GetNumJoints());
 	numVertices_ = numVertices;
 	// ==========================================
 	// 1. 各バッファのインスタンス化と初期化
@@ -47,10 +47,10 @@ void SkinCluster::Create(Fngine* engine, const Skeleton& skeleton, const ModelDa
 	// ModelDataのSkinCluster情報を解析してInfluenceの中身を埋める
 	for (const auto& jointWeight : modelData.skinClusterData) {
 		// Jointの名前を取得
-		auto it = skeleton.jointMap_.find(jointWeight.first);
+		auto it = skeleton.GetJointMap().find(jointWeight.first);
 
 		// そんな名前は存在するのかをチェックする
-		if (it == skeleton.jointMap_.end()) {
+		if (it == skeleton.GetJointMap().end()) {
 			// 無かったら次の要素へ移行
 			continue;
 		}
@@ -112,11 +112,11 @@ void SkinCluster::Update(const Skeleton& skeleton) {
 	// ラッパークラスから直接マップ済みポインタを取得する
 	WellForGPU* mappedPalette = palette_->GetMappedData();
 
-	for (size_t jointIndex = 0; jointIndex < skeleton.joints_.size(); ++jointIndex) {
+	for (size_t jointIndex = 0; jointIndex < skeleton.GetNumJoints(); ++jointIndex) {
 		assert(jointIndex < inverseBindPoseMatrices_.size());
 
 		mappedPalette[jointIndex].skeletonSpaceMatrix =
-			inverseBindPoseMatrices_[jointIndex] * skeleton.joints_[jointIndex].skeletonSpaceMatrix;
+			inverseBindPoseMatrices_[jointIndex] * skeleton.GetJoint((int)jointIndex).skeletonSpaceMatrix;
 
 		mappedPalette[jointIndex].skeletonSpaceInverseTransMatrix =
 			Matrix4x4::Transpose(Matrix4x4::Inverse(mappedPalette[jointIndex].skeletonSpaceMatrix));

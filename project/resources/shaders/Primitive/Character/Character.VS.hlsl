@@ -38,6 +38,7 @@ VertexShaderOutput main(VertexShaderInput input, uint32_t instancedId : SV_Insta
     // 法線をワールド空間に変換
     output.normal = normalize(mul(input.normal, (float32_t3x3) instData.World));
     
+    
     // 頂点のワールド座標を計算してPSに送る
     output.worldPosition = mul(input.position, instData.World).xyz;
     

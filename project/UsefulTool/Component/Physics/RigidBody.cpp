@@ -131,7 +131,8 @@ void RigidBody::ResolveCollision(const Vector3& pushOut) {
     master_->SetPosition(currentPos + pushOut);
 
     // 上向きに押された＝地面に着地したと判定
-    if (pushOut.y > 0.001f && myVelocity_.y < 0.0f) {
+    // ※MyVelocityのY成分の判定を０未満のところを以下に変更
+    if (pushOut.y > 0.001f && myVelocity_.y <= 0.0f) {
         isOnGround_ = true;
         myVelocity_.y = 0.0f; // 着地したら落下速度をリセット
     }

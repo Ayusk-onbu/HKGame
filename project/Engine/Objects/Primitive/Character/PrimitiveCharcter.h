@@ -29,10 +29,10 @@ struct CharacterObjectData {
     std::string modelName = "PlayerModel";
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView{};// スキニング対応
     bool useCustomVB = false;// 使用するかどうか
-    std::string skinMask1TextureName = "Masks_Melanin_Blood_Ratio_SSS.png";
+    std::string skinMask1TextureName = "Masks_Melanin_Blood_Ratio_SSS";
     std::string skinMask2TextureName = "Masks_Melanin_Blood_Ratio_SSS.png";
-	float melaninScale = 0.3f;
-	float bloodVolumeScale = 0.1f;
+	float melaninScale = 0.2f;
+	float bloodVolumeScale = 0.3f;
 	float roughnessScale = 1.0f;
 	float sssScale = 1.0f;
 };

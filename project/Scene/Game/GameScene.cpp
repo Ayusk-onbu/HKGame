@@ -9,7 +9,6 @@
 
 GameScene::GameScene()
 	: player_(std::make_unique<Player>()),
-	  boss_(std::make_unique<BossEnemy>()),
 	  skyBox_(std::make_unique<SkyBox>())
 {
 
@@ -74,11 +73,12 @@ void GameScene::Initialize() {
 	auto editorMgr = EditorManager::GetInstance();
 	auto* sceneEditor = editorMgr->CreateEditor<SceneEditor>(sceneMap_.get());
 
-	sceneMap_->LoadFromFile("Assets/Data/Map/KimoiDSVBaguHassei.json", p_fngine_);
+	sceneMap_->LoadFromFile("Assets/Data/Map/TestScene.json", p_fngine_);
 }
 
 void GameScene::Update(){
 	//float deltaTime = Chronos::GetInstance()->GetDeltaTime();
+	//float deltaTime = Chronos::GetInstance()->GetGameDeltaTime();
 	float deltaTime = 1.0f / 60.0f;
 	if (playGuide_->IsEnd() == true) {
 		playGuide_->Play({ {"PlayGuide","PlayGuideFadeInAnim"} }, false);
@@ -153,12 +153,6 @@ void GameScene::ToScene() {
 		Vector3 downPos = fadeDown_->worldTransform_.get_.Translation();
 		downPos.y = Easing_Float((180.0f) + 720.0f, 180.0f + 360.0f, toSceneTimer_, 3.0f, EASINGTYPE::InBounce);
 		fadeDown_->worldTransform_.set_.Translation(downPos);
-	}
-	if (boss_->IsDead()) {
-		ToClearScene();
-	}
-	else if (false/*player_->GetStatus().IsDead()*/) {
-		ToGameOverScene();
 	}
 }
 

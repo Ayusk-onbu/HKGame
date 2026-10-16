@@ -81,7 +81,8 @@ public:
         // Y方向に一気に初速を与える！
         Vector3 vel = rb->GetVelocity();
         vel.y = jumpPower_;
-        rb->SetVelocity(vel);
+        //rb->SetVelocity(vel);
+        rb->SetExternalVelocity(vel);
 
         coyoteTimer_ = 0.0f; // ジャンプしたので猶予消化
     }
@@ -96,7 +97,7 @@ public:
     void SetCoyoteTime(float time) { coyoteTimer_ = time; }
 
 private:
-    float jumpPower_ = 8.0f;
+    float jumpPower_ = 9.0f;
     mutable float coyoteTimer_ = 0.0f;
 };
 

@@ -21,9 +21,6 @@ void TestScene::Initialize() {
 
 	// 初期化処理
 
-	player_ = std::make_unique<Player3D>();
-	player_->Initialize(p_fngine_);
-
 	testPlayer_ = std::make_unique<Player>();
 	testPlayer_->Initialize(p_fngine_);
 
@@ -35,8 +32,6 @@ void TestScene::Initialize() {
 }
 
 void TestScene::Update() {
-
-	player_->Update();
 
 	testPlayer_->Update(1.0f / 60.0f);
 
@@ -54,7 +49,6 @@ void TestScene::Update() {
 void TestScene::Draw() {
 	
 	ground_->Draw();
-	player_->Draw();
 	testPlayer_->Draw();
 
 	p_fngine_->ChangeOSRsDSVHandleType(DSV_HANDLE_TYPE::ReadOnly);
