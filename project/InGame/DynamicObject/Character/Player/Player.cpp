@@ -15,7 +15,7 @@ Player::Player() {
 
 void Player::Initialize(Fngine* fngine) {
 	DynamicObject::Initialize(fngine, "Naira", "ulthimaSky");
-	transform_.set_.Translation({ 0.0f,1.4f,0.0f });
+	transform_.set_.Translation({ 0.0f,1.4f,-7.0f });
 
 	auto* render = AddComponent<RenderComponent>();
 	render->SetProvider<CharacterRenderProvider>();
@@ -40,7 +40,7 @@ void Player::Initialize(Fngine* fngine) {
 	// =========================================================
 	auto* rb = AddComponent<RigidBody>();
 	rb->SetBodyType(BodyType::Kinematic); // キャラクター物理
-	rb->SetUseGravity(true);
+	rb->SetUseGravity(false);
 
 	auto* status = AddComponent<StatusComponent>();
 	status->SetBaseStats(1000.0f, 100.0f, 50.0f, 6.0f); // HP, ATK, DEF, Speed
@@ -72,6 +72,8 @@ void Player::Initialize(Fngine* fngine) {
 		EVENTCATEGORY::UI, 0, this, &Player::SetHeadPosToCameraTarget
 	);
 	EventManager::GetInstance()->BindEventToTag(GAMEEVENTID::HairEditor, EVENTCATEGORY::UI, 0);
+
+	transform_.LocalToWorld();
 }
 
 void Player::Update(float deltaTime) {

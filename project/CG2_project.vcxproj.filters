@@ -182,6 +182,7 @@
     <ClCompile Include="Engine\Objects\Primitive\Character\PrimitiveCharcter.cpp" />
     <ClCompile Include="UsefulTool\StringPool.cpp" />
     <ClCompile Include="Engine\Objects\Primitive\Mesh\NormalMesh.cpp" />
+    <ClCompile Include="UsefulTool\Light\LightingSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\MathUtils\Physics\Collider\CollisionLayerManager.h" />
@@ -374,6 +375,7 @@
     <ClInclude Include="Engine\Objects\Primitive\Character\PrimitiveCharcter.h" />
     <ClInclude Include="UsefulTool\StringPool.h" />
     <ClInclude Include="Engine\Objects\Primitive\Mesh\NormalMesh.h" />
+    <ClInclude Include="UsefulTool\Light\LightingSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

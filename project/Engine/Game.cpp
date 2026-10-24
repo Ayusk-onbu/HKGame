@@ -9,8 +9,6 @@ void Game::Initialize() {
 	GlobalVariables::GetInstance()->LoadFiles();
 	scene_->SetUpFngine(*fngine_);
 	scene_->Initialize(*new GameScene());
-
-	fngine_->hair_->Initialize(fngine_.get(), false, {});
 }
 
 void Game::Run() {

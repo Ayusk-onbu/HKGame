@@ -65,18 +65,18 @@ void TextureManager::EndLoad() {
 
     if (!list || !queue) return;
 
-    // 1. 閉じて実行するだけ（リセットはしない！）
+    // 閉じて実行するだけ（リセットはしない！）
     list->Close();
     ID3D12CommandList* ppCommandLists[] = { list };
     queue->ExecuteCommandLists(1, ppCommandLists);
 
-    // 2. GPUが終わるのを絶対に待つ
+    // GPUが終わるのを絶対に待つ
     p_fngine_->GetTachyonSync().GetCGPU().Update(p_fngine_->GetCommand().GetQueue().GetQueue());
 
-    // 3. 中間リソースを捨てる
+    // 中間リソースを捨てる
     intermediateResources_.clear();
 
-	// 5. 【重要】次の描画のためにここでリセットしておく
+	// 次の描画のためにここでリセットしておく
 	HRESULT hr = p_fngine_->GetCommand().GetList().GetAllocator()->Reset();
 	assert(SUCCEEDED(hr));
 	hr = list->Reset(p_fngine_->GetCommand().GetList().GetAllocator().Get(), nullptr);

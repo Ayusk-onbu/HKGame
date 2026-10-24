@@ -15,6 +15,12 @@ public:
 		instance_.reset();
 	}
 
+	// --- コピー・ムーブを基底クラスで一括禁止 ---
+	ISingleton(const ISingleton&) = delete;
+	ISingleton& operator=(const ISingleton&) = delete;
+	ISingleton(ISingleton&&) = delete;
+	ISingleton& operator=(ISingleton&&) = delete;
+
 protected:
 	ISingleton() = default;
 	virtual ~ISingleton() = default;

@@ -1,5 +1,6 @@
 #include "SceneDirector.h"
 #include "CameraSystem.h"
+#include "LightingSystem.h"
 #include "ModelManager.h"
 #include "UIAnimation.h"
 #include "Chronos.h"
@@ -35,6 +36,8 @@ void SceneDirector::Initialize(Scene& firstScene) {
 	SDFManager::GetInstance()->BakeAll(p_fngine_->GetCommand().GetList().GetList().Get(),128);
 
 	ComponentFactory::GetInstance()->Initialize();
+
+	LightingSystem::GetInstance()->Initialize(p_fngine_);
 
 	// 最初のシーンの初期化処理
 	currentScene_ = &firstScene;

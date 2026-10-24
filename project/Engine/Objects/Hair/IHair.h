@@ -11,6 +11,7 @@ struct HairCamera {
 	float padding;             // 4の倍数にするためのパディング
 };
 
+// この構造体は絶対消す
 struct HairLightingParams {
 	Vector3 lightDirection = { 1.0f, 1.0f, -1.0f };
 	float pad0 = 0.0f;
@@ -96,6 +97,10 @@ public:
 		}
 	}
 
+	void SetMatrix(const Matrix4x4& mat) {
+		characterMatrix_ = mat;
+	}
+
 private:
 	Microsoft::WRL::ComPtr<ID3D12StateObject> CreateHairRaytracingPSO(
 		ID3D12Device5* device, // DXR対応のDevice5が必要
@@ -124,12 +129,21 @@ private:
 	//【定数バッファ】
 	std::unique_ptr<ConstantBuffer<GuideCurve::HairPhysicsConfig>>gpuPhysicsConfigBuffer_;// 髪全体の情報その物理
 	std::unique_ptr<ConstantBuffer<GuideCurve::FrameConfig>>gpuFrameConfigBuffer_;// 髪全体の情報その物理
-	std::unique_ptr<ConstantBuffer<Strands::HairConfig>>gpuConfigBuffer_;// 髪全体の情報その性質
 	std::unique_ptr<ConstantBuffer<Strands::HairMakeConfig>>gpuMakeConfigBuffer_;// 髪全体の情報その性質
+
+	// 追加
+	std::unique_ptr<ConstantBuffer<HairMaterialParameter>>gpuHairMaterialParameterBuffer_;// 髪の調整用パラメーター全部
+	std::unique_ptr<ConstantBuffer<HairSceneParameter>>gpuHairSceneParameterBuffer_;
+
+	// このデータって使ってるん？
+	std::unique_ptr<ConstantBuffer<Strands::HairConfig>>gpuConfigBuffer_;// 髪全体の情報その性質
+
+	// このデータはLightingSystemに変更する
 	std::unique_ptr<ConstantBuffer<HairLightingParams>>hairLightingParamsBuffer_;// 髪の光の情報
 
 	std::unique_ptr<Structured<GuideCurve::ControllerPoint>> uploadGuideBuffer;// データ転送用バッファ
 	std::unique_ptr<Structured<GuideCurve::GuideInfo>>guideInfoBuffer_;
+
 	std::unique_ptr<Structured<Strands::ChildStrand>>gpuChildStrandBuffer_;// ストランド生成に必要な情報
 	std::unique_ptr<Structured<Strands::StrandInfo>> strandInfoBuffer_;
 	
@@ -145,11 +159,11 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> scratchBuffer_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> blasResultBuffer_;
 	
-	// 加速構造体（TLAS）用のリソース：これは世界で一個のみかな
+	// 加速構造体（TLAS）用のリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> tlasScratchBuffer_;
 	Microsoft::WRL::ComPtr<ID3D12Resource> tlasResultBuffer_;
 
-	// シェーダーバイディングテーブル（SBT）用のリソース（※名前は環境に合わせて調整してね）
+	// シェーダーバイディングテーブル（SBT）用のリソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> sbtBuffer_;
 
 	// ディスパッチの設定を保持する構造体

@@ -54,7 +54,6 @@ Texture2D<float32_t> SceneDepth : register(t2);
 ConstantBuffer<Camera> gCamera : register(b0);
 
 ConstantBuffer<HairLightingParams> g_LightingParams : register(b1);
-
 // UAV
 RWTexture2D<float32_t4> gOutput : register(u0);
 
@@ -373,6 +372,7 @@ float3 EvaluateHair_RPath(
     // -------------------------------------------------------------
     // 6. 最終 BSDF 出力 (BSDF * cosThetaI)
     // -------------------------------------------------------------
+    //float specIntensity = g_LightingParams.lightIntensity;
     float specIntensity = g_LightingParams.lightIntensity;
     float3 S_R = lightColor * (Mp * Np * invCos2ThetaD * cosThetaI) * specIntensity;
     

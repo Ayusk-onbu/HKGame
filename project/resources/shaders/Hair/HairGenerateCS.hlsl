@@ -5,7 +5,7 @@ StructuredBuffer<ChildStrand> g_InChildStrandBuffer : register(t1); // 子髪の
 StructuredBuffer<StrandInfo> g_StrandInfoBuffer : register(t2);
 StructuredBuffer<GuideInfo> g_GuideInfoBuffer : register(t3);
 RWStructuredBuffer<StrandVertex> g_OutVertexBuffer : register(u0);
-ConstantBuffer<HairMakeConfig> g_HairMakeConfig : register(b0);
+ConstantBuffer<HairMaterialParameter> g_HairMaterialPara : register(b0);
 ConstantBuffer<HairConfig> gHairConfig : register(b1);
 
 float3 CatmullRom(float3 p0, float3 p1, float3 p2, float3 p3, float t)
@@ -140,7 +140,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
         outVertex.position = currentPos + offset3D;
 
         float tipTaper = 1.0 - (progress * 0.5);
-        outVertex.radius = currentRadius * tipTaper * g_HairMakeConfig.globalHairThickness;
+        outVertex.radius = currentRadius * tipTaper * g_HairMaterialPara.gGlobalHairThickness;
 
         outVertex.color = currentColor;
         outVertex.padding = 0.0;

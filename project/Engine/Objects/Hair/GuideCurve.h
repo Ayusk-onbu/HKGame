@@ -17,9 +17,13 @@ namespace GuideCurve {
 		float nextToLength;// 次のポイントへの長さ
 		Vector3 homePosition;// 最初の固定値
 		float physicsWeight;// 物理演算影響率(根元 0.0 ～ 毛先 1.0)
+
+		// 物理的な挙動をさせるために追加
+		Vector3 velocity;// 速度
+		float padding;
 	};
 	
-	// 物理演算のための髪の情報
+	// 物理演算のための髪の情報 キャラクターごとのパラメータ
 	struct  HairPhysicsConfig {
 		float stiffness;// 剛性
 		float restoringForce;// 復元力
@@ -41,18 +45,24 @@ namespace GuideCurve {
 	// 【実行時のみのデータ】
 	// --------------------------------------------------
 
+	// なんだこのくそ設計は
 	struct FrameConfig
 	{
 		// 重力ベクトル (例: 0, -9.8, 0)
-		Vector3 gravity;
+		Vector3 gravity;// 一旦一個
+
 		// 前フレームからの経過時間
-		float deltaTime; 
+		float deltaTime; // ikko
+
 		// 風の向きと強さ
-		Vector3 windDirection;
+		Vector3 windDirection;// 一個
+
 		// 経過時間（風のうねり用）
-		float time; 
+		float time; // 一個
+
 		// 動いた方向
-		Vector3 moveDirection;
+		Vector3 moveDirection;// キャラクターごとに違う
+
 		// カス
 		float padding;
 	};
@@ -61,6 +71,7 @@ namespace GuideCurve {
 		std::vector<GuideHear>guides;
 	};// うーん
 
+	// 保存する必要はなさそう（速度）
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ControllerPoint, position, radius, color, nextToLength, homePosition, physicsWeight)
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(HairPhysicsConfig, stiffness, restoringForce, damping, padding)
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GuideInfo, vertexStartIndex, vertexCount)
@@ -97,6 +108,7 @@ namespace Strands {
 	};// 計算するほうがだるい
 
 	// 髪の見た目を調整するデータ
+	// キャラクターごとのパラメータ
 	struct HairMakeConfig {
 		float globalSpreadRadius; // 全体の広がり
 		float globalHairThickness; // 全体の太さ倍率
@@ -163,3 +175,34 @@ namespace Strands {
 	// HairSaveData をルートとして、全ての vector を一括シリアライズ
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(HairSaveData, physicsConfig, makeConfig, hairConfig, points, guideInfo, childStrands, strandInfos, segments)
 }
+
+struct HairMaterialParameter {
+	float stiffness;// 剛性
+	float restoringForce;// 復元力
+	float damping;// 減衰力
+	float globalHairThickness; // 全体の太さ倍率
+
+	float globalSpreadRadius; // 全体の広がり
+	float roughness;          // 粗さ
+	float shift;              // 天使の輪のズレ
+	float specular;           // ハイライトの強度
+
+	float scatter;            // 多重散乱強度
+	Vector3 moveDirection;// 動いた方向
+
+	Matrix4x4 mat;// 追従先のMatrix
+};
+
+struct HairSceneParameter {
+	// 重力ベクトル (例: 0, -9.8, 0)
+	Vector3 gravity;// 一旦一個
+
+	// 前フレームからの経過時間
+	float deltaTime; // ikko
+
+	// 風の向きと強さ
+	Vector3 windDirection;// 一個
+
+	// 経過時間（風のうねり用）
+	float time; // 一個
+};

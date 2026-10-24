@@ -231,7 +231,7 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	//   ====================
 	// -----------------------------------------------
 
-		// ■engineの情報を取得
+	// ■engineの情報を取得
 	engine_ = engine;
 
 	// ■【 RayTracingを使用するために4にキャストしたコマンドリストを取得 】
@@ -243,7 +243,7 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 
 	// -----------------------------------------------
 
-		// ■キャンバスを作成
+	// ■キャンバスを作成
 	outputTexture_ = std::make_unique<RWTexture2D>();
 	// ■フォーマットはエンジンのスワップチェーンに合わせる (例: DXGI_FORMAT_R8G8B8A8_UNORM)
 	outputTexture_->Initialize(engine, 1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM);
@@ -254,9 +254,9 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 
 	// -----------------------------------------------
 
-		// ----------------------
-		// 【 髪への物理の性質 】
-		// ----------------------
+	// ----------------------
+	// 【 髪への物理の性質 】
+	// ----------------------
 	GuideCurve::FrameConfig frameConfig;
 	frameConfig.gravity = { 0.0f, -0.5f,-0.4f };
 	frameConfig.deltaTime = 1.0f / 60.0f;
@@ -269,6 +269,34 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	gpuFrameConfigBuffer_->Initialize();
 	std::memcpy(gpuFrameConfigBuffer_->GetMappedData(), &frameConfig, sizeof(GuideCurve::FrameConfig));
 
+	// -------------------
+	// 【 髪のマテリアル 】
+	// -------------------
+	HairMaterialParameter materialParameter;
+	gpuHairMaterialParameterBuffer_ = std::make_unique<ConstantBuffer<HairMaterialParameter>>(engine);
+	gpuHairMaterialParameterBuffer_->Initialize();
+
+	materialParameter.shift = 0.10f;
+	materialParameter.roughness = 1.0f;
+	materialParameter.specular = 1.0f;
+	materialParameter.scatter = 1.0f;
+	materialParameter.moveDirection = { 0.0f,0.0f,0.0f };
+	materialParameter.mat = characterMatrix_;
+
+	// -------------------
+	// 【 髪のSceneデータ 】
+	// -------------------
+	HairSceneParameter sceneParameter;
+	gpuHairSceneParameterBuffer_ = std::make_unique<ConstantBuffer<HairSceneParameter>>(engine);
+	gpuHairSceneParameterBuffer_->Initialize();
+
+	sceneParameter.gravity = { 0.0f,-0.98f,-0.0f };
+	sceneParameter.windDirection = { -0.0f,0.0f,0.2f };
+	sceneParameter.time = 0.0f;
+	sceneParameter.deltaTime = 1.0f / 60.0f;
+	std::memcpy(gpuHairSceneParameterBuffer_->GetMappedData(), &sceneParameter, sizeof(HairSceneParameter));
+
+#pragma region 消す予定のデータ
 	// ------------------------
 	// 【 髪への光に関する情報 】
 	// ------------------------
@@ -282,6 +310,7 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	hairLightingParamsBuffer_ = std::make_unique<ConstantBuffer<HairLightingParams>>(engine);
 	hairLightingParamsBuffer_->Initialize();
 	std::memcpy(hairLightingParamsBuffer_->GetMappedData(), &lightingConfig, sizeof(HairLightingParams));
+#pragma endregion
 
 	// -------------------
 	//
@@ -395,8 +424,19 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 		makeConfig.paddings[1] = 0.0f;
 		std::memcpy(gpuMakeConfigBuffer_->GetMappedData(), &makeConfig, sizeof(Strands::HairMakeConfig));
 
+
+		// ------------------
+		// 【 髪のMaterial 】
+		// ------------------
+		materialParameter.stiffness = 50.4f;
+		materialParameter.restoringForce = 50.2f;
+		materialParameter.damping = 0.96f;
+		materialParameter.globalSpreadRadius = 0.05f;
+		materialParameter.globalHairThickness = 1.0f;
+		std::memcpy(gpuHairMaterialParameterBuffer_->GetMappedData(), &materialParameter, sizeof(HairMaterialParameter));
+
 		// -------------------------
-		// 【 髪の物理に対する性質 】最大数かな???
+		// 【 髪の物理に対する性質 】最大数かな??? これいらんやろ
 		// -------------------------
 		hairConfig.numGuides = 1000;       // ガイドの総本数：1000
 		hairConfig.pointPerGuide = 16;      // ガイド一本を作る最大数：16
@@ -460,8 +500,11 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	dxrCmdList_->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("HairPhysicsCS").GetRootSignature().GetRS().Get());
 	dxrCmdList_->SetPipelineState(PSOManager::GetInstance()->GetPSO("HairPhysicsCS").GetCPS().Get());
 
-	dxrCmdList_->SetComputeRootConstantBufferView(0, gpuPhysicsConfigBuffer_->GetGPUVirtualAddress());
-	dxrCmdList_->SetComputeRootConstantBufferView(1, gpuFrameConfigBuffer_->GetGPUVirtualAddress());
+	/*dxrCmdList_->SetComputeRootConstantBufferView(0, gpuPhysicsConfigBuffer_->GetGPUVirtualAddress());
+	dxrCmdList_->SetComputeRootConstantBufferView(1, gpuFrameConfigBuffer_->GetGPUVirtualAddress());*/
+
+	dxrCmdList_->SetComputeRootConstantBufferView(0, gpuHairMaterialParameterBuffer_->GetGPUVirtualAddress());
+	dxrCmdList_->SetComputeRootConstantBufferView(1, gpuHairSceneParameterBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootConstantBufferView(2, gpuConfigBuffer_->GetGPUVirtualAddress());
 	uint32_t id = StringPool::GetInstance()->GetStringID("Naira_ExportTest");
 	dxrCmdList_->SetComputeRootConstantBufferView(3, SDFManager::GetInstance()->tempBakeResources_[id].configBuffer->GetGPUVirtualAddress());
@@ -574,7 +617,7 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	dxrCmdList_->SetComputeRootDescriptorTable(2, strandInfoBuffer_->GetSRVHandleGPU());
 	dxrCmdList_->SetComputeRootDescriptorTable(3, guideInfoBuffer_->GetSRVHandleGPU());
 	dxrCmdList_->SetComputeRootDescriptorTable(4, hairVertexBuffer_->GetUAVHandleGPU());
-	dxrCmdList_->SetComputeRootConstantBufferView(5, gpuMakeConfigBuffer_->GetGPUVirtualAddress());
+	dxrCmdList_->SetComputeRootConstantBufferView(5, gpuHairMaterialParameterBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootConstantBufferView(6, gpuConfigBuffer_->GetGPUVirtualAddress());
 
 	dxrCmdList_->Dispatch(generateGroupX, 1, 1);
@@ -1018,9 +1061,15 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 
 	auto chronos = Chronos::GetInstance();
+	characterMatrix_ = mat;
 
-	gpuFrameConfigBuffer_->GetMappedData()->deltaTime = chronos->GetGameDeltaTime();
-	gpuFrameConfigBuffer_->GetMappedData()->time = chronos->GetGameTime();
+	gpuHairMaterialParameterBuffer_->GetMappedData()->mat = Matrix4x4::Transpose(characterMatrix_);
+
+	gpuHairSceneParameterBuffer_->GetMappedData()->deltaTime = chronos->GetGameDeltaTime();
+	gpuHairSceneParameterBuffer_->GetMappedData()->time = chronos->GetGameTime();
+
+	//gpuFrameConfigBuffer_->GetMappedData()->deltaTime = chronos->GetGameDeltaTime();
+	//gpuFrameConfigBuffer_->GetMappedData()->time = chronos->GetGameTime();
 
 	// mat から現在の位置を抽出
 	Vector3 currentPos = { mat.m[3][0], mat.m[3][1], mat.m[3][2] };
@@ -1030,15 +1079,26 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 		Vector3 worldMove = currentPos - prevPosition_;
 
 		// 2. キャラクターの回転を打ち消してローカル移動ベクトルに変換（回転行列の転置を乗算）
-		Vector3 localMove;
+		/*Vector3 localMove;
 		localMove.x = worldMove.x * mat.m[0][0] + worldMove.y * mat.m[0][1] + worldMove.z * mat.m[0][2];
 		localMove.y = worldMove.x * mat.m[1][0] + worldMove.y * mat.m[1][1] + worldMove.z * mat.m[1][2];
-		localMove.z = worldMove.x * mat.m[2][0] + worldMove.y * mat.m[2][1] + worldMove.z * mat.m[2][2];
+		localMove.z = worldMove.x * mat.m[2][0] + worldMove.y * mat.m[2][1] + worldMove.z * mat.m[2][2];*/
 
 		// ローカル変換した移動量をセット
-		gpuFrameConfigBuffer_->GetMappedData()->moveDirection = localMove;
+		//gpuFrameConfigBuffer_->GetMappedData()->moveDirection = worldMove;
+		gpuHairMaterialParameterBuffer_->GetMappedData()->moveDirection = worldMove;
 	}
 	else {
+		if (uploadGuideBuffer) {
+			auto* points = uploadGuideBuffer->GetMappedData();
+			uint32_t count = uploadGuideBuffer->GetNumElements();
+			for (uint32_t i = 0; i < count; ++i) {
+				// homePosition(ローカル) を ワールド座標 に初回変換
+				points[i].position = Matrix4x4::Transform(points[i].homePosition, mat);
+				points[i].velocity = Vector3(0.0f, 0.0f, 0.0f);
+			}
+			RequestNotifyUpdate(); // GPUへの転送をリクエスト
+		}
 		isFirstFrame_ = false;
 	}
 	prevPosition_ = currentPos;
@@ -1106,8 +1166,8 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	dxrCmdList_->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("HairPhysicsCS").GetRootSignature().GetRS().Get());
 	dxrCmdList_->SetPipelineState(PSOManager::GetInstance()->GetPSO("HairPhysicsCS").GetCPS().Get());
 
-	dxrCmdList_->SetComputeRootConstantBufferView(0, gpuPhysicsConfigBuffer_->GetGPUVirtualAddress());
-	dxrCmdList_->SetComputeRootConstantBufferView(1, gpuFrameConfigBuffer_->GetGPUVirtualAddress());
+	dxrCmdList_->SetComputeRootConstantBufferView(0, gpuHairMaterialParameterBuffer_->GetGPUVirtualAddress());
+	dxrCmdList_->SetComputeRootConstantBufferView(1, gpuHairSceneParameterBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootConstantBufferView(2, gpuConfigBuffer_->GetGPUVirtualAddress());
 	uint32_t id = StringPool::GetInstance()->GetStringID("Naira_ExportTest");
 	dxrCmdList_->SetComputeRootConstantBufferView(3, SDFManager::GetInstance()->tempBakeResources_[id].configBuffer->GetGPUVirtualAddress());
@@ -1137,7 +1197,7 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	dxrCmdList_->SetComputeRootDescriptorTable(2, strandInfoBuffer_->GetSRVHandleGPU());
 	dxrCmdList_->SetComputeRootDescriptorTable(3, guideInfoBuffer_->GetSRVHandleGPU());
 	dxrCmdList_->SetComputeRootDescriptorTable(4, hairVertexBuffer_->GetUAVHandleGPU());
-	dxrCmdList_->SetComputeRootConstantBufferView(5, gpuMakeConfigBuffer_->GetGPUVirtualAddress());
+	dxrCmdList_->SetComputeRootConstantBufferView(5, gpuHairMaterialParameterBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootConstantBufferView(6, gpuConfigBuffer_->GetGPUVirtualAddress());
 
 	dxrCmdList_->Dispatch(generateGroupX, 1, 1);
@@ -1257,22 +1317,20 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 		//   ================
 	// -----------------------------------------------
 
-	instanceBuffer->GetMappedData()->Transform[0][0] = mat.m[0][0];
-	instanceBuffer->GetMappedData()->Transform[0][1] = mat.m[1][0];
-	instanceBuffer->GetMappedData()->Transform[0][2] = mat.m[2][0];
-	instanceBuffer->GetMappedData()->Transform[0][3] = mat.m[3][0];
+	Matrix4x4 identity = Matrix4x4::Make::Identity();
 
-	instanceBuffer->GetMappedData()->Transform[1][0] = mat.m[0][1];
-	instanceBuffer->GetMappedData()->Transform[1][1] = mat.m[1][1];
-	instanceBuffer->GetMappedData()->Transform[1][2] = mat.m[2][1];
-	instanceBuffer->GetMappedData()->Transform[1][3] = mat.m[3][1];
-
-	instanceBuffer->GetMappedData()->Transform[2][0] = mat.m[0][2];
-	instanceBuffer->GetMappedData()->Transform[2][1] = mat.m[1][2];
-	instanceBuffer->GetMappedData()->Transform[2][2] = mat.m[2][2];
-	instanceBuffer->GetMappedData()->Transform[2][3] = mat.m[3][2];
-
-	characterMatrix_ = mat;
+	instanceBuffer->GetMappedData()->Transform[0][0] = identity.m[0][0];
+	instanceBuffer->GetMappedData()->Transform[0][1] = identity.m[1][0];
+	instanceBuffer->GetMappedData()->Transform[0][2] = identity.m[2][0];
+	instanceBuffer->GetMappedData()->Transform[0][3] = identity.m[3][0];
+	instanceBuffer->GetMappedData()->Transform[1][0] = identity.m[0][1];
+	instanceBuffer->GetMappedData()->Transform[1][1] = identity.m[1][1];
+	instanceBuffer->GetMappedData()->Transform[1][2] = identity.m[2][1];
+	instanceBuffer->GetMappedData()->Transform[1][3] = identity.m[3][1];
+	instanceBuffer->GetMappedData()->Transform[2][0] = identity.m[0][2];
+	instanceBuffer->GetMappedData()->Transform[2][1] = identity.m[1][2];
+	instanceBuffer->GetMappedData()->Transform[2][2] = identity.m[2][2];
+	instanceBuffer->GetMappedData()->Transform[2][3] = identity.m[3][2];
 
 	// -----------------------------------------------
 
@@ -1306,14 +1364,16 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	// -----------------------------------------------
 #ifdef USE_IMGUI
 	ImGui::Begin("Hair");
-	ImGui::DragFloat3("gravity", &gpuFrameConfigBuffer_->GetMappedData()->gravity.x, 0.01f, -1.0f, 1.0f);
-	ImGui::DragFloat3("Wind Direction ", &gpuFrameConfigBuffer_->GetMappedData()->windDirection.x, 0.01f, -1.0f, 1.0f);
+	ImGui::DragFloat3("gravity", &gpuHairSceneParameterBuffer_->GetMappedData()->gravity.x, 0.01f, -1.0f, 1.0f);
+	
+	
+	ImGui::DragFloat3("Wind Direction ", &gpuHairSceneParameterBuffer_->GetMappedData()->windDirection.x, 0.01f, -1.0f, 1.0f);
 
-	ImGui::DragFloat("globalHairThickness ", &gpuMakeConfigBuffer_->GetMappedData()->globalHairThickness, 0.0001f, 0.0f, 1.0f);
-	ImGui::DragFloat("globalSpreadRadius ", &gpuMakeConfigBuffer_->GetMappedData()->globalSpreadRadius, 0.0001f, 0.0f, 1.0f);
-	ImGui::DragFloat("stiffness：剛性 ", &gpuPhysicsConfigBuffer_->GetMappedData()->stiffness, 0.0001f, 0.0f, 1.0f);
-	ImGui::DragFloat("restoringForce：復元力", &gpuPhysicsConfigBuffer_->GetMappedData()->restoringForce, 0.0001f, 0.0f, 1.0f);
-	ImGui::DragFloat("damping：減衰力", &gpuPhysicsConfigBuffer_->GetMappedData()->damping, 0.0001f, 0.0f, 1.0f);
+	ImGui::DragFloat("globalHairThickness ", &gpuHairMaterialParameterBuffer_->GetMappedData()->globalHairThickness, 0.0001f, 0.0f, 1.0f);
+	ImGui::DragFloat("globalSpreadRadius ", &gpuHairMaterialParameterBuffer_->GetMappedData()->globalSpreadRadius, 0.0001f, 0.0f, 1.0f);
+	ImGui::DragFloat("stiffness：剛性 ", &gpuHairMaterialParameterBuffer_->GetMappedData()->stiffness, 0.0001f, 0.0f, 1.0f);
+	ImGui::DragFloat("restoringForce：復元力", &gpuHairMaterialParameterBuffer_->GetMappedData()->restoringForce, 0.0001f, 0.0f, 1.0f);
+	ImGui::DragFloat("damping：減衰力", &gpuHairMaterialParameterBuffer_->GetMappedData()->damping, 0.0001f, 0.0f, 1.0f);
 
 	// --- ライティング・見た目の設定 ---
 	ImGui::Separator(); // 境界線
@@ -1333,7 +1393,7 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 
 	// 天使の輪のズレ（シフト）
 	// 左右にスライドすると、天使の輪が毛先側・根元側にリアルタイムで上下移動します
-	ImGui::DragFloat("天使の輪の位置 (シフト)", &hairLightingParamsBuffer_->GetMappedData()->hairShift, 0.005f, -0.5f, 0.5f);
+	ImGui::DragFloat("天使の輪の位置 (シフト)", &gpuHairMaterialParameterBuffer_->GetMappedData()->shift, 0.005f, -0.5f, 0.5f);
 
 	// 天使の輪のシャープさ
 	// 小さいとボヤッと全体が光り、大きくするとキュッと細い綺麗な輪になります
@@ -1564,6 +1624,12 @@ bool Hair::LoadFromFile(const std::string& filename) {
 
 	// 各バッファにmemcpyで流し込む（すでに確保されている最大サイズを超えないように std::min で制限！）
 	if (uploadGuideBuffer && !loadedData.points.empty()) {
+
+		for (auto& point : loadedData.points) {
+			point.position = Matrix4x4::Transform(point.homePosition, characterMatrix_);
+			point.velocity = { 0.0f,0.0f,0.0f };
+		}
+
 		size_t copyCount = (std::min)((size_t)uploadGuideBuffer->GetNumElements(), loadedData.points.size());
 		std::memcpy(uploadGuideBuffer->GetMappedData(), loadedData.points.data(), copyCount * sizeof(GuideCurve::ControllerPoint));
 	}
