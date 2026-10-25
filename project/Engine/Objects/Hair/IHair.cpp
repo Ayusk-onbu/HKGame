@@ -229,45 +229,23 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	//   ====================
 	// 【 初期化時の共通処理 】
 	//   ====================
-	// -----------------------------------------------
-
 	// ■engineの情報を取得
 	engine_ = engine;
-
+	auto commandList = engine->GetCommand().GetList().GetList();
 	// ■【 RayTracingを使用するために4にキャストしたコマンドリストを取得 】
-	engine->GetCommand().GetList().GetList().As(&dxrCmdList_);
+	commandList.As(&dxrCmdList_);
+
 #ifdef USE_IMGUI
 	// PIXイベントを開始
 	PIXScopedEvent(dxrCmdList_.Get(), PIX_COLOR_INDEX(2), "Initialize Hair Pass");
 #endif// USEIMGUI
 
-	// -----------------------------------------------
 
-	// ■キャンバスを作成
+	// ■出力先のTextureを作成
 	outputTexture_ = std::make_unique<RWTexture2D>();
-	// ■フォーマットはエンジンのスワップチェーンに合わせる (例: DXGI_FORMAT_R8G8B8A8_UNORM)
 	outputTexture_->Initialize(engine, 1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM);
 	outputTexture_->GetResource()->SetName(L"HairOutputTexture");
-
-	// ■DXRに渡すためのGPUハンドルをメンバ変数に保存！
 	renderTargetUAVHandleGPU_ = outputTexture_->GetUAVHandleGPU();
-
-	// -----------------------------------------------
-
-	// ----------------------
-	// 【 髪への物理の性質 】
-	// ----------------------
-	GuideCurve::FrameConfig frameConfig;
-	frameConfig.gravity = { 0.0f, -0.5f,-0.4f };
-	frameConfig.deltaTime = 1.0f / 60.0f;
-	frameConfig.windDirection = { -0.0f,0.0f,0.2f };
-	frameConfig.time = 0.0f;
-	frameConfig.moveDirection = { 0.0f,0.0f,0.0f };
-	frameConfig.padding = 0.0f;
-
-	gpuFrameConfigBuffer_ = std::make_unique<ConstantBuffer<GuideCurve::FrameConfig>>(engine);
-	gpuFrameConfigBuffer_->Initialize();
-	std::memcpy(gpuFrameConfigBuffer_->GetMappedData(), &frameConfig, sizeof(GuideCurve::FrameConfig));
 
 	// -------------------
 	// 【 髪のマテリアル 】
@@ -296,6 +274,9 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	sceneParameter.deltaTime = 1.0f / 60.0f;
 	std::memcpy(gpuHairSceneParameterBuffer_->GetMappedData(), &sceneParameter, sizeof(HairSceneParameter));
 
+	gpuConfigBuffer_ = std::make_unique<ConstantBuffer<Strands::HairConfig>>(engine);
+	gpuConfigBuffer_->Initialize();
+
 #pragma region 消す予定のデータ
 	// ------------------------
 	// 【 髪への光に関する情報 】
@@ -317,40 +298,16 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	// 【　Bufferの初期化　】
 	//
 	// --------------------
-	gpuPhysicsConfigBuffer_ = std::make_unique<ConstantBuffer<GuideCurve::HairPhysicsConfig>>(engine);
-	gpuPhysicsConfigBuffer_->Initialize();
-
-	gpuMakeConfigBuffer_ = std::make_unique<ConstantBuffer<Strands::HairMakeConfig>>(engine);
-	gpuMakeConfigBuffer_->Initialize();
-
-	gpuConfigBuffer_ = std::make_unique<ConstantBuffer<Strands::HairConfig>>(engine);
-	gpuConfigBuffer_->Initialize();
-
 	guideInfoBuffer_ = std::make_unique<Structured<GuideCurve::GuideInfo>>(engine);
-
 	strandInfoBuffer_ = std::make_unique<Structured<Strands::StrandInfo>>(engine);
 
 	// ガイドの総本数：Load - 取得　作成 - 作成
-	uint32_t totalGuides;
-
+	uint32_t totalGuides = 0;
+	UINT NUM_STRANDS = 0;
+	UINT totalVertices = 0;
 	Strands::HairConfig hairConfig;// Loadするもの
 
-	// =====================================
-	//
-	// 【 データをLoadして作成するタイプ 】
-	//
-	// =====================================
 	if (isLoad == true) {
-		// -------------------------
-		// 【 髪の物理に対する性質 】
-		// -------------------------
-		std::memcpy(gpuPhysicsConfigBuffer_->GetMappedData(), &savedata.physicsConfig, sizeof(GuideCurve::HairPhysicsConfig));
-
-		// --------------
-		// 【 髪の性質 】
-		// --------------
-		std::memcpy(gpuMakeConfigBuffer_->GetMappedData(), &savedata.makeConfig, sizeof(Strands::HairMakeConfig));
-
 		// --------------------------------
 		// 【 ガイドを参照するための情報 】
 		// --------------------------------
@@ -360,11 +317,8 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 		// ------------------
 		// 【 ガイドを作成 】
 		// ------------------
-		uint32_t controllerPointCount = static_cast<uint32_t>(savedata.points.size());
-
-		// Loadパターンの総ガイド数はおそらくGuideInfoのSize
-		//totalGuides = savedata.guideInfo.size();
 		totalGuides = savedata.hairConfig.numGuides;
+		uint32_t controllerPointCount = static_cast<uint32_t>(savedata.points.size());
 
 		// UAVの作成
 		gpuGuideBuffer_ = std::make_unique<RWStructured<GuideCurve::ControllerPoint>>(engine);
@@ -374,60 +328,21 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 		uploadGuideBuffer->Initialize(controllerPointCount);
 		std::memcpy(uploadGuideBuffer->GetMappedData(), savedata.points.data(), sizeof(GuideCurve::ControllerPoint) * controllerPointCount);
 
-		// コピー先に遷移
-		auto transitionToCopyDest = CD3DX12_RESOURCE_BARRIER::Transition(
-			gpuGuideBuffer_->GetResource(),
-			D3D12_RESOURCE_STATE_COMMON,
-			D3D12_RESOURCE_STATE_COPY_DEST);
-
-		// バリア開始
-		D3D12_RESOURCE_BARRIER barriers[] = { transitionToCopyDest };
-		dxrCmdList_->ResourceBarrier(1, barriers);
-
-		// コピー開始
-		dxrCmdList_->CopyResource(gpuGuideBuffer_->GetResource(), uploadGuideBuffer->GetResource());
-
-		// コピーが終わったら、UAVバッファを「UAVとして使える状態」に戻す
-		auto transitionToUAV = CD3DX12_RESOURCE_BARRIER::Transition(
-			gpuGuideBuffer_->GetResource(),
-			D3D12_RESOURCE_STATE_COPY_DEST,
-			D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		dxrCmdList_->ResourceBarrier(1, &transitionToUAV);
-
 		strandInfoBuffer_->Initialize(static_cast<uint32_t>(savedata.strandInfos.size()));
 		std::memcpy(strandInfoBuffer_->GetMappedData(), savedata.strandInfos.data(), sizeof(Strands::StrandInfo) * savedata.strandInfos.size());
-	}
-	// =====================================
-	//
-	// 【 データを作成して作成するタイプ 】
-	//   もしかして：ObjectPool
-	// =====================================
+
+		NUM_STRANDS = static_cast<UINT>(savedata.hairConfig.numStrands);
+		gpuChildStrandBuffer_ = std::make_unique<Structured<Strands::ChildStrand>>(engine);
+		gpuChildStrandBuffer_->Initialize(static_cast<UINT>(savedata.childStrands.size()));
+		std::memcpy(gpuChildStrandBuffer_->GetMappedData(), savedata.childStrands.data(), sizeof(Strands::ChildStrand) * savedata.childStrands.size());
+		Log::View("Child strands loaded from save data.");
+
+		for (const auto& info : savedata.strandInfos) {
+			totalVertices += static_cast<UINT>(info.vertexCount);
+		}
+	}	
 	else {
-
-		// -------------------------
-		// 【 髪の物理に対する性質 】
-		// -------------------------
-		GuideCurve::HairPhysicsConfig commonPhysics;
-		commonPhysics.stiffness = 0.4f;
-		commonPhysics.restoringForce = 0.2f;
-		commonPhysics.damping = 0.96f;
-		commonPhysics.padding = 0.0f;
-		std::memcpy(gpuPhysicsConfigBuffer_->GetMappedData(), &commonPhysics, sizeof(GuideCurve::HairPhysicsConfig));
-
-		// --------------
-		// 【 髪の性質 】
-		// --------------
-		Strands::HairMakeConfig makeConfig;
-		makeConfig.globalSpreadRadius = 0.05f;//
-		makeConfig.globalHairThickness = 1.0f;
-		makeConfig.paddings[0] = 0.0f;
-		makeConfig.paddings[1] = 0.0f;
-		std::memcpy(gpuMakeConfigBuffer_->GetMappedData(), &makeConfig, sizeof(Strands::HairMakeConfig));
-
-
-		// ------------------
-		// 【 髪のMaterial 】
-		// ------------------
+		// --- 髪のMaterial ---
 		materialParameter.stiffness = 50.4f;
 		materialParameter.restoringForce = 50.2f;
 		materialParameter.damping = 0.96f;
@@ -435,21 +350,18 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 		materialParameter.globalHairThickness = 1.0f;
 		std::memcpy(gpuHairMaterialParameterBuffer_->GetMappedData(), &materialParameter, sizeof(HairMaterialParameter));
 
-		// -------------------------
-		// 【 髪の物理に対する性質 】最大数かな??? これいらんやろ
-		// -------------------------
+		// 最大数
 		hairConfig.numGuides = 1000;       // ガイドの総本数：1000
 		hairConfig.pointPerGuide = 16;      // ガイド一本を作る最大数：16
 		hairConfig.pointPerStrand = 32;     // ストランド一本を作る数：32
 		hairConfig.numStrands = 50000.0f;     // ストランドの総本数：10000
 		std::memcpy(gpuConfigBuffer_->GetMappedData(), &hairConfig, sizeof(Strands::HairConfig));
 
+		totalGuides = hairConfig.numGuides;
 		// ガイドを構成する頂点数の合計 = ガイドの本数 x ガイドを構成する頂点数
 		UINT controllerPointSum = static_cast<UINT>(hairConfig.numGuides * hairConfig.pointPerGuide);
 
 		guideInfoBuffer_->Initialize(hairConfig.numGuides);
-
-		totalGuides = hairConfig.numGuides;
 
 		// UAVの作成：ガイドを管理するためのBuffer
 		gpuGuideBuffer_ = std::make_unique<RWStructured<GuideCurve::ControllerPoint>>(engine);
@@ -459,101 +371,12 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 		uploadGuideBuffer = std::make_unique<Structured<GuideCurve::ControllerPoint>>(engine);
 		uploadGuideBuffer->Initialize(controllerPointSum);
 
-		// ----------------
-		// 【 コピー処理 】
-		// ----------------
-		// コピー先に遷移
-		auto transitionToCopyDest = CD3DX12_RESOURCE_BARRIER::Transition(
-			gpuGuideBuffer_->GetResource(),
-			D3D12_RESOURCE_STATE_COMMON,
-			D3D12_RESOURCE_STATE_COPY_DEST);
-
-		// バリア開始
-		D3D12_RESOURCE_BARRIER barriers[] = { transitionToCopyDest };
-		dxrCmdList_->ResourceBarrier(1, barriers);
-
-		// コピー開始
-		dxrCmdList_->CopyResource(gpuGuideBuffer_->GetResource(), uploadGuideBuffer->GetResource());
-
-		// コピーが終わったら、UAVバッファを「UAVとして使える状態」に戻す
-		auto transitionToUAV = CD3DX12_RESOURCE_BARRIER::Transition(
-			gpuGuideBuffer_->GetResource(),
-			D3D12_RESOURCE_STATE_COPY_DEST,
-			D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-		dxrCmdList_->ResourceBarrier(1, &transitionToUAV);
-
 		strandInfoBuffer_->Initialize(static_cast<uint32_t>(hairConfig.numStrands * hairConfig.pointPerStrand));
-	}
-	// -----------------------------------------------------------------
-	// -----------------------------------------------------------------
 
-	//uint32_t physicsGroupX = (totalGuides + 63) / 64;
-	uint32_t physicsGroupX = (totalGuides) / 64;
-
-	//   =====================
-	// 【 HairGuideの物理演算 】
-	//   =====================
-	ID3D12DescriptorHeap* ppHeaps[] = { SRVManager::GetInstance()->GetHeap() };
-	// コマンドリストにヒープをセット（テーブルをセットするより【前】に呼ぶ！）
-	dxrCmdList_->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
-
-	dxrCmdList_->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("HairPhysicsCS").GetRootSignature().GetRS().Get());
-	dxrCmdList_->SetPipelineState(PSOManager::GetInstance()->GetPSO("HairPhysicsCS").GetCPS().Get());
-
-	/*dxrCmdList_->SetComputeRootConstantBufferView(0, gpuPhysicsConfigBuffer_->GetGPUVirtualAddress());
-	dxrCmdList_->SetComputeRootConstantBufferView(1, gpuFrameConfigBuffer_->GetGPUVirtualAddress());*/
-
-	dxrCmdList_->SetComputeRootConstantBufferView(0, gpuHairMaterialParameterBuffer_->GetGPUVirtualAddress());
-	dxrCmdList_->SetComputeRootConstantBufferView(1, gpuHairSceneParameterBuffer_->GetGPUVirtualAddress());
-	dxrCmdList_->SetComputeRootConstantBufferView(2, gpuConfigBuffer_->GetGPUVirtualAddress());
-	uint32_t id = StringPool::GetInstance()->GetStringID("Naira_ExportTest");
-	dxrCmdList_->SetComputeRootConstantBufferView(3, SDFManager::GetInstance()->tempBakeResources_[id].configBuffer->GetGPUVirtualAddress());
-	dxrCmdList_->SetComputeRootDescriptorTable(4, guideInfoBuffer_->GetSRVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(5, SDFManager::GetInstance()->GetSDF("Naira_ExportTest")->texture.GetSRVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(6, gpuGuideBuffer_->GetUAVHandleGPU());
-
-	dxrCmdList_->Dispatch(physicsGroupX, 1, 1);
-
-	auto barrierGuide = CD3DX12_RESOURCE_BARRIER::Transition(
-		gpuGuideBuffer_->GetResource(),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	dxrCmdList_->ResourceBarrier(1, &barrierGuide);
-
-	// -----------------------------------------------
-
-#pragma region ストランドについて
-
-	std::vector<Strands::ChildStrand> childStrands;
-	gpuChildStrandBuffer_ = std::make_unique<Structured<Strands::ChildStrand>>(engine);
-	auto rand = RandomUtils::GetInstance();
-	UINT NUM_STRANDS;
-	UINT totalVertices = 0;
-
-	// =====================================
-	//
-	// 【 データをLoadして作成するタイプ 】
-	//
-	// =====================================
-	if (isLoad == true) {
-		NUM_STRANDS = static_cast<UINT>(savedata.hairConfig.numStrands);
-		gpuChildStrandBuffer_->Initialize(static_cast<UINT>(savedata.childStrands.size()));
-		std::memcpy(gpuChildStrandBuffer_->GetMappedData(), savedata.childStrands.data(), sizeof(Strands::ChildStrand) * savedata.childStrands.size());
-		Log::View("Child strands loaded from save data.");
-		// Strandによって頂点数が違うからStrandInfoで計算するしか方法がないかな
-		// 計算方法はなんだ？
-		for (const auto& info : savedata.strandInfos) {
-			totalVertices += static_cast<UINT>(info.vertexCount);
-		}
-	}
-	// =====================================
-	//
-	// 【 データを作成して作成するタイプ 】
-	//   もしかして：ObjectPool
-	// =====================================
-	else {
 		float spreadRadius = 0.005f;
 		NUM_STRANDS = static_cast<UINT>(gpuConfigBuffer_->GetMappedData()->numStrands);
+		std::vector<Strands::ChildStrand> childStrands;
+		auto rand = RandomUtils::GetInstance();
 
 		//   ================
 		// 【 ストランド設計 】
@@ -590,6 +413,7 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 			childStrands.push_back(child);
 		}
 
+		gpuChildStrandBuffer_ = std::make_unique<Structured<Strands::ChildStrand>>(engine);
 		gpuChildStrandBuffer_->Initialize(static_cast<UINT>(childStrands.size()));
 		std::memcpy(gpuChildStrandBuffer_->GetMappedData(), childStrands.data(), sizeof(Strands::ChildStrand) * childStrands.size());
 
@@ -600,42 +424,27 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 		Log::View("if you Clash when make only buffer ni Please nise data");
 	}
 
-	// GPUに送るためのバッファを作成
+	// 初期位置データを uploadGuideBuffer から gpuGuideBuffer_ へコピー
+	auto transitionToCopyDest = CD3DX12_RESOURCE_BARRIER::Transition(
+		gpuGuideBuffer_->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+	dxrCmdList_->ResourceBarrier(1, &transitionToCopyDest);
+
+	dxrCmdList_->CopyResource(gpuGuideBuffer_->GetResource(), uploadGuideBuffer->GetResource());
+
+	auto transitionToSRV = CD3DX12_RESOURCE_BARRIER::Transition(
+		gpuGuideBuffer_->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+	dxrCmdList_->ResourceBarrier(1, &transitionToSRV);
+
+	// ==========================================
+	// 【 生成結果・AABB用バッファのメモリ確保 】
+	// ==========================================
 	hairVertexBuffer_ = std::make_unique<RWStructured<Strands::StrandVertex>>(engine);
 	hairVertexBuffer_->Initialize(totalVertices);
 	hairVertexBuffer_->GetResource()->SetName(L"HairVertexBuffer");
 
-	//uint32_t generateGroupX = (NUM_STRANDS + 63) / 64;
-	uint32_t generateGroupX = (NUM_STRANDS + 63) / 64;
-
-	// Strands作成CSを実行
-	dxrCmdList_->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("HairGenerateCS").GetRootSignature().GetRS().Get());
-	dxrCmdList_->SetPipelineState(PSOManager::GetInstance()->GetPSO("HairGenerateCS").GetCPS().Get());
-
-	dxrCmdList_->SetComputeRootDescriptorTable(0, gpuGuideBuffer_->GetSRVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(1, gpuChildStrandBuffer_->GetSRVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(2, strandInfoBuffer_->GetSRVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(3, guideInfoBuffer_->GetSRVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(4, hairVertexBuffer_->GetUAVHandleGPU());
-	dxrCmdList_->SetComputeRootConstantBufferView(5, gpuHairMaterialParameterBuffer_->GetGPUVirtualAddress());
-	dxrCmdList_->SetComputeRootConstantBufferView(6, gpuConfigBuffer_->GetGPUVirtualAddress());
-
-	dxrCmdList_->Dispatch(generateGroupX, 1, 1);
-
-	// 書き込み完了を待つ
-	auto barrierVertices = CD3DX12_RESOURCE_BARRIER::Transition(
-		hairVertexBuffer_->GetResource(),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	dxrCmdList_->ResourceBarrier(1, &barrierVertices);
-
-#pragma endregion
-
-	/////////////////////////////
-	//
-	//  AABBBufferについての処理
-	//
-	/////////////////////////////
+	//  ================================
+	//  【　AABBBufferについての処理　】
+	//  ================================
 	std::vector<Strands::SegmentData> cpuSegments;
 	if (isLoad == true) {
 		cpuSegments = savedata.segments;
@@ -651,6 +460,7 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 			}
 		}
 	}
+
 	segmentBuffer_ = std::make_unique<Structured<Strands::SegmentData>>(engine);
 	segmentBuffer_->Initialize(static_cast<uint32_t>(cpuSegments.size()));
 	segmentBuffer_->GetResource()->SetName(L"HairSegmentBuffer");
@@ -664,75 +474,22 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	hairAABBBuffer_->Initialize(static_cast<uint32_t>(cpuSegments.size()));
 	hairAABBBuffer_->GetResource()->SetName(L"HairAABBBuffer");
 
-	// 計算を実行
-	dxrCmdList_->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("HairAABBCS").GetRootSignature().GetRS().Get());
-	dxrCmdList_->SetPipelineState(PSOManager::GetInstance()->GetPSO("HairAABBCS").GetCPS().Get());
-	// ここにRootSignatureのやつを設定していく
-
-	dxrCmdList_->SetComputeRootConstantBufferView(0, gpuConfigBuffer_->GetGPUVirtualAddress());
-	dxrCmdList_->SetComputeRootDescriptorTable(1, hairVertexBuffer_->GetSRVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(2, strandInfoBuffer_->GetSRVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(3, hairAABBBuffer_->GetUAVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(4, hairFlatVertexBuffer_->GetUAVHandleGPU());
-
-	dxrCmdList_->Dispatch(generateGroupX, 1, 1);
-
-	D3D12_RESOURCE_BARRIER uavBarrier = {};
-	uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	uavBarrier.UAV.pResource = hairAABBBuffer_->GetResource(); // AABBバッファ
-	dxrCmdList_->ResourceBarrier(1, &uavBarrier);
-
-	D3D12_RESOURCE_BARRIER uavHairBarrier = {};
-	uavHairBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	uavHairBarrier.UAV.pResource = hairFlatVertexBuffer_->GetResource(); // AABBバッファ
-	dxrCmdList_->ResourceBarrier(1, &uavHairBarrier);
-
-
-	//D3D12_RESOURCE_BARRIER uavSegmentBarrier = {};
-	//uavSegmentBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	//uavSegmentBarrier.UAV.pResource = segmentBuffer_->GetResource(); // Segmentバッファ
-	//dxrCmdList_->ResourceBarrier(1, &uavSegmentBarrier);
-
-	// 作業完了を待つ
-	auto barrierAABB = CD3DX12_RESOURCE_BARRIER::Transition(
-		hairAABBBuffer_->GetResource(),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	dxrCmdList_->ResourceBarrier(1, &barrierAABB);
-
-	auto barrierHair = CD3DX12_RESOURCE_BARRIER::Transition(
-		hairFlatVertexBuffer_->GetResource(),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	dxrCmdList_->ResourceBarrier(1, &barrierHair);
-
-	/*auto barrierSegment = CD3DX12_RESOURCE_BARRIER::Transition(
-		segmentBuffer_->GetResource(),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	dxrCmdList_->ResourceBarrier(1, &barrierSegment);*/
-
-
 	Log::View("AABB Compleate\n");
-	// AABBが完成しました。。。
 
-// -----------------------------------------------
+	// =============================
+	// 【 DXR用の加速構造体の作成 】
+	// =============================
+	auto pDevice = engine->GetD3D12System().GetDevice().Get();
+	Microsoft::WRL::ComPtr <ID3D12Device5> pDevice5 = nullptr;
+	HRESULT hr = pDevice->QueryInterface(IID_PPV_ARGS(&pDevice5));
 
-	//   ===================
-	// 【 DXR用のAABBの作成 】
-	//   ===================
-#pragma region BLASの作成のセット
-
-	//   ==============================
-	// 【 BLASの構造体を作るための情報 】
-	//   ==============================
+	// --- BLASの構造体を作るための情報 ---
 	// ジオメトリの設定
 	D3D12_RAYTRACING_GEOMETRY_DESC geometryDesc{};
 	// ジオメトリの種類
 	geometryDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS; // AABBを指定
 	// ジオメトリのフラグ
 	geometryDesc.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_NONE;
-
 	// 【 AABBの数を設置場所 】
 	geometryDesc.AABBs.AABBCount = hairAABBBuffer_->GetNumElements();
 	geometryDesc.AABBs.AABBs.StartAddress = hairAABBBuffer_->GetResource()->GetGPUVirtualAddress();
@@ -754,22 +511,12 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 			pGeometryDescs または ppGeometryDescs によって参照される要素の数
 	}*/
 	buildInputs.NumDescs = 1;
-
 	// BLASの構造体を作るための情報をセッティング
 	buildInputs.pGeometryDescs = &geometryDesc;
-#pragma endregion
 
-	// -----------------------------------------------
-
-	auto pDevice = engine->GetD3D12System().GetDevice().Get();
-	Microsoft::WRL::ComPtr <ID3D12Device5> pDevice5 = nullptr;
-	HRESULT hr = pDevice->QueryInterface(IID_PPV_ARGS(&pDevice5));
-
-	// -----------------------------------------------
-
-		//   =====================================================
-		// 【 GPUにBLASをビルドするのに必要サイズを計算してもらう 】
-		//   =====================================================
+	//   =====================================================
+	// 【 GPUにBLASをビルドするのに必要サイズを計算してもらう 】
+	//   =====================================================
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo{};
 
 	if (SUCCEEDED(hr)) {
@@ -780,35 +527,29 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 		// そもそもこのパソコン（グラボ）がレイトレ非対応の可能性あり
 	}
 
-	// -----------------------------------------------
-
 	// Rebuild用とUpdate用の「大きい方のサイズ」を取得する
 	UINT64 maxScratchSize = (std::max)(prebuildInfo.ScratchDataSizeInBytes, prebuildInfo.UpdateScratchDataSizeInBytes);
 
 	// 作業用のBuffer（最大サイズで確保）
-	scratchBuffer_ = CreateBufferResource(
-		pDevice, maxScratchSize, true
-	);
+	scratchBuffer_ = CreateBufferResource(pDevice, maxScratchSize, true);
 	scratchBuffer_->SetName(L"BLAS Scratch Buffer");
 
-	D3D12_HEAP_PROPERTIES blasHeapProps{};
-	blasHeapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
-
-	D3D12_RESOURCE_DESC blasResDesc{};
-	blasResDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	blasResDesc.Width = prebuildInfo.ResultDataMaxSizeInBytes; // 必要なサイズ
-	blasResDesc.Height = 1;
-	blasResDesc.DepthOrArraySize = 1;
-	blasResDesc.MipLevels = 1;
-	blasResDesc.Format = DXGI_FORMAT_UNKNOWN;
-	blasResDesc.SampleDesc.Count = 1;
-	blasResDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	blasResDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; // UAVフラグ
+	D3D12_HEAP_PROPERTIES heapProps{ D3D12_HEAP_TYPE_DEFAULT };
+	D3D12_RESOURCE_DESC resDesc{};
+	resDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resDesc.Width = prebuildInfo.ResultDataMaxSizeInBytes; // 必要なサイズ
+	resDesc.Height = 1;
+	resDesc.DepthOrArraySize = 1;
+	resDesc.MipLevels = 1;
+	resDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resDesc.SampleDesc.Count = 1;
+	resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; // UAVフラグ
 
 	pDevice->CreateCommittedResource(
-		&blasHeapProps,
+		&heapProps,
 		D3D12_HEAP_FLAG_NONE,
-		&blasResDesc,
+		&resDesc,
 		D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, // ★初期状態を最初からこれにする！
 		nullptr,
 		IID_PPV_ARGS(&blasResultBuffer_)
@@ -816,39 +557,10 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 
 	blasResultBuffer_->SetName(L"BLAS Result Buffer");
 
-	// -----------------------------------------------
-
-		//   ==================
-		// 【 ビルド命令の発行 】
-		//   ==================
-	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc{};
-	// ビルドの構築設定
-	buildDesc.Inputs = buildInputs;
-	// ビルドする場所
-	buildDesc.ScratchAccelerationStructureData = scratchBuffer_->GetGPUVirtualAddress();
-	// ビルド後の保存場所
-	buildDesc.DestAccelerationStructureData = blasResultBuffer_->GetGPUVirtualAddress();
-
-	// -----------------------------------------------
-
-		// コマンドリストに積む
-	dxrCmdList_->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
-
-	// -----------------------------------------------
-
-		// ビルドが完全に終わるまで、後続の処理が待つようにバリアを張る
-	D3D12_RESOURCE_BARRIER uavAABBBarrier{};
-	uavAABBBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	uavAABBBarrier.UAV.pResource = blasResultBuffer_.Get();
-	dxrCmdList_->ResourceBarrier(1, &uavAABBBarrier);
-
-	// -----------------------------------------------
-
-#pragma region TLASの作成のセット
-	//   ==============================
+	// ==================================
 	// 【 TLASの構造体を作るための情報 】
-	//   ==============================
-	// --- 1. 配置図（Instance Desc）を1個作る ---
+	// ==================================
+	// --- 配置図（Instance Desc）を1個作る ---
 	D3D12_RAYTRACING_INSTANCE_DESC instanceDesc{};
 
 	// 3x4の行列で位置と向きを指定（今回は回転なし・原点配置の単位行列）
@@ -866,128 +578,60 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	// さっき作った「BLAS」のGPUアドレスをここに紐付ける！
 	instanceDesc.AccelerationStructure = blasResultBuffer_->GetGPUVirtualAddress();
 
-	// --- 2. 君の Structured クラスにデータを載せる ---
+	// --- 君の Structured クラスにデータを載せる ---
 	// ※今後、複数のキャラクターや髪の束を増やす時は要素数を増やせばOK
 	instanceBuffer = std::make_unique<Structured<D3D12_RAYTRACING_INSTANCE_DESC>>(engine);
 	instanceBuffer->Initialize(1);
 	instanceBuffer->GetResource()->SetName(L"TLAS Instance Buffer");
+	std::memcpy(instanceBuffer->GetMappedData(),&instanceDesc,sizeof(D3D12_RAYTRACING_INSTANCE_DESC));
 
-	std::memcpy(
-		instanceBuffer->GetMappedData(),
-		&instanceDesc,
-		sizeof(D3D12_RAYTRACING_INSTANCE_DESC)
-	);
-
-	//   ======================
+	// ==========================
 	// 【 TLASを作るための情報 】
-	//   ======================
+	// ==========================
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS tlasInputs{};
 	// TLASを指定
 	tlasInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 	// 作り方の指定
-	tlasInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE
-		| D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
+	tlasInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE | 
+		               D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
 	// BLASの総数
 	tlasInputs.NumDescs = 1; // インスタンス（配置図）の数
 	// dataの並び方
 	tlasInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	// BLASのGPUアドレス
 	tlasInputs.InstanceDescs = instanceBuffer->GetResource()->GetGPUVirtualAddress();
-#pragma endregion
 
-	// -----------------------------------------------
-
-		//   =====================================================
-		// 【 GPUにTLASをビルドするのに必要サイズを計算してもらう 】
-		//   =====================================================
+	// =========================================================
+	// 【 GPUにTLASをビルドするのに必要サイズを計算してもらう 】
+	// =========================================================
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO tlasPrebuildInfo{};
 	pDevice5->GetRaytracingAccelerationStructurePrebuildInfo(&tlasInputs, &tlasPrebuildInfo);
 
-	// -----------------------------------------------
-
-		// TLAS用のスクラッチバッファ（作業場所の確保）
-	tlasScratchBuffer_ = CreateBufferResource(
-		pDevice, tlasPrebuildInfo.ScratchDataSizeInBytes, true
-	);
+	// TLAS用のスクラッチバッファ（作業場所の確保）
+	tlasScratchBuffer_ = CreateBufferResource(pDevice, tlasPrebuildInfo.ScratchDataSizeInBytes, true);
 	tlasScratchBuffer_->SetName(L"TLAS Scratch Buffer");
 
-	// 最終的なTLASを格納するバッファ（これがレイトレの「世界」そのもの）
-	//tlasResultBuffer_ = CreateBufferResource(
-	//	pDevice, tlasPrebuildInfo.ResultDataMaxSizeInBytes, true
-	//);
-
-	D3D12_HEAP_PROPERTIES tlasHeapProps{};
-	tlasHeapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
-
-	D3D12_RESOURCE_DESC tlasResDesc{};
-	tlasResDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	tlasResDesc.Width = tlasPrebuildInfo.ResultDataMaxSizeInBytes; // 必要なサイズ
-	tlasResDesc.Height = 1;
-	tlasResDesc.DepthOrArraySize = 1;
-	tlasResDesc.MipLevels = 1;
-	tlasResDesc.Format = DXGI_FORMAT_UNKNOWN;
-	tlasResDesc.SampleDesc.Count = 1;
-	tlasResDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	tlasResDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS; // UAVフラグ
-
+	resDesc.Width = tlasPrebuildInfo.ResultDataMaxSizeInBytes;
 	pDevice->CreateCommittedResource(
-		&tlasHeapProps,
+		&heapProps,
 		D3D12_HEAP_FLAG_NONE,
-		&tlasResDesc,
+		&resDesc,
 		D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE,
 		nullptr,
 		IID_PPV_ARGS(&tlasResultBuffer_)
 	);
-
 	tlasResultBuffer_->SetName(L"TLAS Result Buffer");
 
-
-	// -----------------------------------------------
-
-		//   ==================
-		// 【 ビルド命令の発行 】
-		//   ==================
-	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC tlasBuildDesc{};
-	tlasBuildDesc.Inputs = tlasInputs;
-	tlasBuildDesc.ScratchAccelerationStructureData = tlasScratchBuffer_->GetGPUVirtualAddress();
-	tlasBuildDesc.DestAccelerationStructureData = tlasResultBuffer_->GetGPUVirtualAddress();
-
-	// -----------------------------------------------
-
-		// コマンドリストに積む
-	dxrCmdList_->BuildRaytracingAccelerationStructure(&tlasBuildDesc, 0, nullptr);
-
-	// -----------------------------------------------
-
-		// ビルド完了を待つUAVバリア
-	D3D12_RESOURCE_BARRIER tlasBarrier{};
-	tlasBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	tlasBarrier.UAV.pResource = tlasResultBuffer_.Get();
-	dxrCmdList_->ResourceBarrier(1, &tlasBarrier);
-
-	// -----------------------------------------------
-
-		// ---------------------------------------------------------
-		// 配線図のパラメーターを4つ定義する
-		// ---------------------------------------------------------
+	// -------------------
+	// 【 RootParameter 】
+	// -------------------
 	CD3DX12_ROOT_PARAMETER rootParameters[6]{};
+	rootParameters[0].InitAsConstantBufferView(0);// b0: カメラ情報 (Constant Buffer)
+	rootParameters[1].InitAsConstantBufferView(1);// b1: カメラ情報 (Constant Buffer)
+	rootParameters[2].InitAsShaderResourceView(0);// t0: TLAS (Shader Resource View)
+	rootParameters[3].InitAsShaderResourceView(1);// t1: 髪の毛の頂点バッファ (Shader Resource View)
 
-	// [0] b0: カメラ情報 (Constant Buffer)
-	rootParameters[0].InitAsConstantBufferView(0); // レジスタ b0 に直接繋ぐ
-
-	// [0] b0: カメラ情報 (Constant Buffer)
-	rootParameters[1].InitAsConstantBufferView(1); // レジスタ b1 に直接繋ぐ
-
-	// [1] t0: TLAS (Shader Resource View)
-	rootParameters[2].InitAsShaderResourceView(0); // レジスタ t0 に直接繋ぐ
-
-	// [2] t1: 髪の毛の頂点バッファ (Shader Resource View)
-	rootParameters[3].InitAsShaderResourceView(1); // レジスタ t1 に直接繋ぐ
-
-	// [3] t3: Segmentバッファ (Shader Resource View)
-	//rootParameters[3].InitAsShaderResourceView(3); // レジスタ t3 に直接繋ぐ
-
-	// [4] u0: 出力先のキャンバス (Unordered Access View)
+	// u0: 出力先のキャンバス (Unordered Access View)
 	CD3DX12_DESCRIPTOR_RANGE uavRange;
 	uavRange.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, 0); // u0 を1個
 	rootParameters[4].InitAsDescriptorTable(1, &uavRange);
@@ -1031,9 +675,7 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 		hairShaderBlob_->GetBufferSize()
 	);
 
-	// -----------------------------------------------
-
-			// シェーダーバインディングテーブルの作成
+	// シェーダーバインディングテーブルの作成
 	CreateShaderBindingTable(
 		rtpso_.Get(),
 		pDevice,
@@ -1052,6 +694,8 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	dxrCmdList_->ResourceBarrier(1, &initBarrier);
 
 	LoadFromFile("resources/Data/Hair/CompHair2.json");
+
+	isGpuUpdateRequested_ = true;
 }
 //////////////////////////////
 //   ====================
@@ -1063,13 +707,15 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	auto chronos = Chronos::GetInstance();
 	characterMatrix_ = mat;
 
+	// ===========================
+	// 【 GPUへパラメータを統合 】
+	// ===========================
 	gpuHairMaterialParameterBuffer_->GetMappedData()->mat = Matrix4x4::Transpose(characterMatrix_);
 
-	gpuHairSceneParameterBuffer_->GetMappedData()->deltaTime = chronos->GetGameDeltaTime();
+	// 1/30秒（約0.033秒）以上に deltaTime が跳ね上がらないように制限する
+	float safeDeltaTime = std::min(chronos->GetGameDeltaTime(), 1.0f / 30.0f);
+	gpuHairSceneParameterBuffer_->GetMappedData()->deltaTime = safeDeltaTime;
 	gpuHairSceneParameterBuffer_->GetMappedData()->time = chronos->GetGameTime();
-
-	//gpuFrameConfigBuffer_->GetMappedData()->deltaTime = chronos->GetGameDeltaTime();
-	//gpuFrameConfigBuffer_->GetMappedData()->time = chronos->GetGameTime();
 
 	// mat から現在の位置を抽出
 	Vector3 currentPos = { mat.m[3][0], mat.m[3][1], mat.m[3][2] };
@@ -1077,18 +723,10 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	if (!isFirstFrame_) {
 		// ワールド空間での移動量（今回 - 前回）
 		Vector3 worldMove = currentPos - prevPosition_;
-
-		// 2. キャラクターの回転を打ち消してローカル移動ベクトルに変換（回転行列の転置を乗算）
-		/*Vector3 localMove;
-		localMove.x = worldMove.x * mat.m[0][0] + worldMove.y * mat.m[0][1] + worldMove.z * mat.m[0][2];
-		localMove.y = worldMove.x * mat.m[1][0] + worldMove.y * mat.m[1][1] + worldMove.z * mat.m[1][2];
-		localMove.z = worldMove.x * mat.m[2][0] + worldMove.y * mat.m[2][1] + worldMove.z * mat.m[2][2];*/
-
-		// ローカル変換した移動量をセット
-		//gpuFrameConfigBuffer_->GetMappedData()->moveDirection = worldMove;
 		gpuHairMaterialParameterBuffer_->GetMappedData()->moveDirection = worldMove;
 	}
 	else {
+		// 座標変換
 		if (uploadGuideBuffer) {
 			auto* points = uploadGuideBuffer->GetMappedData();
 			uint32_t count = uploadGuideBuffer->GetNumElements();
@@ -1140,7 +778,7 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	}
 
 	//   ====================
-	// 【 HairCSの初期化処理 】
+	// 【 Compute Shader の リソースバリア処理 】
 	//   ====================
 	D3D12_RESOURCE_BARRIER preCSBarriers[] = {
 		CD3DX12_RESOURCE_BARRIER::Transition(gpuGuideBuffer_->GetResource(),
@@ -1151,8 +789,6 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
 		CD3DX12_RESOURCE_BARRIER::Transition(hairFlatVertexBuffer_->GetResource(),
 			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
-			/*CD3DX12_RESOURCE_BARRIER::Transition(segmentBuffer_->GetResource(),
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS)*/
 	};
 	dxrCmdList_->ResourceBarrier(_countof(preCSBarriers), preCSBarriers);
 
@@ -1161,7 +797,6 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	//   =====================
 	uint32_t totalGuides = gpuConfigBuffer_->GetMappedData()->numGuides;
 	uint32_t physicsGroupX = (totalGuides + 63) / 64;
-	//uint32_t physicsGroupX = (totalGuides) / 64;
 
 	dxrCmdList_->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("HairPhysicsCS").GetRootSignature().GetRS().Get());
 	dxrCmdList_->SetPipelineState(PSOManager::GetInstance()->GetPSO("HairPhysicsCS").GetCPS().Get());
@@ -1219,44 +854,17 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	dxrCmdList_->SetComputeRootDescriptorTable(2, strandInfoBuffer_->GetSRVHandleGPU());
 	dxrCmdList_->SetComputeRootDescriptorTable(3, hairAABBBuffer_->GetUAVHandleGPU());
 	dxrCmdList_->SetComputeRootDescriptorTable(4, hairFlatVertexBuffer_->GetUAVHandleGPU());
-	//dxrCmdList_->SetComputeRootDescriptorTable(4, segmentBuffer_->GetSRVHandleGPU());
 
 	dxrCmdList_->Dispatch(generateGroupX, 1, 1);
 
-	D3D12_RESOURCE_BARRIER uavBarrier = {};
-	uavBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	uavBarrier.UAV.pResource = hairAABBBuffer_->GetResource(); // AABBバッファ
-	dxrCmdList_->ResourceBarrier(1, &uavBarrier);
-
-	D3D12_RESOURCE_BARRIER uavHairBarrier = {};
-	uavHairBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	uavHairBarrier.UAV.pResource = hairFlatVertexBuffer_->GetResource(); // AABBバッファ
-	dxrCmdList_->ResourceBarrier(1, &uavHairBarrier);
-
-	//D3D12_RESOURCE_BARRIER uavSegmentBarrier = {};
-	//uavSegmentBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-	//uavSegmentBarrier.UAV.pResource = segmentBuffer_->GetResource(); // Segmentバッファ
-	//dxrCmdList_->ResourceBarrier(1, &uavSegmentBarrier);
-
-	auto barrierAABB = CD3DX12_RESOURCE_BARRIER::Transition(
-		hairAABBBuffer_->GetResource(),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
-	);
-	dxrCmdList_->ResourceBarrier(1, &barrierAABB);
-
-	auto barrierHair = CD3DX12_RESOURCE_BARRIER::Transition(
-		hairFlatVertexBuffer_->GetResource(),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	dxrCmdList_->ResourceBarrier(1, &barrierHair);
-
-	/*auto barrierSegment = CD3DX12_RESOURCE_BARRIER::Transition(
-		segmentBuffer_->GetResource(),
-		D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-		D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-	dxrCmdList_->ResourceBarrier(1, &barrierSegment);*/
-
+	D3D12_RESOURCE_BARRIER postAABBBarriers[] = {
+		CD3DX12_RESOURCE_BARRIER::Transition(hairAABBBuffer_->GetResource(),
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
+		CD3DX12_RESOURCE_BARRIER::Transition(hairFlatVertexBuffer_->GetResource(),
+			D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)
+	};
+	dxrCmdList_->ResourceBarrier(_countof(postAABBBarriers), postAABBBarriers);
+	
 	//   ==============
 	// 【 BLASの再構築 】
 	//   ==============
@@ -1271,9 +879,6 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	// ビルド用のインプットを再設定
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS blasInputs{};
 	blasInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
-	/*blasInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE
-					 | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE
-					 | D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;*/
 	blasInputs.NumDescs = 1;
 	blasInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	blasInputs.pGeometryDescs = &geometryDesc;
@@ -1334,23 +939,31 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 
 	// -----------------------------------------------
 
-		// Inputsの設定
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS tlasInputs{};
 	tlasInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
-	tlasInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE
-		| D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE
-		| D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
-	tlasInputs.NumDescs = 1; // 配置するインスタンス数
+	tlasInputs.NumDescs = 1;
 	tlasInputs.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 	tlasInputs.InstanceDescs = instanceBuffer->GetResource()->GetGPUVirtualAddress();
 
-	// BuildDescの設定
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC tlasBuildDesc{};
 	tlasBuildDesc.Inputs = tlasInputs;
 	tlasBuildDesc.ScratchAccelerationStructureData = tlasScratchBuffer_->GetGPUVirtualAddress();
 	tlasBuildDesc.DestAccelerationStructureData = tlasResultBuffer_->GetGPUVirtualAddress();
-	tlasBuildDesc.SourceAccelerationStructureData = tlasResultBuffer_->GetGPUVirtualAddress();
-	//tlasBuildDesc.SourceAccelerationStructureData = 0;
+
+	if (isRebuildBLAS) {
+		// 【 FULL REBUILD 】初回またはリクエスト時はゼロから新規構築
+		tlasInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE
+			| D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
+		tlasBuildDesc.SourceAccelerationStructureData = 0; // ソースなし (新規)
+	}
+	else {
+		// 【 UPDATE 】2フレーム目以降の通常フレームは差分更新
+		tlasInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE
+			| D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE
+			| D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PERFORM_UPDATE;
+		tlasBuildDesc.SourceAccelerationStructureData = tlasResultBuffer_->GetGPUVirtualAddress();
+	}
+	tlasBuildDesc.Inputs = tlasInputs; // 設定したFlagsを反映
 
 	// GPUにビルドし直せコマンドを積む
 	dxrCmdList_->BuildRaytracingAccelerationStructure(&tlasBuildDesc, 0, nullptr);
@@ -1365,10 +978,7 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 #ifdef USE_IMGUI
 	ImGui::Begin("Hair");
 	ImGui::DragFloat3("gravity", &gpuHairSceneParameterBuffer_->GetMappedData()->gravity.x, 0.01f, -1.0f, 1.0f);
-	
-	
 	ImGui::DragFloat3("Wind Direction ", &gpuHairSceneParameterBuffer_->GetMappedData()->windDirection.x, 0.01f, -1.0f, 1.0f);
-
 	ImGui::DragFloat("globalHairThickness ", &gpuHairMaterialParameterBuffer_->GetMappedData()->globalHairThickness, 0.0001f, 0.0f, 1.0f);
 	ImGui::DragFloat("globalSpreadRadius ", &gpuHairMaterialParameterBuffer_->GetMappedData()->globalSpreadRadius, 0.0001f, 0.0f, 1.0f);
 	ImGui::DragFloat("stiffness：剛性 ", &gpuHairMaterialParameterBuffer_->GetMappedData()->stiffness, 0.0001f, 0.0f, 1.0f);
@@ -1378,23 +988,17 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	// --- ライティング・見た目の設定 ---
 	ImGui::Separator(); // 境界線
 	ImGui::Text("【 ライティング ＆ ツヤ（天使の輪）設定 】");
-
 	// ライト方向
 	ImGui::DragFloat3("ライトの照射方向", &hairLightingParamsBuffer_->GetMappedData()->lightDirection.x, 0.01f, -1.0f, 1.0f);
-
 	// ライトカラー
 	ImGui::ColorEdit3("ライトの色", &hairLightingParamsBuffer_->GetMappedData()->lightColor.x);
-
 	// ライト強度
 	ImGui::DragFloat("ライトの明るさ", &hairLightingParamsBuffer_->GetMappedData()->lightIntensity, 0.05f, 0.0f, 10.0f);
-
 	// 環境光
 	ImGui::ColorEdit3("暗部の明るさ (環境光)", &hairLightingParamsBuffer_->GetMappedData()->ambientColor.x);
-
 	// 天使の輪のズレ（シフト）
 	// 左右にスライドすると、天使の輪が毛先側・根元側にリアルタイムで上下移動します
 	ImGui::DragFloat("天使の輪の位置 (シフト)", &gpuHairMaterialParameterBuffer_->GetMappedData()->shift, 0.005f, -0.5f, 0.5f);
-
 	// 天使の輪のシャープさ
 	// 小さいとボヤッと全体が光り、大きくするとキュッと細い綺麗な輪になります
 	ImGui::DragFloat("天使の輪の鋭さ (ツヤ)", &hairLightingParamsBuffer_->GetMappedData()->hairExponent, 0.5f, 1.0f, 500.0f);
@@ -1434,11 +1038,11 @@ void Hair::Render(D3D12_GPU_DESCRIPTOR_HANDLE depthHandle) {
 
 	commandList->SetComputeRootDescriptorTable(5, depthHandle);
 
-	// --- 2. パイプライン（RTPSO）のセット ---
+	// --- パイプライン（RTPSO）のセット ---
 	// コマンドリストにレイトレ専用パイプラインを設定（StateObjectをセットします）
 	dxrCmdList_->SetPipelineState1(rtpso_.Get());
 
-	// --- 3. DXRレイトレーシングの実行！ ---
+	// --- DXRレイトレーシングの実行！ ---
 	// 前ステップで SBT の情報を詰め込んだ `dispatchDesc` に、画面サイズを設定します
 	UINT windowWidth = 1280;  // 画面の横幅（例: 1920）
 	UINT windowHeight = 720; // 画面の縦幅（例: 1080）
@@ -1552,8 +1156,8 @@ bool Hair::SaveToFile(const std::string& filename) {
 
 	// コンフィグ類のコピー
 	saveData.hairConfig = *hairConfig;
-	if (auto* physics = GetCPUPhysicsConfig()) { saveData.physicsConfig = *physics; }
-	if (auto* make = GetCPUMakeConfig()) { saveData.makeConfig = *make; }
+	//if (auto* physics = GetCPUPhysicsConfig()) { saveData.physicsConfig = *physics; }
+	//if (auto* make = GetCPUMakeConfig()) { saveData.makeConfig = *make; }
 
 	// --- データ収集ロジック ---
 	uint32_t activeGuidePoints = 0;
@@ -1612,12 +1216,12 @@ bool Hair::LoadFromFile(const std::string& filename) {
 	}
 
 	// --- マッピングメモリへの数値を直接上書き（再登録） ---
-	if (gpuPhysicsConfigBuffer_) {
+	/*if (gpuPhysicsConfigBuffer_) {
 		*gpuPhysicsConfigBuffer_->GetMappedData() = loadedData.physicsConfig;
 	}
 	if (gpuMakeConfigBuffer_) {
 		*gpuMakeConfigBuffer_->GetMappedData() = loadedData.makeConfig;
-	}
+	}*/
 	if (gpuConfigBuffer_) {
 		*gpuConfigBuffer_->GetMappedData() = loadedData.hairConfig;
 	}

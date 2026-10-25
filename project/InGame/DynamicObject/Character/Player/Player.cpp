@@ -40,7 +40,7 @@ void Player::Initialize(Fngine* fngine) {
 	// =========================================================
 	auto* rb = AddComponent<RigidBody>();
 	rb->SetBodyType(BodyType::Kinematic); // キャラクター物理
-	rb->SetUseGravity(false);
+	rb->SetUseGravity(true);
 
 	auto* status = AddComponent<StatusComponent>();
 	status->SetBaseStats(1000.0f, 100.0f, 50.0f, 6.0f); // HP, ATK, DEF, Speed
@@ -61,7 +61,7 @@ void Player::Initialize(Fngine* fngine) {
 	col->SetLayer("Player");
 	col->SetTargetLayers({ "Enemy", "StaticMap" });
 	auto collider = col->CreateCollider<BVHCollider>();
-	collider->SetModelName("Naira");
+	collider->SetModelName("BoneOctahedron");
 
 	EventManager::GetInstance()->RegisterAction(
 		EVENTCATEGORY::EFFECT, 0, this, &Player::MakeHitEffect

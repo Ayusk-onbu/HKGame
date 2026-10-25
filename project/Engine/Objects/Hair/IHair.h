@@ -84,16 +84,10 @@ public:
 		return gpuChildStrandBuffer_ ? gpuChildStrandBuffer_->GetMappedData() : nullptr;
 	}
 
-	GuideCurve::HairPhysicsConfig* GetCPUPhysicsConfig() {
-		return gpuPhysicsConfigBuffer_ ? gpuPhysicsConfigBuffer_->GetMappedData() : nullptr;
-	}
-	Strands::HairMakeConfig* GetCPUMakeConfig() {
-		return gpuMakeConfigBuffer_ ? gpuMakeConfigBuffer_->GetMappedData() : nullptr;
-	}
 	// 追従先の移動量を設定する
 	void SetMoveDirection(const Vector3& moveDir) {
-		if (gpuFrameConfigBuffer_) {
-			gpuFrameConfigBuffer_->GetMappedData()->moveDirection = moveDir;
+		if (gpuHairMaterialParameterBuffer_) {
+			gpuHairMaterialParameterBuffer_->GetMappedData()->moveDirection = moveDir;
 		}
 	}
 
@@ -126,11 +120,6 @@ private:
 	bool isFirstFrame_ = true;
 
 	GuideCurve::Main hairData_;
-	//【定数バッファ】
-	std::unique_ptr<ConstantBuffer<GuideCurve::HairPhysicsConfig>>gpuPhysicsConfigBuffer_;// 髪全体の情報その物理
-	std::unique_ptr<ConstantBuffer<GuideCurve::FrameConfig>>gpuFrameConfigBuffer_;// 髪全体の情報その物理
-	std::unique_ptr<ConstantBuffer<Strands::HairMakeConfig>>gpuMakeConfigBuffer_;// 髪全体の情報その性質
-
 	// 追加
 	std::unique_ptr<ConstantBuffer<HairMaterialParameter>>gpuHairMaterialParameterBuffer_;// 髪の調整用パラメーター全部
 	std::unique_ptr<ConstantBuffer<HairSceneParameter>>gpuHairSceneParameterBuffer_;

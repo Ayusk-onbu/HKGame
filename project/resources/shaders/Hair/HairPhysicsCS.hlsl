@@ -102,11 +102,10 @@ void ApplyXPBDDistanceConstraint(uint parentIdx, uint childIdx, float dt)
 // -------------------------------------------------------------
 // XPBD 曲げ制約 (Bending Constraint)
 // -------------------------------------------------------------
-void ApplyXPBDBendingConstraint(uint prevIdx, uint currIdx, uint nextIdx, float dt)
+void ApplyXPBDBendingConstraint(uint prevIdx, uint currIdx, uint nextIdx, float dt, float strandRatio)
 {
     ControllerPoint curr = g_GuideBuffer[currIdx];
-    if (curr.physicsWeight <= 0.0001f)
-        return;
+    if (curr.physicsWeight <= 0.0001f)return;
 
     float3 p0 = g_GuideBuffer[prevIdx].position;
     float3 p1 = curr.position;
@@ -115,10 +114,12 @@ void ApplyXPBDBendingConstraint(uint prevIdx, uint currIdx, uint nextIdx, float 
     float3 center = (p0 + p2) * 0.5f;
     float3 diff = center - p1;
 
-    float bendStiffness = max(gHairMaterialParm.gRestoringForce * 100.0f, 0.01f);
+    float softnessFactor = pow(1.0f - strandRatio, 1.5f);
+    float bendStiffness = max(gHairMaterialParm.gRestoringForce * 10.0f * softnessFactor, 0.001f);
+    
     float alphaTilde = 1.0f / (bendStiffness * dt * dt);
-
     float deltaLambda = 1.0f / (1.0f + alphaTilde);
+    
     g_GuideBuffer[currIdx].position += diff * deltaLambda;
 }
 
@@ -207,7 +208,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     // =========================================================
     // ステップ2: XPBDソルバーループ (ワールド空間)
     // =========================================================
-    for (uint iter = 0; iter < 100; ++iter)
+    for (uint iter = 0; iter < 20; ++iter)
     {
         // XPBD 距離制約
         for (uint j = 1; j < info.vertexCount; ++j)
@@ -223,7 +224,8 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
             uint prev = info.vertexStartIndex + b - 1;
             uint curr = info.vertexStartIndex + b;
             uint next = info.vertexStartIndex + b + 1;
-            ApplyXPBDBendingConstraint(prev, curr, next, dt);
+            float strandRatio = (float) b / (float) (info.vertexCount - 1);
+            ApplyXPBDBendingConstraint(prev, curr, next, dt, strandRatio);
         }
 
         // SDF 衝突解決

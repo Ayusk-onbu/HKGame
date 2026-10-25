@@ -72,5 +72,5 @@ private:
     float restitution_ = 0.0f; // 跳ね返り度合い（0=弾まない, 1=完全反発）
     float friction_ = 0.2f;    // 減速の強さ
 
-    const Vector3 kGravity = { 0.0f, -9.81f * 5.0f, 0.0f }; // 重力加速度
+    const Vector3 kGravity = { 0.0f, -9.81f * 10.0f, 0.0f }; // 重力加速度
 };

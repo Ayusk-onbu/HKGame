@@ -1456,12 +1456,12 @@ bool HairGuideEditor::SaveToFile(const std::string& filename) {
     Strands::HairSaveData saveData{};
 
     // 1. 各種コンフィグ設定の取得
-    if (auto* physics = hairSystem_->GetCPUPhysicsConfig()) {
+    /*if (auto* physics = hairSystem_->GetCPUPhysicsConfig()) {
         saveData.physicsConfig = *physics;
     }
     if (auto* make = hairSystem_->GetCPUMakeConfig()) {
         saveData.makeConfig = *make;
-    }
+    }*/
     if (auto* config = hairSystem_->GetCPUGuideConfig()) {
         saveData.hairConfig = *config;
     }
