@@ -347,7 +347,7 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 		materialParameter.restoringForce = 50.2f;
 		materialParameter.damping = 0.96f;
 		materialParameter.globalSpreadRadius = 0.05f;
-		materialParameter.globalHairThickness = 1.0f;
+		materialParameter.globalHairThickness = 0.32f;
 		std::memcpy(gpuHairMaterialParameterBuffer_->GetMappedData(), &materialParameter, sizeof(HairMaterialParameter));
 
 		// 最大数
@@ -722,8 +722,31 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 
 	if (!isFirstFrame_) {
 		// ワールド空間での移動量（今回 - 前回）
-		Vector3 worldMove = currentPos - prevPosition_;
-		gpuHairMaterialParameterBuffer_->GetMappedData()->moveDirection = worldMove;
+		//Vector3 worldMove = currentPos - prevPosition_;
+		//gpuHairMaterialParameterBuffer_->GetMappedData()->moveDirection = worldMove;
+		// 生の移動量を計算
+		Vector3 rawWorldMove = currentPos - prevPosition_;
+
+		// 慣性スケール（Inertia Scale）の適用（0.1f 〜 0.2f 程度に抑える）
+		float inertiaScale = 0.15f;
+		Vector3 scaledMove = rawWorldMove * inertiaScale;
+
+		// 移動量の激しい変化（スパイク）をなめらかにする（ローパスフィルター）
+		static Vector3 smoothedMove = { 0.0f, 0.0f, 0.0f };
+		float smoothingFactor = 0.2f; // 小さいほどなめらか
+		smoothedMove.x = smoothedMove.x + (scaledMove.x - smoothedMove.x) * smoothingFactor;
+		smoothedMove.y = smoothedMove.y + (scaledMove.y - smoothedMove.y) * smoothingFactor;
+		smoothedMove.z = smoothedMove.z + (scaledMove.z - smoothedMove.z) * smoothingFactor;
+
+		// 1フレームあたりの最大移動影響量にキャップ（上限）をかける
+		float maxMoveLen = 0.05f; // 秒速ではなく1フレームあたりの限界値
+		float moveLen = std::sqrt(smoothedMove.x * smoothedMove.x + smoothedMove.y * smoothedMove.y + smoothedMove.z * smoothedMove.z);
+		if (moveLen > maxMoveLen) {
+			smoothedMove = (smoothedMove / moveLen) * maxMoveLen;
+		}
+
+		// 補正後の移動量をGPUへ渡す
+		gpuHairMaterialParameterBuffer_->GetMappedData()->moveDirection = smoothedMove;
 	}
 	else {
 		// 座標変換

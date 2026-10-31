@@ -1,0 +1,846 @@
+{
+    "mapName": "TestScene",
+    "objects": [
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "cube",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": true
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "cube",
+                        "colliderType": "BVH",
+                        "mask": 4294967282
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    1.1920928955078125e-07,
+                    0.27694302797317505,
+                    1.1920928955078125e-07
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    25.0,
+                    1.0,
+                    25.0
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "Column",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Column",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "Column",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    -2.3437600135803223,
+                    1.2734224796295166,
+                    4.6994476318359375
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.9950991272926331,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "cube",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                0.27413129806518555,
+                                0.27413129806518555,
+                                0.27413129806518555,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "cube",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    -7.769513130187988,
+                    4.316413879394531,
+                    4.622817039489746
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.5,
+                    0.5,
+                    0.5
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "Slope",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Slope",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": true
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "Slope",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    0.5367094278335571,
+                    2.7128310203552246,
+                    0.00516284815967083
+                ],
+                "rotation": [
+                    -179.99989318847656,
+                    0.21880808472633362,
+                    -179.99989318847656
+                ],
+                "scale": [
+                    3.5000879764556885,
+                    2.900085926055908,
+                    11.500107765197754
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "cube",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 10.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "cube",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    0.7119941711425781,
+                    2.6982510089874268,
+                    15.385958671569824
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    10.615131378173828,
+                    1.4244221448898315,
+                    9.62399959564209
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "Column",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Column",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": true
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "Column",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    3.35524320602417,
+                    1.273542046546936,
+                    4.761858940124512
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "cube",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                0.13513511419296265,
+                                0.13513511419296265,
+                                0.13513511419296265,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 16
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "cube",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    -4.985147476196289,
+                    4.612217903137207,
+                    4.498539924621582
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "Slope",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Slope",
+                            "textureIndex": 23
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": false,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "Slope",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    -2.0467429161071777,
+                    6.647531509399414,
+                    8.583675384521484
+                ],
+                "rotation": [
+                    176.28961181640625,
+                    0.6376582384109497,
+                    159.77810668945313
+                ],
+                "scale": [
+                    1.3845763206481934,
+                    0.8045828938484192,
+                    4.37546968460083
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "Slope",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Slope",
+                            "textureIndex": 24
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": false,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "Slope",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    -0.22856181859970093,
+                    8.140246391296387,
+                    11.977754592895508
+                ],
+                "rotation": [
+                    -163.78024291992188,
+                    -13.323464393615723,
+                    -176.16220092773438
+                ],
+                "scale": [
+                    0.999986469745636,
+                    0.8751410245895386,
+                    3.9759762287139893
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "plane",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "plane",
+                            "textureIndex": 11
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "plane",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    -1.4559097290039063,
+                    8.87179183959961,
+                    10.362222671508789
+                ],
+                "rotation": [
+                    -83.2497787475586,
+                    -27.4665584564209,
+                    1.9244735085521825e-05
+                ],
+                "scale": [
+                    1.7337325811386108,
+                    4.9719133377075195,
+                    1.00858473777771
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "Sphere",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "Sphere",
+                            "textureIndex": 12
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "Sphere",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    4.141330718994141,
+                    9.012388229370117,
+                    8.457660675048828
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    2.2481727600097656,
+                    0.4409439265727997,
+                    2.3524410724639893
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "cube",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 14
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "cube",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    9.59500503540039,
+                    8.726502418518066,
+                    11.740864753723145
+                ],
+                "rotation": [
+                    0.0,
+                    86.88528442382813,
+                    0.0
+                ],
+                "scale": [
+                    7.102574348449707,
+                    1.0000284910202026,
+                    3.2027831077575684
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "cube",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 10
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 2,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": true
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "cube",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    7.450580596923828e-09,
+                    9.487028121948242,
+                    21.802814483642578
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    13.5,
+                    1.0,
+                    2.4000000953674316
+                ]
+            }
+        },
+        {
+            "components": [
+                {
+                    "data": {
+                        "ShadowModelName": "cube",
+                        "castSDFShadow": true,
+                        "providerData": {
+                            "color": [
+                                1.0,
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "modelName": "cube",
+                            "textureIndex": 10
+                        },
+                        "providerType": "NormalMesh"
+                    },
+                    "type": "Render"
+                },
+                {
+                    "data": {
+                        "bodyType": 0,
+                        "friction": 0.20000000298023224,
+                        "mass": 1.0,
+                        "orientToMovement": true,
+                        "restitution": 0.0,
+                        "useGravity": false
+                    },
+                    "type": "RigidBody"
+                },
+                {
+                    "data": {
+                        "attribute": 16,
+                        "bvhModelName": "cube",
+                        "colliderType": "BVH",
+                        "mask": 4294967286
+                    },
+                    "type": "ColliderComponent"
+                }
+            ],
+            "name": "New Object",
+            "transform": {
+                "position": [
+                    0.0,
+                    12.091201782226563,
+                    25.44872283935547
+                ],
+                "rotation": [
+                    0.0,
+                    -0.0,
+                    0.0
+                ],
+                "scale": [
+                    12.939580917358398,
+                    3.6977405548095703,
+                    1.2458088397979736
+                ]
+            }
+        }
+    ],
+    "objectsCount": 14
+}

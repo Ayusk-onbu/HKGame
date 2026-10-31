@@ -73,7 +73,7 @@ void GameScene::Initialize() {
 	auto editorMgr = EditorManager::GetInstance();
 	auto* sceneEditor = editorMgr->CreateEditor<SceneEditor>(sceneMap_.get());
 
-	sceneMap_->LoadFromFile("Assets/Data/Map/TestScene.json", p_fngine_);
+	sceneMap_->LoadFromFile("Assets/Data/Map/siran.json", p_fngine_);
 
 	p_fngine_->hair_->SetMatrix(player_->GetHeadMatrix());
 	p_fngine_->hair_->Initialize(p_fngine_, false, {});

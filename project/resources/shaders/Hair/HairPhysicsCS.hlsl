@@ -134,6 +134,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     // 対象外の場合は終了
     if (guideIdx >= gHairConfig.numGuides)
         return;
+    
     // 対象の情報を取得
     GuideInfo info = g_GuideInfos[guideIdx];
     // 構成する頂点数が一つの場合は終了
@@ -152,8 +153,12 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     // 移動の向きを取得
     float3 moveDir = (moveLen > 0.0001f) ? (gHairMaterialParm.gMoveDirection / moveLen) : float3(0, 0, 0);
     // 慣性力の計算
-    float3 inertia = -moveDir * min(moveLen, 0.5f) * 0.125f;
+    float3 inertia = -moveDir * min(moveLen, 0.05f) * 0.05f;
 
+    float3 headCenter = mul(gHairMaterialParm.gCharacterMatrix, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
+    
+    float3 charVelocity = gHairMaterialParm.gMoveDirection / dt; // キャラの移動速度
+    
     // 速度逆算用の旧位置保持配列
     float3 oldPositions[512];
 
@@ -168,6 +173,8 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
         ControllerPoint p = g_GuideBuffer[currentIdx];
         // 速度計算用に現在のワールド位置を保存
         oldPositions[i] = p.position;
+        
+        float strandRatio = (float) i / (float) (info.vertexCount - 1);
 
         if (p.physicsWeight <= 0.0001f)
         {
@@ -191,16 +198,33 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
             // 重力
             float3 gravity = gHairSceneParm.gGravity * p.physicsWeight;
             // 風
-            float3 wind = gHairSceneParm.gWindDirection * sin(wavePhase) * p.physicsWeight;
+            float3 wind = gHairSceneParm.gWindDirection * (sin(wavePhase) * 0.5f + 0.5f) * p.physicsWeight;
             // 復元力
-            float3 toHome = (targetHomeWorld - p.position) * gHairMaterialParm.gRestoringForce;
-
-            float3 totalForce = gravity + wind + toHome;
+            float restoringScale = gHairMaterialParm.gRestoringForce * pow(1.0f - strandRatio, 2.0f);
+            float3 toHome = (targetHomeWorld - p.position) * restoringScale;
+            // 空気抵抗
+            float speed = length(p.velocity);
+            float3 airDrag = (speed > 0.0001f) ? (-normalize(p.velocity) * speed * speed * 0.15f) : float3(0, 0, 0);
+            // 浮力
+            float horizontalSpeed = length(p.velocity.xz);
+            float3 lift = float3(0.0f, 1.0f, 0.0f) * horizontalSpeed * 0.01f * strandRatio;
+            // 頭部中心からの拡散力
+            float3 outwardDir = p.position - headCenter;
+            float outwardLen = length(outwardDir);
+            float3 spreadForce = (outwardLen > 0.0001f) ? (outwardDir / outwardLen) * gHairMaterialParm.gGlobalSpreadRadius * 10.0f * strandRatio : float3(0.0f, 0.0f, 0.0f);
+            
+            float3 totalForce = (gravity * 10.00f) + (wind * 1.0f) + (toHome * 1.25f) + (airDrag * 1.5f) + lift + spreadForce;
 
             // 仮位置（Predict Position）の計算と更新
-            p.velocity = (p.velocity + (inertia + totalForce) * dt) * gHairMaterialParm.gDamping;
+            p.velocity = (p.velocity + ((inertia) + totalForce) * dt) * gHairMaterialParm.gDamping;
+            
+            // 速度上限
+            if (length(p.velocity) > 7.0f)
+            {
+                p.velocity = normalize(p.velocity) * 7.0f;
+            }
+            
             p.position += p.velocity * dt;
-
             g_GuideBuffer[currentIdx] = p;
         }
     }
@@ -208,7 +232,7 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     // =========================================================
     // ステップ2: XPBDソルバーループ (ワールド空間)
     // =========================================================
-    for (uint iter = 0; iter < 20; ++iter)
+    for (uint iter = 0; iter < 25; ++iter)
     {
         // XPBD 距離制約
         for (uint j = 1; j < info.vertexCount; ++j)
@@ -229,17 +253,17 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
         }
 
         // SDF 衝突解決
-        for (uint c = 1; c < info.vertexCount; ++c)
-        {
-            uint idx = info.vertexStartIndex + c;
-            float3 pos = g_GuideBuffer[idx].position;
-            float hairRadius = g_GuideBuffer[idx].radius;
+        //for (uint c = 1; c < info.vertexCount; ++c)
+        //{
+        //    uint idx = info.vertexStartIndex + c;
+        //    float3 pos = g_GuideBuffer[idx].position;
+        //    float hairRadius = g_GuideBuffer[idx].radius;
 
-            if (ResolveSDFCollision(pos, hairRadius))
-            {
-                g_GuideBuffer[idx].position = pos;
-            }
-        }
+        //    if (ResolveSDFCollision(pos, hairRadius))
+        //    {
+        //        g_GuideBuffer[idx].position = pos;
+        //    }
+        //}
     }
 
     // =========================================================
@@ -252,16 +276,18 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
 
         if (p.physicsWeight > 0.0001f)
         {
-            float3 calculatedVel = (p.position - oldPositions[k]) / dt;
+            float3 worldVel = (p.position - oldPositions[k]) / dt;
 
+            float3 relativeVel = worldVel - charVelocity * 0.5f;
+            
             // 超高速移動時の速度爆発ガード（上限を設ける）
-            float velLen = length(calculatedVel);
-            if (velLen > 10.0f)
+            float velLen = length(relativeVel);
+            if (velLen > 7.0f)
             {
-                calculatedVel = (calculatedVel / velLen) * 10.0f;
+                relativeVel = (relativeVel / velLen) * 7.0f;
             }
 
-            p.velocity = calculatedVel;
+            p.velocity = relativeVel;
             g_GuideBuffer[idx] = p;
         }
     }

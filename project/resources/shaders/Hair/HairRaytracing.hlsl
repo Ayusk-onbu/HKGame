@@ -707,7 +707,7 @@ void HairClosestHitShader(inout RayPayload payload, in HairAttribute attribute)
     float scatter = 1.00f; // UI Scatter
 
     // 統合シェーダーによる一括ライティング計算
-    float3 finalColor = EvaluateHair_Epic_Unified(
+    float3 directColor = EvaluateHair_Epic_Unified(
         L, V, worldT,
         baseColor,
         roughness,
@@ -718,10 +718,17 @@ void HairClosestHitShader(inout RayPayload payload, in HairAttribute attribute)
         g_LightingParams.lightColor
     );
     
-    // 環境光 (完全な暗闇を防止)
-    float3 ambient = baseColor * 0.05f;
-    finalColor += ambient;
+    float3 ambientLight = g_LightingParams.ambientColor;
 
+    // 髪の毛特有の多重散乱（影の中でも髪の色が柔らかく透ける質感）
+    // 上方向（空）からの光をやや強く受けるヘミスフィア要素を隠し味として追加
+    float3 upDir = float3(0.0f, 1.0f, 0.0f);
+    float hemi = saturate(dot(worldT, upDir) * 0.5f + 0.5f);
+    float3 ambientScattering = baseColor * ambientLight * lerp(0.8f, 1.2f, hemi);
+
+    // 直接光 と 散乱環境光 を統合
+    float3 finalColor = directColor + ambientScattering;
+    
     // Reinhard トーンマッピング
     payload.color = finalColor / (finalColor + 1.0f);
 }

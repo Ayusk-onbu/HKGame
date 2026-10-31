@@ -26,7 +26,7 @@ void GrassField::Initialize(Fngine* engine, uint32_t maxGrass, const std::string
 		grass.worldTransform.Initialize();
 
 		// エミッターのXY座標を、地面のXZ座標に変換
-		grass.worldTransform.set_.Translation({ point.position.x, 0.0f, point.position.y });
+		grass.worldTransform.set_.Translation({ point.position.x - 5.0f, 1.0f, point.position.y });
 		// スケールや向きをランダムにばらけさせる
 		grass.worldTransform.set_.Scale({ 1.0f, rand.GetFloat(0.6f, 1.4f), 1.0f });
 		grass.worldTransform.set_.Rotation({ 0.0f, rand.GetFloat(0.0f, 3.141592f * 2.0f), 0.0f });

@@ -51,6 +51,9 @@ void SceneDirector::Initialize(Scene& firstScene) {
 	CameraSystem::GetInstance()->MakeCamera("GameCamera", CameraType::Game);
 	CameraSystem::GetInstance()->SetActiveCamera("DebugCamera");
 
+	CameraSystem::GetInstance()->GetActiveCamera()->SetTheta(20.0f);
+	CameraSystem::GetInstance()->GetActiveCamera()->SetRadius(20.0f);
+
 	DrawManager::GetInstance()->Initialize(p_fngine_);
 
 	auto editorMgr = EditorManager::GetInstance();
