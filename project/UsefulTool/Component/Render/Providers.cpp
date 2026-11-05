@@ -162,7 +162,7 @@ json NormalMeshRenderProvider::Serialize() const {
     json j;
     // 数値IDではなく文字列名で保存（ロード環境が変わっても安全にするため）
     j["modelName"] = StringPool::GetInstance()->GetStringFromID(data.modelID);
-    j["textureIndex"] = data.textureIndex;
+    j["textureName"] = TextureManager::GetInstance()->GetTextureNameBySrvIndex(data.textureIndex);
     j["color"] = { data.color.x, data.color.y, data.color.z, data.color.w };
     return j;
 }
@@ -172,8 +172,9 @@ void NormalMeshRenderProvider::Deserialize(const json& j) {
         std::string modelName = j["modelName"].get<std::string>();
         data.modelID = StringPool::GetInstance()->GetStringID(modelName);
     }
-    if (j.contains("textureIndex")) {
-        data.textureIndex = j["textureIndex"].get<uint32_t>();
+    if (j.contains("textureName")) {
+        std::string textureName = j["textureName"].get<std::string>();
+        data.textureIndex = TextureManager::GetInstance()->GetTextureSrvIndexByName(textureName);
     }
     if (j.contains("color") && j["color"].is_array()) {
         data.color.x = j["color"][0].get<float>();

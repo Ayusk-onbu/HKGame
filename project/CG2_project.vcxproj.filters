@@ -183,6 +183,8 @@
     <ClCompile Include="UsefulTool\StringPool.cpp" />
     <ClCompile Include="Engine\Objects\Primitive\Mesh\NormalMesh.cpp" />
     <ClCompile Include="UsefulTool\Light\LightingSystem.cpp" />
+    <ClCompile Include="Engine\ResourceView\RayTracing\RayTracingManager.cpp" />
+    <ClCompile Include="UsefulTool\Component\Render\RayTracingComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\MathUtils\Physics\Collider\CollisionLayerManager.h" />
@@ -376,6 +378,8 @@
     <ClInclude Include="UsefulTool\StringPool.h" />
     <ClInclude Include="Engine\Objects\Primitive\Mesh\NormalMesh.h" />
     <ClInclude Include="UsefulTool\Light\LightingSystem.h" />
+    <ClInclude Include="Engine\ResourceView\RayTracing\RayTracingManager.h" />
+    <ClInclude Include="UsefulTool\Component\Render\RayTracingComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

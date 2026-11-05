@@ -57,7 +57,6 @@ void SceneDirector::Initialize(Scene& firstScene) {
 	DrawManager::GetInstance()->Initialize(p_fngine_);
 
 	auto editorMgr = EditorManager::GetInstance();
-	auto* hairEditor = editorMgr->CreateEditor<HairGuideEditor>(p_fngine_->hair_.get());
 	auto* hermiteEditor = editorMgr->CreateEditor<HermiteEditor>();
 	editorMgr->SetActiveEditor(hermiteEditor);
 }

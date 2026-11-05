@@ -7,6 +7,7 @@
 #include "State/Movement/Movement.h"
 #include "Controller/Controller.h"
 #include "Skinning/SkinningComponent.h"
+#include "Render/RayTracingComponent.h"
 
 void ComponentFactory::Initialize() {
     // --------------------------------------------------
@@ -76,6 +77,15 @@ void ComponentFactory::Initialize() {
     // --------------------------------------------------
     Register("SkinningComponent", []() {
         auto comp = std::make_unique<SkinningComponent>();
+        comp->Initialize();
+        return comp;
+    });
+
+    // --------------------------------------------------
+    // レイトレーシングコンポーネント (RayTracingComponent)
+    // --------------------------------------------------
+    Register("RayTracingComponent", []() {
+        auto comp = std::make_unique<RayTracingComponent>();
         comp->Initialize();
         return comp;
     });

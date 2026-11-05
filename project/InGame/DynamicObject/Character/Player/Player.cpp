@@ -8,6 +8,9 @@
 #include "Component/Physics/ColliderComponent.h"
 #include "Component/Physics/RigidBody.h"
 #include "Component/Render/RenderComponent.h"
+#include "Component/Render/RayTracingComponent.h"
+#include "RayTracingManager.h"
+#include "../../../../UsefulTool/EditorManager/Hair/HairEditor.h"
 
 Player::Player() {
 	//controller_ = std::make_unique<PlayerController>();
@@ -60,8 +63,12 @@ void Player::Initialize(Fngine* fngine) {
 	auto* col = AddComponent<ColliderComponent>();
 	col->SetLayer("Player");
 	col->SetTargetLayers({ "Enemy", "StaticMap" });
+
 	auto collider = col->CreateCollider<BVHCollider>();
 	collider->SetModelName("BoneOctahedron");
+
+	auto* rtComp = AddComponent<RayTracingComponent>();
+	rtComp->SetColor(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
 	EventManager::GetInstance()->RegisterAction(
 		EVENTCATEGORY::EFFECT, 0, this, &Player::MakeHitEffect
@@ -74,6 +81,13 @@ void Player::Initialize(Fngine* fngine) {
 	EventManager::GetInstance()->BindEventToTag(GAMEEVENTID::HairEditor, EVENTCATEGORY::UI, 0);
 
 	transform_.LocalToWorld();
+
+	hair_ = std::make_unique<Hair>();
+	hair_->SetMatrix(GetHeadMatrix());
+	hair_->Initialize(fngine, false, {});
+
+	auto editorMgr = EditorManager::GetInstance();
+	auto* hairEditor = editorMgr->CreateEditor<HairGuideEditor>(hair_.get());
 }
 
 void Player::Update(float deltaTime) {
@@ -107,6 +121,18 @@ void Player::Update(float deltaTime) {
 void Player::Draw() {
 	//obj_->LocalToWorld();
 	DynamicObject::Draw();
+
+	if (hair_) {
+		hair_->Update(1.0f / 60.0f, GetHeadMatrix());
+
+		RayTracingManager::GetInstance()->RegisterHairInstance(
+			hair_->GetAABBBufferGPUAddress(),
+			hair_->GetFlatVertexBufferResource(),
+			hair_->GetAABBCount(),
+			Matrix4x4::Make::Identity(),
+			Vector4(0.2f, 0.2f, 0.2f, 1.0f)
+		);
+	}
 }
 
 void Player::MakeHitEffect() {

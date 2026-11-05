@@ -85,7 +85,8 @@ void DynamicObject::DrawUI() {
             "SkinningComponent",
             "RigidBody",
             "ColliderComponent",
-            "StatusComponent"
+            "StatusComponent",
+			"RayTracingComponent",
         };
         static int selectedCompIdx = 0;
 

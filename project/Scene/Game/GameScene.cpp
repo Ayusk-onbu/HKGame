@@ -73,10 +73,10 @@ void GameScene::Initialize() {
 	auto editorMgr = EditorManager::GetInstance();
 	auto* sceneEditor = editorMgr->CreateEditor<SceneEditor>(sceneMap_.get());
 
-	sceneMap_->LoadFromFile("Assets/Data/Map/siran.json", p_fngine_);
+	sceneMap_->LoadFromFile("Assets/Data/Map/TestScene3.json", p_fngine_);
 
-	p_fngine_->hair_->SetMatrix(player_->GetHeadMatrix());
-	p_fngine_->hair_->Initialize(p_fngine_, false, {});
+	//p_fngine_->hair_->SetMatrix(player_->GetHeadMatrix());
+	//p_fngine_->hair_->Initialize(p_fngine_, false, {});
 }
 
 void GameScene::Update(){
@@ -138,7 +138,7 @@ void GameScene::Draw() {
 	//fadeDown_->Draw();
 	// UI
 	//purposeUI_->Draw();
-	p_fngine_->hair_->Update(1.0f / 60.0f, player_->GetHeadMatrix());
+	//p_fngine_->hair_->Update(1.0f / 60.0f, player_->GetHeadMatrix());
 }
 
 void GameScene::CollisionCheck() {

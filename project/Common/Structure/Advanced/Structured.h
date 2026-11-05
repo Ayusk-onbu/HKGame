@@ -126,6 +126,8 @@ public:
     D3D12_GPU_DESCRIPTOR_HANDLE GetUAVHandleGPU() const { return uavAllocation_.gpu; }
     // Vertex/Pixel Shaderにセットする用
     D3D12_GPU_DESCRIPTOR_HANDLE GetSRVHandleGPU() const { return srvAllocation_.gpu; }
+    // CPUハンドルを使うことでしかコピーできないので追加した。
+    D3D12_CPU_DESCRIPTOR_HANDLE GetSRVHandleCPU() const { return srvAllocation_.cpu; }
 
     ID3D12Resource* GetResource() const { return resource_.Get(); } // バリア処理用に公開しておく
 
@@ -143,7 +145,7 @@ private:
 
 class RWTexture2D {
 public:
-    void Initialize(Fngine* fngine, uint32_t width, uint32_t height, DXGI_FORMAT format) {
+    void Initialize(Fngine* fngine, uint32_t width, uint32_t height, DXGI_FORMAT format, D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON) {
         auto device = fngine->GetD3D12System().GetDevice().Get();
 
         // Defaultヒープで作成
@@ -163,7 +165,7 @@ public:
 
         device->CreateCommittedResource(
             &heapProps, D3D12_HEAP_FLAG_NONE, &resDesc,
-            D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource_));
+            initialState, nullptr, IID_PPV_ARGS(&resource_));
 
         auto srv = SRVManager::GetInstance();
 

@@ -37,6 +37,15 @@ public:
         }
         return "None / Unknown";
     }
+
+	uint32_t GetTextureSrvIndexByName(const std::string& name) const {
+		auto it = textures_.find(name);
+		if (it != textures_.end() && it->second) {
+			return it->second->GetSrvIndex();
+		}
+		return UINT32_MAX; // Return an invalid index if not found
+	}
+
 private:
 	Fngine* p_fngine_ = nullptr;
 	std::unordered_map<std::string, std::unique_ptr<Texture>>textures_;

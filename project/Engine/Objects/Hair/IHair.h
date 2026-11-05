@@ -5,24 +5,6 @@
 #include "Structured.h"
 #include "Constant.h"
 
-struct HairCamera {
-	Matrix4x4 inverseProjView; // カメラの逆射影ビュー行列
-	Vector3 cameraPosition;     // カメラの位置
-	float padding;             // 4の倍数にするためのパディング
-};
-
-// この構造体は絶対消す
-struct HairLightingParams {
-	Vector3 lightDirection = { 1.0f, 1.0f, -1.0f };
-	float pad0 = 0.0f;
-	Vector3 lightColor = { 1.0f, 1.0f, 1.0f };
-	float lightIntensity = 1.0f;
-	Vector3 ambientColor = { 0.05f, 0.05f, 0.05f };
-	float hairShift = 0.1f;
-	float hairExponent = 80.0f;
-	Vector3 pad1 = { 0.0f, 0.0f, 0.0f };
-};
-
 // 全てのGuideは違う頂点数が可能であり、
 // 全てのStrandsは違う頂点数が可能である。
 // 以上のことから、和が国家はStrandsInfoとGuideInfoをセーブする必要がある。
@@ -32,9 +14,6 @@ public:
 	void Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& savedata);
 	void Update(float deltaTime, const Matrix4x4& mat);
 	
-	void Render(D3D12_GPU_DESCRIPTOR_HANDLE depthHandle);
-	void PreHair(ID3D12Resource* randerTargetResource, D3D12_RESOURCE_STATES preState, ID3D12Resource* depthResource);
-	void PostHair(ID3D12Resource* randerTargetResource, D3D12_RESOURCE_STATES postState, ID3D12Resource* depthResource);
 public:
 
 	bool AddVertexToGuide(uint32_t guideIndex, const GuideCurve::ControllerPoint* customPoint = nullptr);
@@ -84,6 +63,24 @@ public:
 		return gpuChildStrandBuffer_ ? gpuChildStrandBuffer_->GetMappedData() : nullptr;
 	}
 
+	D3D12_GPU_VIRTUAL_ADDRESS GetAABBBufferGPUAddress() const {
+		return hairAABBBuffer_->GetResource()->GetGPUVirtualAddress();
+	}
+	UINT GetAABBCount() const {
+		return hairAABBBuffer_->GetNumElements();
+	}
+	D3D12_GPU_DESCRIPTOR_HANDLE GetFlatVertexBufferSRVHandleGPU() const {
+		return hairFlatVertexBuffer_->GetSRVHandleGPU();
+	}
+
+	D3D12_CPU_DESCRIPTOR_HANDLE GetFlatVertexBufferSRVHandleCPU() const {
+		return hairFlatVertexBuffer_->GetSRVHandleCPU();
+	}
+
+	ID3D12Resource* GetFlatVertexBufferResource() const {
+		return hairFlatVertexBuffer_->GetResource();
+	}
+
 	// 追従先の移動量を設定する
 	void SetMoveDirection(const Vector3& moveDir) {
 		if (gpuHairMaterialParameterBuffer_) {
@@ -105,13 +102,8 @@ private:
 private:
 	Fngine* engine_ = nullptr;
 
-	// コマンドリストとパイプライン
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> dxrCmdList_; // QueryInterfaceしたやつ
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> globalRootSignature_;
-	Microsoft::WRL::ComPtr<ID3D12StateObject> rtpso_;
-	Microsoft::WRL::ComPtr<IDxcBlob> hairShaderBlob_;
 
-private:
 	GuideCurve::GuideHear guide_;
 	bool isGpuUpdateRequested_ = false; // フラグ
 	uint32_t cachedActiveVertexCount_ = 0;
@@ -128,7 +120,7 @@ private:
 	std::unique_ptr<ConstantBuffer<Strands::HairConfig>>gpuConfigBuffer_;// 髪全体の情報その性質
 
 	// このデータはLightingSystemに変更する
-	std::unique_ptr<ConstantBuffer<HairLightingParams>>hairLightingParamsBuffer_;// 髪の光の情報
+	//std::unique_ptr<ConstantBuffer<HairLightingParams>>hairLightingParamsBuffer_;// 髪の光の情報
 
 	std::unique_ptr<Structured<GuideCurve::ControllerPoint>> uploadGuideBuffer;// データ転送用バッファ
 	std::unique_ptr<Structured<GuideCurve::GuideInfo>>guideInfoBuffer_;
@@ -140,29 +132,29 @@ private:
 	std::unique_ptr<RWStructured<GuideCurve::ControllerPoint>>gpuGuideBuffer_;// 全てのガイドの情報
 	std::unique_ptr<RWStructured<Strands::StrandVertex>> hairVertexBuffer_;
 	std::unique_ptr<RWStructured<D3D12_RAYTRACING_AABB>> hairAABBBuffer_;
-	std::unique_ptr<Structured<D3D12_RAYTRACING_INSTANCE_DESC>> instanceBuffer;
+	//std::unique_ptr<Structured<D3D12_RAYTRACING_INSTANCE_DESC>> instanceBuffer;
 	// レイトレ専用のフラット頂点バッファ(二重参照をしないため)
 	std::unique_ptr<RWStructured<Strands::StrandVertex>> hairFlatVertexBuffer_;
 
 	// 加速構造体（BLAS）用のリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> scratchBuffer_;
-	Microsoft::WRL::ComPtr<ID3D12Resource> blasResultBuffer_;
+	//Microsoft::WRL::ComPtr<ID3D12Resource> scratchBuffer_;
+	//Microsoft::WRL::ComPtr<ID3D12Resource> blasResultBuffer_;
 	
 	// 加速構造体（TLAS）用のリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> tlasScratchBuffer_;
-	Microsoft::WRL::ComPtr<ID3D12Resource> tlasResultBuffer_;
+	//Microsoft::WRL::ComPtr<ID3D12Resource> tlasScratchBuffer_;
+	//Microsoft::WRL::ComPtr<ID3D12Resource> tlasResultBuffer_;
 
 	// シェーダーバイディングテーブル（SBT）用のリソース
-	Microsoft::WRL::ComPtr<ID3D12Resource> sbtBuffer_;
+	//Microsoft::WRL::ComPtr<ID3D12Resource> sbtBuffer_;
 
 	// ディスパッチの設定を保持する構造体
-	D3D12_DISPATCH_RAYS_DESC dispatchDesc_{};
+	//D3D12_DISPATCH_RAYS_DESC dispatchDesc_{};
 
 	// 出力用UAVのGPUハンドル
-	D3D12_GPU_DESCRIPTOR_HANDLE renderTargetUAVHandleGPU_{};
-	std::unique_ptr<RWTexture2D> outputTexture_;
+	//D3D12_GPU_DESCRIPTOR_HANDLE renderTargetUAVHandleGPU_{};
+	//std::unique_ptr<RWTexture2D> outputTexture_;
 
-	std::unique_ptr<ConstantBuffer<HairCamera>> hairCameraBuffer_;
+	//std::unique_ptr<ConstantBuffer<HairCamera>> hairCameraBuffer_;
 
 public:
 	// 追従させているキャラクターの行列

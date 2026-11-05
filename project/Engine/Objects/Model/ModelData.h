@@ -164,6 +164,9 @@ public:
 		}
 		return vbView;
 	}
+	ID3D12Resource* GetOutputVertexBufferResource() {
+		return outputVertices_ ? outputVertices_->GetResource() : nullptr;
+	}
 public:
 	std::vector<Matrix4x4> inverseBindPoseMatrices_;
 	uint32_t numVertices_ = 0;

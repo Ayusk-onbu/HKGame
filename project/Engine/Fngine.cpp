@@ -7,6 +7,7 @@
 #include "SDFManager.h"
 #include "Hair/IHair.h"
 #include "Structured.h"
+#include "RayTracingManager.h"
 
 #include <d3dx12.h>
 
@@ -26,6 +27,8 @@ Fngine::~Fngine() {
 	SRVManager::GetInstance()->ReleaseInstance();
 
 	SDFManager::GetInstance()->ReleaseInstance();
+
+	RayTracingManager::GetInstance()->ReleaseInstance();
 
 	ModelManager::GetInstance()->ReleaseInstance();
 
@@ -55,7 +58,7 @@ void Fngine::Initialize() {
 	// Logの初期化
 	Log::Initialize();
 
-	window_.Initialize(L"CG2ClassName", L"LE2B_19_ハマダ_カズヤ_NONAME");
+	window_.Initialize(L"CG2ClassName", L"LE3A_13_ハマダ_カズヤ_I am God");
 
 	errorGuardian_.SetDebugInterface();
 	dxgi_.RecruitEngineer();
@@ -151,13 +154,15 @@ void Fngine::Initialize() {
 	};
 	osrGroup_.Initialize(d3d12_, 1280.0f, 720.0f, slots, false);
 	
-	hair_ = std::make_unique<Hair>();
+	//hair_ = std::make_unique<Hair>();
+
+	RayTracingManager::GetInstance()->Initialize(this);
 
 	intermediate_ = std::make_unique<RWTexture2D>();
-	intermediate_->Initialize(this,1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM);
+	intermediate_->Initialize(this,1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 	finalOutputColor_ = std::make_unique<RWTexture2D>();
-	finalOutputColor_->Initialize(this,1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM);
+	finalOutputColor_->Initialize(this,1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
 	EventManager::GetInstance()->RegisterAction(
 		EVENTCATEGORY::EFFECT, 10, this, &Fngine::UseBoxFilter
@@ -194,6 +199,8 @@ void Fngine::UseRandom() {
 }
 
 void Fngine::BeginOSRFrame() {
+	RayTracingManager::GetInstance()->ClearInstance();
+
 	postPerfectForGPU_->GetMappedData()->enableVignette = 0;
 	postPerfectForGPU_->GetMappedData()->enableRadialBlur = 0;
 	postPerfectForGPU_->GetMappedData()->enableGaussian = 0;
@@ -224,19 +231,23 @@ void Fngine::BeginOSRFrame() {
 void Fngine::EndOSRFrame() {
 	//osr_.End(command_);
 
-	hair_->PreHair(
-        osrGroup_.GetResource(RenderTargetType::Albedo).Get(),
-        D3D12_RESOURCE_STATE_RENDER_TARGET,
-        osrGroup_.GetDSVResource().Get()
-    );
+	auto RTMgr = RayTracingManager::GetInstance();
 
-    hair_->Render(osrGroup_.GetDSVDepthHandleGPU());
+	RTMgr->Update(1.0f / 60.0f);
 
-    hair_->PostHair(
-        osrGroup_.GetResource(RenderTargetType::Albedo).Get(),
-        D3D12_RESOURCE_STATE_RENDER_TARGET,
-        osrGroup_.GetDSVResource().Get()
-    );
+	RTMgr->PreRender(osrGroup_.GetResource(
+		RenderTargetType::Albedo).Get(), 
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		osrGroup_.GetDSVResource().Get()
+	);
+
+	RTMgr->Render(osrGroup_.GetDSVResource().Get());
+
+	RTMgr->PostRender(osrGroup_.GetResource(
+		RenderTargetType::Albedo).Get(),
+		D3D12_RESOURCE_STATE_RENDER_TARGET,
+		osrGroup_.GetDSVResource().Get()
+	);
 
     osrGroup_.End(command_);
 
@@ -244,6 +255,9 @@ void Fngine::EndOSRFrame() {
 	UINT dispatchY = (720 + 7) / 8;
 
 	auto commandList = command_.GetList().GetList().Get();
+
+	ID3D12DescriptorHeap* mainHeaps[] = { SRVManager::GetInstance()->GetHeap() }; // ※使用しているメインヒープの取得処理に合わせて調整
+	commandList->SetDescriptorHeaps(_countof(mainHeaps), mainHeaps);
 
 	// --- Dispatch 前に、入力テクスチャを Compute Shader で読める状態に遷移させる ---
 	D3D12_RESOURCE_BARRIER inputBarriers[] = {

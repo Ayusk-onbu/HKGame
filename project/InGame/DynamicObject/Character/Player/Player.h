@@ -1,6 +1,7 @@
 #pragma once
 #include "Character.h"
 #include "Animation.h"
+#include "../../../../Engine/Objects/Hair/IHair.h"
 
 struct HitEffectInfo {
 	WorldTransform transform;
@@ -52,4 +53,9 @@ public:
 	Matrix4x4 GetHeadMatrix()const;
 	Vector3 GetHeadPos()const;
 	void SetHeadPosToCameraTarget();
+	Hair* GetHair(){ return hair_.get(); }
+
+private:
+	std::unique_ptr<Hair>hair_;
+
 };

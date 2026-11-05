@@ -44,8 +44,6 @@
 
 //#define pi float(3.14159265358979323846f)
 
-class Hair;
-
 class RWTexture2D;
 
 struct PostEffectConfig
@@ -125,8 +123,6 @@ private:
 
 
 public:
-	// 髪の毛
-	std::unique_ptr<Hair> hair_ = nullptr;
 
 	std::unique_ptr<RWTexture2D> intermediate_;
 	std::unique_ptr<RWTexture2D> finalOutputColor_;
