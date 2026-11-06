@@ -6,6 +6,34 @@
 #include <d3dx12.h>
 #include <pix3.h>
 
+RayTracingManager::~RayTracingManager() {
+	// 登録インスタンスのクリア
+	registeredInstances_.clear();
+
+	// マップに保持している全 BLAS リソースを明示的にクリア（これで ComPtr が解放される）
+	dynamicBLASMap_.clear();
+	staticBLASMap_.clear();
+
+	// TLAS および各バッファの解放
+	tlasResultBuffer_.Reset();
+	tlasScratchBuffer_.Reset();
+	instanceDescBuffer_.reset();
+	materialStructuredBuffer_.reset();
+
+	// パイプライン・SBT・ヒープ等の解放
+	sbtBuffer_.Reset();
+	rtpso_.Reset();
+	globalRootSignature_.Reset();
+	outputTexture_.reset();
+	cameraBuffer_.reset();
+	rtDescriptorHeap_.Reset();
+
+	// コマンドリストの参照解除
+	dxrCmdList_.Reset();
+
+	device5_.Reset();
+}
+
 constexpr UINT AlignTo(UINT size, UINT alignment) {
 	return(size + alignment - 1) & ~(alignment - 1);
 }
@@ -44,9 +72,11 @@ void RayTracingManager::Initialize(Fngine* engine) {
 
 	instanceDescBuffer_ = std::make_unique<Structured<D3D12_RAYTRACING_INSTANCE_DESC>>(engine_);
 	instanceDescBuffer_->Initialize(2048);
+	instanceDescBuffer_->GetResource()->SetName(L"RTManager_InstanceDescBuffer");
 
 	materialStructuredBuffer_ = std::make_unique<Structured<RayTracingInstanceMaterial>>(engine_);
 	materialStructuredBuffer_->Initialize(2048);
+	materialStructuredBuffer_->GetResource()->SetName(L"RTManager_MaterialStructuredBuffer");
 }
 
 // ====================
@@ -68,29 +98,36 @@ void RayTracingManager::Update(float deltaTime)
 	for (UINT i = 0; i < numInstances; ++i) {
 		const auto& inst = registeredInstances_[i];
 
-		// 1. BLAS の取得または動的ビルド
+		// BLAS の取得または動的ビルド
 		D3D12_GPU_VIRTUAL_ADDRESS blasAddr = 0;
 		if (inst.type == RayTracingInstanceType::StaticMesh) {
 			blasAddr = GetOrCreateStaticBLAS(inst.modelID);
 		}
 		else {
-			blasAddr = BuildDynamicBLAS(inst, i);
+			// インスタンスが持つ固有のリソースポインタをキーにして渡す
+			ID3D12Resource* keyResource = (inst.type == RayTracingInstanceType::HairProcedural)
+				? inst.hairFlatVertexBuffer
+				: inst.vertexBufferResource;
+
+			blasAddr = BuildDynamicBLAS(inst, keyResource);
 		}
 
-		// 2. TLAS インスタンス記述子の設定
+		// TLAS インスタンス記述子の設定
 		D3D12_RAYTRACING_INSTANCE_DESC desc{};
 		Matrix4x4 transposeMat = Matrix4x4::Transpose(inst.worldMatrix);
 		std::memcpy(desc.Transform, &transposeMat, sizeof(desc.Transform));
 
 		desc.InstanceID = i;
 		desc.InstanceMask = 0xFF;
+
+		// HitGroup の基本オフセット指定（※ HairShadowAnyHit 導入時は 2、未導入時は 1）
 		desc.InstanceContributionToHitGroupIndex = (inst.type == RayTracingInstanceType::HairProcedural) ? 1 : 0;
 		desc.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 		desc.AccelerationStructure = blasAddr;
 
 		instanceDescs[i] = desc;
 
-		// 3. マテリアルパラメータおよび SRV の設定
+		// マテリアルパラメータおよび SRV の設定
 		RayTracingInstanceMaterial matData{};
 		matData.color = inst.color;
 		matData.isHair = (inst.type == RayTracingInstanceType::HairProcedural) ? 1 : 0;
@@ -102,7 +139,7 @@ void RayTracingManager::Update(float deltaTime)
 			// Index 0 (Output UAV) と Index 1 (Depth SRV) を避けて Index 2 から書き込む
 			CD3DX12_CPU_DESCRIPTOR_HANDLE targetHandle(
 				rtDescriptorHeap_->GetCPUDescriptorHandleForHeapStart(),
-				2 + currentHairBufferCount, // ★ オフセット 2
+				2 + currentHairBufferCount,
 				descriptorSize_
 			);
 
@@ -128,7 +165,7 @@ void RayTracingManager::Update(float deltaTime)
 		materials[i] = matData;
 	}
 
-	// 4. TLAS (Top-Level Acceleration Structure) のビルド
+	// TLAS (Top-Level Acceleration Structure) のビルド
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS tlasInputs{};
 	tlasInputs.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 	tlasInputs.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
@@ -142,6 +179,7 @@ void RayTracingManager::Update(float deltaTime)
 	// TLAS バッファの容量確保・再生成
 	if (!tlasResultBuffer_ || tlasResultBuffer_->GetDesc().Width < tlasPrebuildInfo.ResultDataMaxSizeInBytes) {
 		tlasScratchBuffer_ = CreateBufferResource(engine_->GetD3D12System().GetDevice().Get(), tlasPrebuildInfo.ScratchDataSizeInBytes, true);
+		tlasScratchBuffer_->SetName(L"RTManager_TLAS_ScratchBuffer");
 
 		D3D12_HEAP_PROPERTIES heapProps{ D3D12_HEAP_TYPE_DEFAULT };
 		D3D12_RESOURCE_DESC resDesc{};
@@ -155,7 +193,15 @@ void RayTracingManager::Update(float deltaTime)
 		resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		resDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-		device5_->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, nullptr, IID_PPV_ARGS(&tlasResultBuffer_));
+		device5_->CreateCommittedResource(
+			&heapProps,
+			D3D12_HEAP_FLAG_NONE,
+			&resDesc,
+			D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE,
+			nullptr,
+			IID_PPV_ARGS(&tlasResultBuffer_)
+		);
+		tlasResultBuffer_->SetName(L"RTManager_TLAS_ResultBuffer");
 	}
 
 	// TLAS ビルドコマンドの発行
@@ -182,7 +228,7 @@ D3D12_GPU_VIRTUAL_ADDRESS RayTracingManager::GetOrCreateStaticBLAS(uint32_t mode
 	auto& objectData = ModelManager::GetInstance()->GetObjectData(modelID);
 	if (objectData.GetVertexCount() == 0) return 0;
 
-	// ★ 静的メッシュの VB / IB は GENERIC_READ 状態のため、バリア発行は一切不要！
+	// 静的メッシュの VB / IB は GENERIC_READ 状態のため、バリア発行は一切不要！
 
 	D3D12_RAYTRACING_GEOMETRY_DESC geomDesc{};
 	geomDesc.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
@@ -207,6 +253,7 @@ D3D12_GPU_VIRTUAL_ADDRESS RayTracingManager::GetOrCreateStaticBLAS(uint32_t mode
 
 	BLASResource res{};
 	res.scratchBuffer = CreateBufferResource(engine_->GetD3D12System().GetDevice().Get(), prebuildInfo.ScratchDataSizeInBytes, true);
+	res.scratchBuffer->SetName(L"StaticBLAS_ScratchBuffer");
 
 	D3D12_HEAP_PROPERTIES heapProps{ D3D12_HEAP_TYPE_DEFAULT };
 	D3D12_RESOURCE_DESC resDesc{};
@@ -221,6 +268,7 @@ D3D12_GPU_VIRTUAL_ADDRESS RayTracingManager::GetOrCreateStaticBLAS(uint32_t mode
 	resDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
 	device5_->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, nullptr, IID_PPV_ARGS(&res.resultBuffer));
+	res.resultBuffer->SetName(L"StaticBLAS_ResultBuffer");
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc{};
 	buildDesc.Inputs = inputs;
@@ -238,21 +286,21 @@ D3D12_GPU_VIRTUAL_ADDRESS RayTracingManager::GetOrCreateStaticBLAS(uint32_t mode
 	return res.resultBuffer->GetGPUVirtualAddress();
 }
 
-D3D12_GPU_VIRTUAL_ADDRESS RayTracingManager::BuildDynamicBLAS(const RayTracingInstanceDesc& inst, uint32_t instanceIndex) {
-	if (instanceIndex >= dynamicBLASPool_.size()) {
-		dynamicBLASPool_.resize(instanceIndex + 1);
-	}
-	auto& res = dynamicBLASPool_[instanceIndex];
+D3D12_GPU_VIRTUAL_ADDRESS RayTracingManager::BuildDynamicBLAS(const RayTracingInstanceDesc& inst, ID3D12Resource* keyResource) {
+	if (!keyResource) return 0;
+
+	// インデックス依存を廃止し、固有リソースポインタをキーにして BLAS を取得・自動生成
+	auto& res = dynamicBLASMap_[keyResource];
 
 	std::vector<D3D12_RESOURCE_BARRIER> preBarriers;
 	std::vector<D3D12_RESOURCE_BARRIER> postBarriers;
 
-	// ★ インスタンス種別ごとに実際の状態に合わせてステート遷移を分岐
+	// インスタンス種別ごとに実際の状態に合わせてステート遷移を分岐
 	if (inst.type == RayTracingInstanceType::SkinnedMesh) {
 		if (inst.vertexBufferResource) {
 			preBarriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
 				inst.vertexBufferResource,
-				D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, // SkinnedMeshの頂点バッファ状態
+				D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER,
 				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
 			));
 			postBarriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
@@ -262,20 +310,22 @@ D3D12_GPU_VIRTUAL_ADDRESS RayTracingManager::BuildDynamicBLAS(const RayTracingIn
 			));
 		}
 	}
-	else if (inst.type == RayTracingInstanceType::HairProcedural) {
-		if (inst.vertexBufferResource) {
-			preBarriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
-				inst.vertexBufferResource,
-				D3D12_RESOURCE_STATE_UNORDERED_ACCESS, // Hair AABBバッファ状態
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
-			));
-			postBarriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
-				inst.vertexBufferResource,
-				D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-				D3D12_RESOURCE_STATE_UNORDERED_ACCESS
-			));
-		}
-	}
+	//else if (inst.type == RayTracingInstanceType::HairProcedural) {
+	//	// AABBバッファ（またはFlatVertexBuffer）のステート遷移
+	//	ID3D12Resource* targetRes = inst.vertexBufferResource ? inst.vertexBufferResource : inst.hairFlatVertexBuffer;
+	//	if (targetRes) {
+	//		preBarriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
+	//			targetRes,
+	//			D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+	//			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+	//		));
+	//		postBarriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
+	//			targetRes,
+	//			D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+	//			D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+	//		));
+	//	}
+	//}
 
 	if (!preBarriers.empty()) {
 		dxrCmdList_->ResourceBarrier(static_cast<UINT>(preBarriers.size()), preBarriers.data());
@@ -312,8 +362,10 @@ D3D12_GPU_VIRTUAL_ADDRESS RayTracingManager::BuildDynamicBLAS(const RayTracingIn
 	D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO prebuildInfo{};
 	device5_->GetRaytracingAccelerationStructurePrebuildInfo(&inputs, &prebuildInfo);
 
+	// 未作成または容量不足の場合のみバッファを新規生成（作成済みなら100%使い回す）
 	if (!res.resultBuffer || res.resultBuffer->GetDesc().Width < prebuildInfo.ResultDataMaxSizeInBytes) {
 		res.scratchBuffer = CreateBufferResource(engine_->GetD3D12System().GetDevice().Get(), prebuildInfo.ScratchDataSizeInBytes, true);
+		res.scratchBuffer->SetName(L"DynamicBLAS_ScratchBuffer");
 
 		D3D12_HEAP_PROPERTIES heapProps{ D3D12_HEAP_TYPE_DEFAULT };
 		D3D12_RESOURCE_DESC resDesc{};
@@ -327,7 +379,15 @@ D3D12_GPU_VIRTUAL_ADDRESS RayTracingManager::BuildDynamicBLAS(const RayTracingIn
 		resDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		resDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-		device5_->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &resDesc, D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE, nullptr, IID_PPV_ARGS(&res.resultBuffer));
+		device5_->CreateCommittedResource(
+			&heapProps,
+			D3D12_HEAP_FLAG_NONE,
+			&resDesc,
+			D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE,
+			nullptr,
+			IID_PPV_ARGS(&res.resultBuffer)
+		);
+		res.resultBuffer->SetName(L"DynamicBLAS_ResultBuffer");
 	}
 
 	D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc{};
@@ -420,7 +480,7 @@ void RayTracingManager::Render(ID3D12Resource* depthResource)
 	if (registeredInstances_.empty() || !tlasResultBuffer_) return;
 
 	// -------------------------------------------------------------
-	// 1. rtDescriptorHeap_ の Index 0 と 1 に Output UAV と Depth SRV を直接構築
+	// rtDescriptorHeap_ の Index 0 と 1 に Output UAV と Depth SRV を直接構築
 	// -------------------------------------------------------------
 	CD3DX12_CPU_DESCRIPTOR_HANDLE heapCpuStart(rtDescriptorHeap_->GetCPUDescriptorHandleForHeapStart());
 
@@ -435,7 +495,6 @@ void RayTracingManager::Render(ID3D12Resource* depthResource)
 	CD3DX12_CPU_DESCRIPTOR_HANDLE depthCpuHandle(heapCpuStart, 1, descriptorSize_);
 	D3D12_SHADER_RESOURCE_VIEW_DESC depthSrvDesc{};
 
-	// ★ R32_FLOAT から R24_UNORM_X8_TYPELESS へ変更！
 	depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
 	depthSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	depthSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -444,7 +503,7 @@ void RayTracingManager::Render(ID3D12Resource* depthResource)
 	device5_->CreateShaderResourceView(depthResource, &depthSrvDesc, depthCpuHandle);
 
 	// -------------------------------------------------------------
-	// 2. カメラ等のパラメータ更新
+	// カメラ等のパラメータ更新
 	// -------------------------------------------------------------
 	auto camera = CameraSystem::GetInstance()->GetActiveCamera();
 	RayTracingCamera camData;
@@ -453,7 +512,7 @@ void RayTracingManager::Render(ID3D12Resource* depthResource)
 	std::memcpy(cameraBuffer_->GetMappedData(), &camData, sizeof(RayTracingCamera));
 
 	// -------------------------------------------------------------
-	// 3. レイトレ専用 Descriptor Heap をバインド（これ1つのみでOK！）
+	// レイトレ専用 Descriptor Heap をバインド（これ1つのみでOK！）
 	// -------------------------------------------------------------
 	ID3D12DescriptorHeap* ppHeaps[] = { rtDescriptorHeap_.Get() };
 	dxrCmdList_->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
@@ -464,15 +523,15 @@ void RayTracingManager::Render(ID3D12Resource* depthResource)
 	dxrCmdList_->SetComputeRootConstantBufferView(0, cameraBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootShaderResourceView(1, tlasResultBuffer_->GetGPUVirtualAddress());
 
-	// ★ Index 0 の Output UAV ハンドル
+	// Index 0 の Output UAV ハンドル
 	dxrCmdList_->SetComputeRootDescriptorTable(2, CD3DX12_GPU_DESCRIPTOR_HANDLE(heapGpuStart, 0, descriptorSize_));
 
-	// ★ Index 1 の Depth SRV ハンドル
+	// Index 1 の Depth SRV ハンドル
 	dxrCmdList_->SetComputeRootDescriptorTable(3, CD3DX12_GPU_DESCRIPTOR_HANDLE(heapGpuStart, 1, descriptorSize_));
 
 	dxrCmdList_->SetComputeRootShaderResourceView(4, materialStructuredBuffer_->GetResource()->GetGPUVirtualAddress());
 
-	// ★ Index 2～ の Hair Flat Vertices SRV 配列の先頭ハンドル
+	// Index 2～ の Hair Flat Vertices SRV 配列の先頭ハンドル
 	dxrCmdList_->SetComputeRootDescriptorTable(5, CD3DX12_GPU_DESCRIPTOR_HANDLE(heapGpuStart, 2, descriptorSize_));
 
 	dxrCmdList_->SetPipelineState1(rtpso_.Get());
@@ -538,6 +597,7 @@ void RayTracingManager::CreateDescriptorHeap() {
 
 	HRESULT hr = device5_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&rtDescriptorHeap_));
 	assert(SUCCEEDED(hr));
+	rtDescriptorHeap_->SetName(L"RayTracing Descriptor Heap");
 }
 
 void RayTracingManager::CreateRootSignature()
@@ -577,6 +637,8 @@ void RayTracingManager::CreateRootSignature()
 		assert(false);
 	}
 	pDevice->CreateRootSignature(0, signatureBlob->GetBufferPointer(), signatureBlob->GetBufferSize(), IID_PPV_ARGS(&globalRootSignature_));
+
+	globalRootSignature_->SetName(L"RayTracing Global Root Signature");
 }
 
 void RayTracingManager::CreateRaytracingPSO()
@@ -632,6 +694,7 @@ void RayTracingManager::CreateShaderBindingTable()
 
 	Microsoft::WRL::ComPtr<ID3D12StateObjectProperties> rtpsoProps;
 	rtpso_->QueryInterface(IID_PPV_ARGS(&rtpsoProps));
+	rtpso_->SetName(L"RayTracing Pipeline State Object");
 
 	// 各識別子の取得
 	void* rayGenId = rtpsoProps->GetShaderIdentifier(L"MyRayGenShader");
@@ -651,6 +714,7 @@ void RayTracingManager::CreateShaderBindingTable()
 	UINT totalSBTSize = rayGenSectionSize + missSectionSize + hitGroupSectionSize;
 
 	sbtBuffer_ = CreateBufferResource(pDevice, totalSBTSize);
+	sbtBuffer_->SetName(L"RayTracing SBT Buffer");
 
 	uint8_t* pData = nullptr;
 	sbtBuffer_->Map(0, nullptr, reinterpret_cast<void**>(&pData));

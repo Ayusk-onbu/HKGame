@@ -22,6 +22,10 @@ void Audio::Initialize() {
 }
 
 void Audio::Finalize() {
+	if (masterVoice_) {
+		masterVoice_->DestroyVoice();
+		masterVoice_ = nullptr;
+	}
 	xAudio2_.Reset();
 }
 

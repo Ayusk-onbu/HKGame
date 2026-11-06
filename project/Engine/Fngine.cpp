@@ -20,6 +20,10 @@ Fngine::Fngine() {
 }
 
 Fngine::~Fngine() {
+	if (command_.GetQueue().GetQueue()) {
+		tachyonSync_.GetCGPU().Flush(command_.GetQueue().GetQueue());
+	}
+
 	ImGuiManager::GetInstance()->Shutdown();
 
 	TextureManager::GetInstance()->ReleaseInstance();
@@ -28,8 +32,6 @@ Fngine::~Fngine() {
 
 	SDFManager::GetInstance()->ReleaseInstance();
 
-	RayTracingManager::GetInstance()->ReleaseInstance();
-
 	ModelManager::GetInstance()->ReleaseInstance();
 
 	DrawManager::GetInstance()->ReleaseInstance();
@@ -37,6 +39,13 @@ Fngine::~Fngine() {
 	Music::GetInstance()->UnLoad();
 
 	PSOManager::GetInstance()->ReleaseInstance();
+
+	RayTracingManager::GetInstance()->ReleaseInstance();
+	
+	if (command_.GetQueue().GetQueue()) {
+		tachyonSync_.GetCGPU().Flush(command_.GetQueue().GetQueue());
+	}
+	
 	//解放処理
 	tachyonSync_.GetCGPU().UnLoad();
 

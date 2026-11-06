@@ -20,6 +20,8 @@ public:
 	/// Deleteと同処理
 	/// </summary>
 	void UnLoad();
+
+	void Flush(Microsoft::WRL::ComPtr <ID3D12CommandQueue>& commandQueue);
 private:
 	/// <summary>
 	/// ゴールと図るための道具を渡す処理

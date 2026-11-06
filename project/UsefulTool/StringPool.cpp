@@ -17,7 +17,7 @@ uint32_t StringPool::GetStringID(const std::string& str) {
 }
 
 std::string StringPool::GetStringFromID(uint32_t id) {
-	Log::View("Getting string by ID: " + std::to_string(id));
+	//Log::View("Getting string by ID: " + std::to_string(id));
 	if (id >= idToStringMap_.size()) {
 		Log::View("Invalid string ID");
 		if (idToStringMap_.size() > 0) {
@@ -28,6 +28,6 @@ std::string StringPool::GetStringFromID(uint32_t id) {
 		return "";
 	}
 
-	Log::View("Correct Get String by ID");
+	//Log::View("Correct Get String by ID");
 	return idToStringMap_[id];
 }

@@ -32,7 +32,6 @@ void Game::Run() {
 }
 
 void Game::Finalize() {
+	scene_.reset();
 	fngine_.reset();
-	//COMの初期化を解除
-	CoUninitialize();
 }

@@ -38,3 +38,8 @@ void Fence::Wait() {
 void Fence::UnLoad() {
 	CloseHandle(event_);
 }
+
+void Fence::Flush(Microsoft::WRL::ComPtr <ID3D12CommandQueue>& commandQueue) {
+	Signal(commandQueue);
+	Wait();
+}

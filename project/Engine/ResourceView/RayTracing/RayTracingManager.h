@@ -44,7 +44,7 @@ class RayTracingManager :
 public:
 	friend class ISingleton<RayTracingManager>;
 	RayTracingManager() = default;
-	~RayTracingManager() = default;
+	~RayTracingManager();
 public:
 	void Initialize(Fngine* engine);
 
@@ -110,7 +110,8 @@ private:
 
 	// 内部ビルド処理
 	D3D12_GPU_VIRTUAL_ADDRESS GetOrCreateStaticBLAS(uint32_t modelID);
-	D3D12_GPU_VIRTUAL_ADDRESS BuildDynamicBLAS(const RayTracingInstanceDesc& inst, uint32_t instanceIndex);
+	//D3D12_GPU_VIRTUAL_ADDRESS BuildDynamicBLAS(const RayTracingInstanceDesc& inst, uint32_t instanceIndex);
+	D3D12_GPU_VIRTUAL_ADDRESS BuildDynamicBLAS(const RayTracingInstanceDesc& inst, ID3D12Resource* keyResource);
 
 	// DXCヘルパー
 	Microsoft::WRL::ComPtr<IDxcBlob> CompileShader(
@@ -120,8 +121,7 @@ private:
 
 private:
 	Fngine* engine_ = nullptr;
-	ID3D12Device5* device5_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> dxrCmdList_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Device5> device5_ = nullptr;Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> dxrCmdList_ = nullptr;
 	UINT width_ = 1280;
 	UINT height_ = 720;
 
@@ -143,11 +143,16 @@ private:
 	std::vector<RayTracingInstanceDesc> registeredInstances_;
 
 	struct BLASResource {
+		~BLASResource() {
+			resultBuffer.Reset();
+			scratchBuffer.Reset();
+		}
 		Microsoft::WRL::ComPtr<ID3D12Resource> resultBuffer;
 		Microsoft::WRL::ComPtr<ID3D12Resource> scratchBuffer;
 	};
 	std::unordered_map<uint32_t, BLASResource> staticBLASMap_;
-	std::vector<BLASResource> dynamicBLASPool_;
+	//std::vector<BLASResource> dynamicBLASPool_;
+	std::unordered_map<ID3D12Resource*, BLASResource> dynamicBLASMap_;
 
 	// TLAS 用リソース
 	Microsoft::WRL::ComPtr<ID3D12Resource> tlasResultBuffer_;
