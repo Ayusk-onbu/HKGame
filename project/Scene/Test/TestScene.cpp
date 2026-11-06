@@ -42,7 +42,7 @@ void TestScene::Update() {
 	}
 
 	if (hasRequestedNextScene_) {
-		p_sceneDirector_->RequestChangeScene(new TitleScene());
+		p_sceneDirector_->RequestChangeScene(SceneType::Title);
 	}
 }
 

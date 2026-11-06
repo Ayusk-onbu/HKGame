@@ -163,7 +163,7 @@ void GameScene::ToClearScene() {
 	toSceneTimer_ += 1.0f / 60.0f;
 
 	if (toSceneTimer_ > 3.0f) {
-		p_sceneDirector_->RequestChangeScene(new ClearScene());
+		p_sceneDirector_->RequestChangeScene(SceneType::Clear);
 		return;
 	}
 }
@@ -172,7 +172,7 @@ void GameScene::ToGameOverScene() {
 	toSceneTimer_ += 1.0f / 60.0f;
 
 	if (toSceneTimer_ > 3.0f) {
-		p_sceneDirector_->RequestChangeScene(new GameOverScene());
+		p_sceneDirector_->RequestChangeScene(SceneType::GameOver);
 	}
 }
 
@@ -207,7 +207,7 @@ void GameScene::PauseUpdate() {
 	playGuide_->UpdateAnimation(1.0f / 60.0f);
 
 	if (InputManager::GetGamePad(0).IsPressed(XINPUT_GAMEPAD_Y)) {
-		p_sceneDirector_->RequestChangeScene(new TitleScene());
+		p_sceneDirector_->RequestChangeScene(SceneType::Title);
 	}
 }
 

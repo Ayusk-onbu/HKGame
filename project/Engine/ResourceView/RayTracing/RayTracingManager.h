@@ -82,6 +82,7 @@ public:
 
 	// 解除,____
 	void ClearInstance();
+	void ClearBLASCache();
 
 	// =================
 	// 【 更新 & 描画 】

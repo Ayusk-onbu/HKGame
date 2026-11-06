@@ -216,6 +216,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Engine\Objects\Primitive\Base\PrimitiveBaseModel.cpp" />
     <ClCompile Include="Engine\Objects\Primitive\Box\PrimitiveBox.cpp" />
     <ClCompile Include="InGame\Map\SceneMap.cpp" />
+    <ClCompile Include="Scene\SceneFactory.cpp" />
     <ClCompile Include="Scene\Title\TitleScene.cpp" />
     <ClCompile Include="UsefulTool\Animation\AnimationManager.cpp" />
     <ClCompile Include="UsefulTool\Component\ComponentFactory.cpp" />
@@ -413,6 +414,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Engine\Objects\Primitive\Base\PrimitiveBaseModel.h" />
     <ClInclude Include="Engine\Objects\Primitive\Box\PrimitiveBox.h" />
     <ClInclude Include="InGame\Map\SceneMap.h" />
+    <ClInclude Include="Scene\SceneFactory.h" />
+    <ClInclude Include="Scene\SceneType.h" />
     <ClInclude Include="Scene\Title\TitleScene.h" />
     <ClInclude Include="UsefulTool\Animation\AnimationManager.h" />
     <ClInclude Include="UsefulTool\Component\Component.h" />

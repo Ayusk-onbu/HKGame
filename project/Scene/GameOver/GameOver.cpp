@@ -14,7 +14,7 @@ void GameOverScene::Update() {
 	}
 
 	if (isTrans_) {
-		p_sceneDirector_->RequestChangeScene(new TitleScene);
+		p_sceneDirector_->RequestChangeScene(SceneType::Title);
 	}
 }
 

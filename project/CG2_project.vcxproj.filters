@@ -185,6 +185,7 @@
     <ClCompile Include="UsefulTool\Light\LightingSystem.cpp" />
     <ClCompile Include="Engine\ResourceView\RayTracing\RayTracingManager.cpp" />
     <ClCompile Include="UsefulTool\Component\Render\RayTracingComponent.cpp" />
+    <ClCompile Include="Scene\SceneFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\MathUtils\Physics\Collider\CollisionLayerManager.h" />
@@ -380,6 +381,8 @@
     <ClInclude Include="UsefulTool\Light\LightingSystem.h" />
     <ClInclude Include="Engine\ResourceView\RayTracing\RayTracingManager.h" />
     <ClInclude Include="UsefulTool\Component\Render\RayTracingComponent.h" />
+    <ClInclude Include="Scene\SceneType.h" />
+    <ClInclude Include="Scene\SceneFactory.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

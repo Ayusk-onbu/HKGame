@@ -1,11 +1,13 @@
 #include "SceneDirector.h"
+#include "SceneFactory.h"
 #include "CameraSystem.h"
 #include "LightingSystem.h"
 #include "ModelManager.h"
-#include "UIAnimation.h"
+#include "UIHAnimation.h"
 #include "Chronos.h"
 #include "DrawManager.h"
 #include "SDFManager.h"
+#include "RayTracingManager.h"
 #include "AnimationManager.h"
 #include "SkinningManager.h"
 #include "../Engine/Objects/Primitive/Box/PrimitiveBox.h"
@@ -15,19 +17,20 @@
 #include "../UsefulTool/EditorManager/Map/SceneEditor.h"
 #include "../UsefulTool/EditorManager/Hermite/HermiteEditor.h"
 #include "../UsefulTool/Component/ComponentFactory.h"
+#include "Scene.h"
 #include <pix3.h>
 
 import MotionManager;
 
-SceneDirector::~SceneDirector() {
-	delete currentScene_;
-}
+SceneDirector::SceneDirector() = default;
+SceneDirector::~SceneDirector() = default;
 
-void SceneDirector::Initialize(Scene& firstScene) {
+void SceneDirector::Initialize(SceneType firstSceneType) {
 	// Loadは何か他のクラスにまとめるべきなのではないのであろうか
 	LoadTexture();
 	LoadModelData();
 	LoadMusic();
+
 	UIHAnimationManager::GetInstance()->Load();
 	MotionManager::GetInstance()->LoadMotions("resources/Data/Motion/Hermite/");
 
@@ -40,10 +43,8 @@ void SceneDirector::Initialize(Scene& firstScene) {
 	LightingSystem::GetInstance()->Initialize(p_fngine_);
 
 	// 最初のシーンの初期化処理
-	currentScene_ = &firstScene;
-	currentScene_->FngineSetUp(*p_fngine_);
-	currentScene_->Initialize();
-	currentScene_->GetSceneDirector(this);
+	RequestChangeScene(firstSceneType);
+	ProcessPendingSceneChange();
 
 	// 使うカメラの作成
 	CameraSystem::GetInstance()->MakeCamera("NormalCamera", CameraType::Normal);
@@ -63,6 +64,10 @@ void SceneDirector::Initialize(Scene& firstScene) {
 
 void SceneDirector::Update() {
 	// 更新処理
+	// 予約されているシーン遷移があれば、フレーム冒頭で安全に切り替える
+	ProcessPendingSceneChange();
+
+	if (!currentScene_)return;
 
 	// [ カメラ ]
 	CameraSystem::GetInstance()->Update();
@@ -97,6 +102,7 @@ void SceneDirector::Update() {
 }
 
 void SceneDirector::Draw() {
+	if (!currentScene_)return;
 	// 描画処理
 	bool pauseNow = PauseSystem::GetInstance()->GetIsPause();
 	
@@ -132,6 +138,35 @@ void SceneDirector::Draw() {
 	}
 }
 
+void SceneDirector::RequestChangeScene(SceneType nextSceneType) {
+	// SceneFactory を使用して安全に作成・予約
+	nextScene_ = SceneFactory::CreateScene(nextSceneType);
+}
+
+void SceneDirector::RequestChangeScene(std::unique_ptr<Scene> newScene) {
+	nextScene_ = std::move(newScene);
+}
+
+void SceneDirector::ProcessPendingSceneChange() {
+	if (!nextScene_) return;
+
+	// 旧シーンを安全に破棄
+	if (currentScene_) {
+		currentScene_.reset();
+	}
+
+	RayTracingManager::GetInstance()->ClearBLASCache();
+
+	// 新シーンの適用とセットアップ
+	currentScene_ = std::move(nextScene_);
+
+	PauseSystem::GetInstance()->SetPause(false);
+
+	currentScene_->FngineSetUp(*p_fngine_);
+	currentScene_->GetSceneDirector(this);
+	currentScene_->Initialize();
+}
+
 void SceneDirector::ImGui() {
 	ImGuiManager::GetInstance()->DrawSlider("DirectionalLight : pos", p_fngine_->GetLight().directionalLightData_->direction, -1.0f, 1.0f);
 	ImGuiManager::GetInstance()->DrawSlider("DirectionalLight : color", p_fngine_->GetLight().directionalLightData_->color, 0.0f, 1.0f);
@@ -141,26 +176,16 @@ void SceneDirector::ImGui() {
 	PSOManager::GetInstance()->ImGui();
 #ifdef USE_IMGUI
 	if (ImGui::TreeNode("SceneDirector")) {
-
-		if (ImGui::Button("TestScene")) {
-			RequestChangeScene(new TestScene());
-		}
+		// Enum 指定によりタイポ防止
+		if (ImGui::Button("TestScene"))      RequestChangeScene(SceneType::Test);
 		ImGui::SameLine();
-		if (ImGui::Button("TitleScene")) {
-			RequestChangeScene(new TitleScene());
-		}
+		if (ImGui::Button("TitleScene"))     RequestChangeScene(SceneType::Title);
 		ImGui::SameLine();
-		if (ImGui::Button("GameScene")) {
-			RequestChangeScene(new GameScene());
-		}
+		if (ImGui::Button("GameScene"))      RequestChangeScene(SceneType::Game);
 		ImGui::SameLine();
-		if (ImGui::Button("GameOverScene")) {
-			RequestChangeScene(new GameOverScene());
-		}
+		if (ImGui::Button("GameOverScene"))  RequestChangeScene(SceneType::GameOver);
 		ImGui::SameLine();
-		if (ImGui::Button("GameClearScene")) {
-			RequestChangeScene(new ClearScene());
-		}
+		if (ImGui::Button("GameClearScene")) RequestChangeScene(SceneType::Clear);
 
 		ImGui::TreePop();
 	}
@@ -168,23 +193,9 @@ void SceneDirector::ImGui() {
 #endif//USE_IMGUI
 }
 
-void SceneDirector::RequestChangeScene(Scene* newScene) {
-	if (currentScene_) {
-		// 今使っているsceneを削除
-		delete currentScene_;
-	}
-
-	// そんなことは起きないと思うけど一応
-	// ポーズが切れるようにする
-	PauseSystem::GetInstance()->SetPause(false);
-
-	// 新しいsceneを取得
-	currentScene_ = newScene;
-	currentScene_->FngineSetUp(*p_fngine_);
-	currentScene_->Initialize();
-	currentScene_->GetSceneDirector(this);
-}
-
+// 
+// 
+// 
 void SceneDirector::LoadModelData() {
 	auto modelMgr = ModelManager::GetInstance();
 

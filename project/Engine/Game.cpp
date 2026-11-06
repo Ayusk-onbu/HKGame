@@ -8,7 +8,7 @@ void Game::Initialize() {
 	fngine_->Initialize();
 	GlobalVariables::GetInstance()->LoadFiles();
 	scene_->SetUpFngine(*fngine_);
-	scene_->Initialize(*new GameScene());
+	scene_->Initialize(SceneType::Game);
 }
 
 void Game::Run() {

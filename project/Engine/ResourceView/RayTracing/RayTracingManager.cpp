@@ -418,6 +418,13 @@ void RayTracingManager::ClearInstance() {
 	registeredInstances_.clear();
 }
 
+void RayTracingManager::ClearBLASCache() {
+	// BLASキャッシュをクリアする場合は、登録済みインスタンスもクリアする
+	//registeredInstances_.clear();
+	dynamicBLASMap_.clear();
+	//staticBLASMap_.clear();
+}
+
 // Static Mesh,____
 void RayTracingManager::RegisterStaticMeshInstance(uint32_t modelID, const Matrix4x4& worldMat, const Vector4& color) {
 	RayTracingInstanceDesc desc{};

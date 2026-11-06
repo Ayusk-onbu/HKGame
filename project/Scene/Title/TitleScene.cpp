@@ -49,7 +49,7 @@ void TitleScene::Update() {
 		alpha = Easing_Float(0.0f, 1.0f, toGameTimer_, endTime, EASINGTYPE::InSine);
 		fade_->SetColor({ 0.0f,0.0f,0.0f,alpha });
 		if (toGameTimer_ > endTime) {
-			p_sceneDirector_->RequestChangeScene(new GameScene());
+			p_sceneDirector_->RequestChangeScene(SceneType::Game);
 		}
 	}
 }
