@@ -92,7 +92,7 @@ void CharacterRenderProvider::DrawUI() {
 		ImGui::DragFloat("Melanin Scale", &data.melaninScale, 0.01f, 0.0f, 2.0f);
 		ImGui::DragFloat("Blood Volume Scale", &data.bloodVolumeScale, 0.01f, 0.0f, 2.0f);
 		ImGui::DragFloat("Roughness Scale", &data.roughnessScale, 0.01f, 0.0f, 1.0f);
-		ImGui::DragFloat("SSS Scale", &data.sssScale, 0.01f, 0.0f, 2.0f);
+		ImGui::DragFloat("SSS Scale", &data.sssScale, 0.01f, 0.0f, 100.0f);
 
         ImGui::TreePop();
     }

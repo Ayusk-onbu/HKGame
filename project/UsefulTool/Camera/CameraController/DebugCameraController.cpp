@@ -2,6 +2,7 @@
 #include "Camera.h"
 #include "InputManager.h"
 #include "ImGuiManager.h"
+#include "DrawManager.h"
 
 #include <algorithm>
 
@@ -54,4 +55,13 @@ void DebugCameraController::Update(Camera& camera)
 	ImGuiManager::GetInstance()->DrawDrag("radius", camera.GetRadius());
 	ImGuiManager::GetInstance()->DrawDrag("theta", camera.GetTheta());
 	ImGuiManager::GetInstance()->DrawDrag("phi", camera.GetPhi());
+
+#ifdef USE_IMGUI
+	WorldTransform worldTransform;
+	worldTransform.Initialize();
+	worldTransform.set_.Translation(camera.targetPos_);
+	worldTransform.set_.Scale(Vector3(0.125f, 0.125f, 0.125f));
+	worldTransform.LocalToWorld();
+	DrawManager::GetInstance()->GetSphere()->AddInstance({ worldTransform, {1.0f,0.0f,0.0f,1.0f} });
+#endif
 }

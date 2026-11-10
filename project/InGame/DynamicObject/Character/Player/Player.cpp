@@ -21,7 +21,10 @@ void Player::Initialize(Fngine* fngine) {
 	transform_.set_.Translation({ 0.0f,1.4f,-7.0f });
 
 	auto* render = AddComponent<RenderComponent>();
-	render->SetProvider<CharacterRenderProvider>();
+	auto provider = render->SetProvider<CharacterRenderProvider>();
+	provider->SetMelaninScale(0.07f);
+	provider->SetBllodScale(0.26f);
+	provider->SetRoughnessScale(0.47f);
 
 	// =========================================================
 	// 脳みそ (ControllerComponent) ➔ プレイヤー操作を代入

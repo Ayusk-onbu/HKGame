@@ -30,6 +30,12 @@ public:
 
     void SendToDrawManager(DynamicObject* owner) override;
 
+	void SetMelaninScale(float melanin) { data.melaninScale = melanin; }
+
+	void SetBllodScale(float blood) { data.bloodVolumeScale = blood; }
+
+	void SetRoughnessScale(float roughness) { data.roughnessScale = roughness; }
+
     void DrawUI() override;
 };
 

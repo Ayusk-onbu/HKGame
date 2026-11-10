@@ -303,6 +303,11 @@ void Fngine::EndOSRFrame() {
 	};
 	commandList->ResourceBarrier(_countof(inputBarriers), inputBarriers);
 
+	ImGui::Begin("SSS Mask");
+	D3D12_GPU_DESCRIPTOR_HANDLE sssMaskHandle = osrGroup_.GetSRVGPUHandle(RenderTargetType::SSS);
+	ImGui::Image((void*)sssMaskHandle.ptr, ImVec2(256, 256));
+	ImGui::End();
+
 	commandList->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("SkinHorizontalSSSCS").GetRootSignature().GetRS().Get());
 	commandList->SetPipelineState(PSOManager::GetInstance()->GetPSO("SkinHorizontalSSSCS").GetCPS().Get());
 
