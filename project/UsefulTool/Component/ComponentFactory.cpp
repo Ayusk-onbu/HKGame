@@ -8,6 +8,7 @@
 #include "Controller/Controller.h"
 #include "Skinning/SkinningComponent.h"
 #include "Render/RayTracingComponent.h"
+#include "SDF/SDFFunctionComponent.h"
 
 void ComponentFactory::Initialize() {
     // --------------------------------------------------
@@ -86,6 +87,15 @@ void ComponentFactory::Initialize() {
     // --------------------------------------------------
     Register("RayTracingComponent", []() {
         auto comp = std::make_unique<RayTracingComponent>();
+        comp->Initialize();
+        return comp;
+    });
+
+    // --------------------------------------------------
+    // SDF関数コンポーネント (SDFFunctionComponent)
+    // --------------------------------------------------
+    Register("SDFFunctionComponent", []() {
+        auto comp = std::make_unique<SDFFunctionComponent>();
         comp->Initialize();
         return comp;
     });

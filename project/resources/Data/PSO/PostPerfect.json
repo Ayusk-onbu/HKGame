@@ -21,6 +21,8 @@
       "rootSignature": [
         { "type": "SRVTable", "register": 0, "count": 1, "visibility": "Pixel" },
         { "type": "SRVTable", "register": 1, "count": 1, "visibility": "Pixel" },
+        { "type": "SRVTable", "register": 2, "count": 1, "visibility": "Pixel" },
+        { "type": "SRVTable", "register": 3, "count": 1, "visibility": "Pixel" },
         { "type": "CBV", "register": 0, "visibility": "All" }
       ],
       "staticSamplers":[

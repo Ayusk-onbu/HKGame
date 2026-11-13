@@ -50,6 +50,9 @@ struct PostEffectConfig
 {
 	Matrix4x4 projectionInverse;
 
+	Vector3 cameraPos;
+	uint32_t sdfInstanceCount;
+
 	int enableVignette = 0;          
 	int enableRadialBlur = 0;        
 	int enableRandom = 0;            
@@ -60,10 +63,11 @@ struct PostEffectConfig
 	int enableBoxFilter = 0;
 	int enableGrayscale = 0;
 
+	int32_t enableSDFDebug = 0;
+
 	float vignetteIntensity = 1.0f;  
 	float radialBlurWidth = 0.01f;   
 	float time = 0.0f;               
-	float pad[1] = { 0.0f };   
 };
 
 class Fngine
@@ -177,6 +181,12 @@ public:
 	{
 		auto* data = postPerfectForGPU_->GetMappedData();
 		data->enableDepthOutline = 1;
+	}
+
+	// --- 9. SDF Debug Visualization (SDFのレイマーチング可視化) ---
+	void UseSDFDebug(bool enable = true)
+	{
+		postPerfectForGPU_->GetMappedData()->enableSDFDebug = enable ? 1 : 0;
 	}
 private:
 	std::string usePostEffectName_ = "PostPerfect";

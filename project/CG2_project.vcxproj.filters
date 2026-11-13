@@ -186,6 +186,9 @@
     <ClCompile Include="Engine\ResourceView\RayTracing\RayTracingManager.cpp" />
     <ClCompile Include="UsefulTool\Component\Render\RayTracingComponent.cpp" />
     <ClCompile Include="Scene\SceneFactory.cpp" />
+    <ClCompile Include="Engine\ResourceView\Texture\SDFFunctionManager.cpp" />
+    <ClCompile Include="UsefulTool\Component\SDF\SDFFunctionComponent.cpp" />
+    <ClCompile Include="UsefulTool\Component\SDF\SDFFunctionSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\MathUtils\Physics\Collider\CollisionLayerManager.h" />
@@ -383,6 +386,10 @@
     <ClInclude Include="UsefulTool\Component\Render\RayTracingComponent.h" />
     <ClInclude Include="Scene\SceneType.h" />
     <ClInclude Include="Scene\SceneFactory.h" />
+    <ClInclude Include="Engine\ResourceView\Texture\SDFFunctionManager.h" />
+    <ClInclude Include="Engine\ResourceView\Texture\SDFStackType.h" />
+    <ClInclude Include="UsefulTool\Component\SDF\SDFFunctionComponent.h" />
+    <ClInclude Include="UsefulTool\Component\SDF\SDFFunctionSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -403,6 +410,7 @@
     <None Include="resources\shaders\Sphere\Sphere.hlsli" />
     <None Include="resources\shaders\Primitive\Character\Character.hlsli" />
     <None Include="resources\shaders\Primitive\NormalMesh\NormalMesh.hlsli" />
+    <None Include="resources\shaders\SDFFunction.hlsli" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="externals\imgui\LICENSE.txt" />

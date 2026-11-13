@@ -153,10 +153,74 @@ void SkinningComponent::DrawUI() {
             ImGui::Checkbox("Loop", &isLoop_);
         }
 
+        ImGui::Separator();
+
+		// --- ボーン階層の表示 ---
+
+        static bool showBoneNames = false;
+        static char boneNameFilter[64] = "";
+        ImGui::Checkbox("Show Bone Names", &showBoneNames);
+
+        if (showBoneNames && master_) {
+            ImGui::InputText("Filter Bone Name", boneNameFilter, IM_ARRAYSIZE(boneNameFilter));
+
+            auto* activeCam = CameraSystem::GetInstance()->GetActiveCamera();
+            if (activeCam) {
+                Matrix4x4 vpMat = activeCam->GetViewProjectionMatrix();
+                Matrix4x4 charWorldMat = master_->GetTransform().mat_;
+
+                // 現在のメインビューポート（画面左上座標とサイズ）を取得
+                ImGuiViewport* viewport = ImGui::GetMainViewport();
+                ImVec2 viewPos = viewport->Pos;
+                ImVec2 viewSize = viewport->Size;
+
+                // 背景レイヤーに描画（ImGuiのウィンドウの後ろに隠れるので操作を邪魔しない）
+                ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+                for (const auto& joint : skeleton_.joints_) {
+                    // フィルタ入力がある場合は一致するボーンだけ表示
+                    if (boneNameFilter[0] != '\0' && joint.name.find(boneNameFilter) == std::string::npos) {
+                        continue;
+                    }
+
+                    // ボーンのワールド座標を算出
+                    Matrix4x4 jointWorldMat = joint.skeletonSpaceMatrix * charWorldMat;
+                    Vector4 worldPos = {
+                        jointWorldMat.m[3][0],
+                        jointWorldMat.m[3][1],
+                        jointWorldMat.m[3][2],
+                        1.0f
+                    };
+
+                    // クリップ空間へ変換（Matrix4x4::Transform は第1引数が行列、第2引数がVector4）
+                    Vector4 clipPos = Matrix4x4::Transform(vpMat, worldPos);
+
+                    // カメラの背後にあるボーンはスキップ
+                    if (clipPos.w <= 0.001f) continue;
+
+                    // 透視除算して NDC (-1.0 ～ 1.0) へ
+                    float ndcX = clipPos.x / clipPos.w;
+                    float ndcY = clipPos.y / clipPos.w;
+
+                    // 画面外のボーンはスキップ
+                    if (ndcX < -1.1f || ndcX > 1.1f || ndcY < -1.1f || ndcY > 1.1f) continue;
+
+                    // スクリーン座標へ変換（DirectXはY上が+1、ImGuiはY下が+なので反転）
+                    float screenX = viewPos.x + (ndcX + 1.0f) * 0.5f * viewSize.x;
+                    float screenY = viewPos.y + (1.0f - ndcY) * 0.5f * viewSize.y;
+
+                    // 関節位置に点とテキストを描画（見やすいように黒縁の影付き）
+                    drawList->AddCircleFilled(ImVec2(screenX, screenY), 3.0f, IM_COL32(255, 200, 0, 255));
+                    drawList->AddText(ImVec2(screenX + 6.0f, screenY - 6.0f), IM_COL32(0, 0, 0, 220), joint.name.c_str());
+                    drawList->AddText(ImVec2(screenX + 5.0f, screenY - 7.0f), IM_COL32(255, 255, 255, 255), joint.name.c_str());
+                }
+            }
+        }
+
         ImGui::TreePop();
     }
 
-    //DrawManager::GetInstance()->GetBone()->AddSkeleton(skeleton_, master_->GetTransform().mat_);
+    DrawManager::GetInstance()->GetBone()->AddSkeleton(skeleton_, master_->GetTransform().mat_);
 #endif
 }
 

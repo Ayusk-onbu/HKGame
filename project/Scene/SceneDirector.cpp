@@ -17,6 +17,7 @@
 #include "../UsefulTool/EditorManager/Map/SceneEditor.h"
 #include "../UsefulTool/EditorManager/Hermite/HermiteEditor.h"
 #include "../UsefulTool/Component/ComponentFactory.h"
+#include "SDFFunctionManager.h"
 #include "Scene.h"
 #include <pix3.h>
 
@@ -36,6 +37,7 @@ void SceneDirector::Initialize(SceneType firstSceneType) {
 
 	SDFManager::GetInstance()->Initialize(p_fngine_);
 
+	SDFFunctionManager::GetInstance()->Initialize(p_fngine_);
 	SDFManager::GetInstance()->BakeAll(p_fngine_->GetCommand().GetList().GetList().Get(),128);
 
 	ComponentFactory::GetInstance()->Initialize();
@@ -116,6 +118,7 @@ void SceneDirector::Draw() {
 		// 【Compute Shader パス】全 SkinCluster を一括 Dispatch！
 		// =========================================================
 			//※ リストの物体全てのMatrixをInverseしているためくそくそ重い
+			SDFFunctionManager::GetInstance()->UpdateGPUBuffer(SDFSystem::GetInstance()->EvaluateAll());
 			SDFManager::GetInstance()->UpdateGPUBuffer();
 
 			SkinningManager::GetInstance()->DispatchAll(p_fngine_->GetCommand().GetList().GetList().Get());

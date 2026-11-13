@@ -178,6 +178,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="Engine\Objects\SkinningManager.cpp" />
     <ClCompile Include="Engine\ResourceView\RayTracing\RayTracingManager.cpp" />
     <ClCompile Include="Engine\ResourceView\SRV\SRVManager.cpp" />
+    <ClCompile Include="Engine\ResourceView\Texture\SDFFunctionManager.cpp" />
     <ClCompile Include="Engine\ResourceView\Texture\SDFManager.cpp" />
     <ClCompile Include="externals\imgui\GraphEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -226,6 +227,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClCompile Include="UsefulTool\Component\Render\Providers.cpp" />
     <ClCompile Include="UsefulTool\Component\Render\RayTracingComponent.cpp" />
     <ClCompile Include="UsefulTool\Component\Render\RenderComponent.cpp" />
+    <ClCompile Include="UsefulTool\Component\SDF\SDFFunctionComponent.cpp" />
+    <ClCompile Include="UsefulTool\Component\SDF\SDFFunctionSystem.cpp" />
     <ClCompile Include="UsefulTool\Component\Skinning\SkinningComponent.cpp" />
     <ClCompile Include="UsefulTool\Component\State\Action\Action.cpp" />
     <ClCompile Include="UsefulTool\Component\State\Movement\Movement.cpp" />
@@ -385,7 +388,9 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="Engine\Objects\SkinningManager.h" />
     <ClInclude Include="Engine\ResourceView\RayTracing\RayTracingManager.h" />
     <ClInclude Include="Engine\ResourceView\SRV\SRVManager.h" />
+    <ClInclude Include="Engine\ResourceView\Texture\SDFFunctionManager.h" />
     <ClInclude Include="Engine\ResourceView\Texture\SDFManager.h" />
+    <ClInclude Include="Engine\ResourceView\Texture\SDFStackType.h" />
     <ClInclude Include="externals\imgui\GraphEditor.h" />
     <ClInclude Include="externals\imgui\ImCurveEdit.h" />
     <ClInclude Include="externals\imgui\ImGradient.h" />
@@ -426,6 +431,8 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <ClInclude Include="UsefulTool\Component\Render\Providers.h" />
     <ClInclude Include="UsefulTool\Component\Render\RayTracingComponent.h" />
     <ClInclude Include="UsefulTool\Component\Render\RenderComponent.h" />
+    <ClInclude Include="UsefulTool\Component\SDF\SDFFunctionComponent.h" />
+    <ClInclude Include="UsefulTool\Component\SDF\SDFFunctionSystem.h" />
     <ClInclude Include="UsefulTool\Component\Skinning\SkinningComponent.h" />
     <ClInclude Include="UsefulTool\Component\State\Action\Action.h" />
     <ClInclude Include="UsefulTool\Component\State\Action\ActionStateBase.h" />
@@ -583,6 +590,7 @@ copy "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dx
     <None Include="resources\shaders\Primitive\Grass\Grass.hlsli" />
     <None Include="resources\shaders\Primitive\NormalMesh\NormalMesh.hlsli" />
     <None Include="resources\shaders\Ring\Ring.hlsli" />
+    <None Include="resources\shaders\SDFFunction.hlsli" />
     <None Include="resources\shaders\SkinningObject3d\SkinningObject3d.hlsli" />
     <None Include="resources\shaders\SkyBox\SkyBox.hlsli" />
     <None Include="resources\shaders\Sphere\Sphere.hlsli" />

@@ -95,6 +95,30 @@ public:
 		return joints_[index];
 	}
 
+	// 所属する全ボーンの名前を取得
+	std::vector<std::string>GetJointNames()const {
+		std::vector<std::string> names;
+		for (const auto& joint : joints_) {
+			names.push_back(joint.name);
+		}
+		return names;
+	}
+
+	const Matrix4x4* GetJointMatrixPtr(const std::string& jointName) const {
+		auto it = jointMap_.find(jointName);
+		if (it != jointMap_.end()) {
+			return &joints_[it->second].skeletonSpaceMatrix;
+		}
+		return nullptr;
+	}
+
+	const Matrix4x4* GetJointMatrixPtr(int32_t jointIndex) const {
+		if (jointIndex >= 0 && jointIndex < static_cast<int32_t>(joints_.size())) {
+			return &joints_[jointIndex].skeletonSpaceMatrix;
+		}
+		return nullptr;
+	}
+
 private:
 	int32_t CreateJoint(const Node& node, const std::optional<int32_t>& parent, std::vector<Joint>& joints);
 public:

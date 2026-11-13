@@ -9,6 +9,7 @@
 #include "Component/Physics/RigidBody.h"
 #include "Component/Render/RenderComponent.h"
 #include "Component/Render/RayTracingComponent.h"
+#include "Component/SDF/SDFFunctionComponent.h"
 #include "RayTracingManager.h"
 #include "../../../../UsefulTool/EditorManager/Hair/HairEditor.h"
 
@@ -72,6 +73,10 @@ void Player::Initialize(Fngine* fngine) {
 
 	auto* rtComp = AddComponent<RayTracingComponent>();
 	rtComp->SetColor(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+
+	auto* sdfComp = AddComponent<SDFFunctionComponent>();
+	sdfComp->Initialize();
+	sdfComp->LoadFromFile("Assets/Data/SDFFunction/Naira.json");
 
 	EventManager::GetInstance()->RegisterAction(
 		EVENTCATEGORY::EFFECT, 0, this, &Player::MakeHitEffect

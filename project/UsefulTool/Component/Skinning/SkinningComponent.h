@@ -83,6 +83,14 @@ public:
         return skeleton_.GetJointIndex(jointName);
     }
 
+    std::vector<std::string> GetJointNames() const {
+        return skeleton_.GetJointNames();
+    }
+
+    const Matrix4x4* GetJointLocalMatrixPtr(const std::string& jointName) const {
+        return skeleton_.GetJointMatrixPtr(jointName);
+    }
+
 private:
     Fngine* engine_ = nullptr;
     std::string modelID_ = "";

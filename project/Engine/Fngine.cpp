@@ -8,6 +8,7 @@
 #include "Hair/IHair.h"
 #include "Structured.h"
 #include "RayTracingManager.h"
+#include "SDFFunctionManager.h"
 
 #include <d3dx12.h>
 
@@ -42,6 +43,8 @@ Fngine::~Fngine() {
 
 	RayTracingManager::GetInstance()->ReleaseInstance();
 	
+	SDFFunctionManager::GetInstance()->ReleaseInstance();
+
 	if (command_.GetQueue().GetQueue()) {
 		tachyonSync_.GetCGPU().Flush(command_.GetQueue().GetQueue());
 	}
@@ -130,6 +133,7 @@ void Fngine::Initialize() {
 	Music::GetInstance()->Initialize();
 	Chronos::GetInstance()->Initialize();
 	RandomUtils::GetInstance()->Initialize();
+	SDFFunctionManager::GetInstance()->Initialize(this);
 	//EditorManager::GetInstance()->Initialize();
 
 	light_.Initialize(d3d12_);
@@ -152,6 +156,7 @@ void Fngine::Initialize() {
 
 	postPerfectForGPU_->GetMappedData()->enableLuminanceOutline = 0;
 	postPerfectForGPU_->GetMappedData()->enableDepthOutline = 0;
+	postPerfectForGPU_->GetMappedData()->enableSDFDebug = 1;
 
 	float clearColor[4] = { 0.0f,0.0f,0.0f,1.0f };
 	float sssClearColor[4] = { 0.0f,0.0f,0.0f,1.0f };
@@ -303,10 +308,12 @@ void Fngine::EndOSRFrame() {
 	};
 	commandList->ResourceBarrier(_countof(inputBarriers), inputBarriers);
 
+#ifdef USE_IMGUI
 	ImGui::Begin("SSS Mask");
 	D3D12_GPU_DESCRIPTOR_HANDLE sssMaskHandle = osrGroup_.GetSRVGPUHandle(RenderTargetType::SSS);
 	ImGui::Image((void*)sssMaskHandle.ptr, ImVec2(256, 256));
 	ImGui::End();
+#endif
 
 	commandList->SetComputeRootSignature(PSOManager::GetInstance()->GetPSO("SkinHorizontalSSSCS").GetRootSignature().GetRS().Get());
 	commandList->SetPipelineState(PSOManager::GetInstance()->GetPSO("SkinHorizontalSSSCS").GetCPS().Get());
@@ -408,9 +415,13 @@ void Fngine::EndFrame() {
 		);
 		command_.GetList().GetList()->ResourceBarrier(1, &transitionDepth);
 
-		postPerfectForGPU_->GetMappedData()->projectionInverse = Matrix4x4::Inverse(CameraSystem::GetInstance()->GetActiveCamera()->GetViewProjectionMatrix());
+		auto* activeCam = CameraSystem::GetInstance()->GetActiveCamera();
+		auto* mappedConfig = postPerfectForGPU_->GetMappedData();
 
-		postPerfectForGPU_->GetMappedData()->time += Chronos::GetInstance()->GetGameDeltaTime();
+		mappedConfig->projectionInverse = Matrix4x4::Inverse(activeCam->GetViewProjectionMatrix());
+		mappedConfig->cameraPos = activeCam->GetTranslation();
+		mappedConfig->sdfInstanceCount = SDFFunctionManager::GetInstance()->GetActiveInstanceCount();
+		mappedConfig->time += Chronos::GetInstance()->GetGameDeltaTime();
 	}
 
 	command_.GetList().GetList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -433,7 +444,9 @@ void Fngine::EndFrame() {
 	}
 	else if (usePostEffectName_ == "PostPerfect") {
 		command_.GetList().GetList()->SetGraphicsRootDescriptorTable(1, osrGroup_.GetDSVDepthHandleGPU());
-		command_.GetList().GetList()->SetGraphicsRootConstantBufferView(2, postPerfectForGPU_->GetGPUVirtualAddress());
+		command_.GetList().GetList()->SetGraphicsRootDescriptorTable(2, SDFFunctionManager::GetInstance()->GetInstanceBufferSRVHandleGPU());
+		command_.GetList().GetList()->SetGraphicsRootDescriptorTable(3, SDFFunctionManager::GetInstance()->GetNodeBufferSRVHandleGPU());
+		command_.GetList().GetList()->SetGraphicsRootConstantBufferView(4, postPerfectForGPU_->GetGPUVirtualAddress());
 	}
 
 	command_.GetList().GetList()->DrawInstanced(3, 1, 0, 0);

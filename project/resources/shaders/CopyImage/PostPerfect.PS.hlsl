@@ -1,9 +1,12 @@
 #include "Fullscreen.hlsli"
+#include "../SDFFunction.hlsli"
 
 // --- 統合パラメータ構造体 ---
 struct PostEffectConfig
 {
     float32_t4x4 projectionInverse;
+    float32_t3 cameraPos;
+    uint32_t sdfInstanceCount;
     // 各エフェクトの有効化フラグ (0: OFF, 1: ON)
     int32_t enableVignette;
     int32_t enableRadialBlur;
@@ -13,19 +16,42 @@ struct PostEffectConfig
     int32_t enableDepthOutline;
     int32_t enableBoxFilter;
     int32_t enableGrayscale;
+    int32_t enableSDFDebug;
     
     // パラメータ類
     float32_t vignetteIntensity;
     float32_t radialBlurWidth;
     float32_t time; // Randomノイズ用
-    float32_t pad[2];
 };
 
 Texture2D<float32_t4> gTexture : register(t0);
 Texture2D<float32_t> gDepthTexture : register(t1);
+StructuredBuffer<SDFFunctionInstanceGPU> gSDFInstances : register(t2);
+StructuredBuffer<SDFFunctionStackNodeGPU> gSDFNodes : register(t3);
 ConstantBuffer<PostEffectConfig> gConfig : register(b0);
 SamplerState gSampler : register(s0);
 SamplerState gSamplerPoint : register(s1);
+
+float32_t3 ReconstructWorldPos(float32_t2 uv, float32_t depth)
+{
+    float32_t4 ndc = float32_t4(uv.x * 2.0f - 1.0f, (1.0f - uv.y) * 2.0f - 1.0f, depth, 1.0f);
+    float32_t4 worldPos = mul(ndc, gConfig.projectionInverse);
+    return worldPos.xyz / worldPos.w;
+}
+
+// 中心差分によるSDFの法線計算（立体的な陰影用）
+float32_t3 CalcSDFNormal(SDFEvaluator sdf, float32_t3 p)
+{
+    const float32_t eps = 0.002f;
+    int32_t dummy;
+    float32_t dx = sdf.EvaluateScene(p + float32_t3(eps, 0, 0), gConfig.sdfInstanceCount, dummy)
+                 - sdf.EvaluateScene(p - float32_t3(eps, 0, 0), gConfig.sdfInstanceCount, dummy);
+    float32_t dy = sdf.EvaluateScene(p + float32_t3(0, eps, 0), gConfig.sdfInstanceCount, dummy)
+                 - sdf.EvaluateScene(p - float32_t3(0, eps, 0), gConfig.sdfInstanceCount, dummy);
+    float32_t dz = sdf.EvaluateScene(p + float32_t3(0, 0, eps), gConfig.sdfInstanceCount, dummy)
+                 - sdf.EvaluateScene(p - float32_t3(0, 0, eps), gConfig.sdfInstanceCount, dummy);
+    return normalize(float32_t3(dx, dy, dz));
+}
 
 struct PixelShaderOutput
 {
@@ -291,5 +317,51 @@ PixelShaderOutput main(VertexShaderOutput input)
         output.color.rgb *= random;
     }
 
+    // -------------------------------------------------------------------
+    // 9. SDF Debug Visualization (レイマーチング可視化)
+    // -------------------------------------------------------------------
+    if (gConfig.enableSDFDebug > 0 && gConfig.sdfInstanceCount > 0)
+    {
+        float32_t ndcDepth = gDepthTexture.Sample(gSamplerPoint, uv);
+        float32_t3 sceneWorldPos = ReconstructWorldPos(uv, ndcDepth);
+        float32_t maxRayDist = length(sceneWorldPos - gConfig.cameraPos);
+
+        // Near と Far の2点からレイ方向を正確に算出
+        float32_t3 nearWorldPos = ReconstructWorldPos(uv, 0.0f);
+        float32_t3 farWorldPos = ReconstructWorldPos(uv, 1.0f);
+        float32_t3 rayDir = normalize(farWorldPos - nearWorldPos);
+
+        SDFEvaluator sdf;
+        sdf.instances = gSDFInstances;
+        sdf.nodes = gSDFNodes;
+
+        float32_t t = 0.0f;
+        const int32_t kMaxSteps = 128;
+        const float32_t kHitThreshold = 0.005f;
+
+        for (int32_t i = 0; i < kMaxSteps; ++i)
+        {
+            if (t >= maxRayDist)
+                break;
+
+            float32_t3 p = gConfig.cameraPos + rayDir * t;
+            int32_t hitIdx = -1;
+            float32_t d = sdf.EvaluateScene(p, gConfig.sdfInstanceCount, hitIdx);
+
+            if (d < kHitThreshold)
+            {
+                float32_t3 normal = CalcSDFNormal(sdf, p);
+                float32_t3 lightDir = normalize(float32_t3(0.5f, 1.0f, -0.5f));
+                float32_t ndotl = dot(normal, lightDir) * 0.5f + 0.5f;
+                float32_t3 debugColor = (normal * 0.5f + 0.5f) * ndotl;
+
+                output.color.rgb = lerp(output.color.rgb, debugColor, 0.6f);
+                break;
+            }
+
+            t += max(d, 0.01f);
+        }
+    }
+    
     return output;
 }
