@@ -11,6 +11,7 @@
 #include "Component/Render/RayTracingComponent.h"
 #include "Component/SDF/SDFFunctionComponent.h"
 #include "RayTracingManager.h"
+#include "FileSystem.h"
 #include "../../../../UsefulTool/EditorManager/Hair/HairEditor.h"
 
 Player::Player() {
@@ -22,6 +23,7 @@ void Player::Initialize(Fngine* fngine) {
 	transform_.set_.Translation({ 0.0f,1.4f,-7.0f });
 
 	auto* render = AddComponent<RenderComponent>();
+	render->SetModelFromName("plane");
 	auto provider = render->SetProvider<CharacterRenderProvider>();
 	provider->SetMelaninScale(0.07f);
 	provider->SetBllodScale(0.26f);
@@ -76,7 +78,7 @@ void Player::Initialize(Fngine* fngine) {
 
 	auto* sdfComp = AddComponent<SDFFunctionComponent>();
 	sdfComp->Initialize();
-	sdfComp->LoadFromFile("Assets/Data/SDFFunction/Naira.json");
+	sdfComp->LoadFromFile("Assets/Data/SDFFunction/syumi.json");
 
 	EventManager::GetInstance()->RegisterAction(
 		EVENTCATEGORY::EFFECT, 0, this, &Player::MakeHitEffect
@@ -92,7 +94,13 @@ void Player::Initialize(Fngine* fngine) {
 
 	hair_ = std::make_unique<Hair>();
 	hair_->SetMatrix(GetHeadMatrix());
-	hair_->Initialize(fngine, false, {});
+	
+	Strands::HairSaveData loadedData{};
+	if (!FileSystem::LoadFromFile("Assets/Data/Hair/compVer3.json", loadedData)) {
+		std::cerr << "[Hair::Load] Failed to load JSON file: "<< std::endl;
+	}
+	hair_->Initialize(fngine, true, loadedData);
+	//hair_->Initialize(fngine, false, {});
 
 	auto editorMgr = EditorManager::GetInstance();
 	auto* hairEditor = editorMgr->CreateEditor<HairGuideEditor>(hair_.get());

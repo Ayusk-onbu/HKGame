@@ -6,6 +6,7 @@
 #include "StringPool.h"
 #include "../Engine/Objects/Primitive/Box/PrimitiveBox.h"
 #include "FileSystem.h"
+#include "SDFFunctionManager.h"
 #include <pix3.h>
 
 // CPPのみで定義されている関数
@@ -240,13 +241,6 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	PIXScopedEvent(commandList.Get(), PIX_COLOR_INDEX(2), "Initialize Hair Pass");
 #endif// USEIMGUI
 
-
-	// ■出力先のTextureを作成
-	/*outputTexture_ = std::make_unique<RWTexture2D>();
-	outputTexture_->Initialize(engine, 1280, 720, DXGI_FORMAT_R8G8B8A8_UNORM);
-	outputTexture_->GetResource()->SetName(L"HairOutputTexture");
-	renderTargetUAVHandleGPU_ = outputTexture_->GetUAVHandleGPU();*/
-
 	// -------------------
 	// 【 髪のマテリアル 】
 	// -------------------
@@ -308,11 +302,18 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	Strands::HairConfig hairConfig;// Loadするもの
 
 	if (isLoad == true) {
+		materialParameter.stiffness = (savedata.physicsConfig.stiffness > 0.0f) ? savedata.physicsConfig.stiffness : 50.4f;
+		materialParameter.restoringForce = (savedata.physicsConfig.restoringForce > 0.0f) ? savedata.physicsConfig.restoringForce : 50.2f;
+		materialParameter.damping = (savedata.physicsConfig.damping > 0.0f) ? savedata.physicsConfig.damping : 0.96f;
+		materialParameter.globalSpreadRadius = (savedata.makeConfig.globalSpreadRadius > 0.0f) ? savedata.makeConfig.globalSpreadRadius : 0.05f;
+		materialParameter.globalHairThickness = (savedata.makeConfig.globalHairThickness > 0.0f) ? savedata.makeConfig.globalHairThickness : 0.32f;
+		std::memcpy(gpuHairMaterialParameterBuffer_->GetMappedData(), &materialParameter, sizeof(HairMaterialParameter));
+
 		// --------------------------------
 		// 【 ガイドを参照するための情報 】
 		// --------------------------------
 		guideInfoBuffer_->Initialize(static_cast<uint32_t>(savedata.guideInfo.size()));
-		std::memcpy(guideInfoBuffer_->GetMappedData(), &savedata.guideInfo, sizeof(GuideCurve::GuideInfo) * savedata.guideInfo.size());
+		std::memcpy(guideInfoBuffer_->GetMappedData(), savedata.guideInfo.data(), sizeof(GuideCurve::GuideInfo) * savedata.guideInfo.size());
 
 		// ------------------
 		// 【 ガイドを作成 】
@@ -323,6 +324,8 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 		// UAVの作成
 		gpuGuideBuffer_ = std::make_unique<RWStructured<GuideCurve::ControllerPoint>>(engine);
 		gpuGuideBuffer_->Initialize(controllerPointCount);
+
+		std::memcpy(gpuConfigBuffer_->GetMappedData(), &savedata.hairConfig, sizeof(Strands::HairConfig));
 
 		uploadGuideBuffer = std::make_unique<Structured<GuideCurve::ControllerPoint>>(engine);
 		uploadGuideBuffer->Initialize(controllerPointCount);
@@ -473,6 +476,16 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	hairAABBBuffer_ = std::make_unique<RWStructured<D3D12_RAYTRACING_AABB>>(engine);
 	hairAABBBuffer_->Initialize(static_cast<uint32_t>(cpuSegments.size()));
 	hairAABBBuffer_->GetResource()->SetName(L"HairAABBBuffer");
+
+	D3D12_RESOURCE_BARRIER initializeHairBuffers[] = {
+		CD3DX12_RESOURCE_BARRIER::Transition(hairVertexBuffer_->GetResource(),
+			D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
+		CD3DX12_RESOURCE_BARRIER::Transition(hairAABBBuffer_->GetResource(),
+			D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
+		CD3DX12_RESOURCE_BARRIER::Transition(hairFlatVertexBuffer_->GetResource(),
+			D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)
+	};
+	dxrCmdList_->ResourceBarrier(_countof(initializeHairBuffers), initializeHairBuffers);
 
 	Log::View("AABB Compleate\n");
 
@@ -692,8 +705,10 @@ void Hair::Initialize(Fngine* engine, bool isLoad, const Strands::HairSaveData& 
 	//	D3D12_RESOURCE_STATE_UNORDERED_ACCESS
 	//);
 	//dxrCmdList_->ResourceBarrier(1, &initBarrier);
-
-	LoadFromFile("resources/Data/Hair/CompHair2.json");
+	
+	if (isLoad == false) {
+		LoadFromFile("resources/Data/Hair/CompHair2.json");
+	}
 
 	isGpuUpdateRequested_ = true;
 }
@@ -746,7 +761,7 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 		}
 
 		// 補正後の移動量をGPUへ渡す
-		gpuHairMaterialParameterBuffer_->GetMappedData()->moveDirection = smoothedMove;
+		gpuHairMaterialParameterBuffer_->GetMappedData()->moveDirection = rawWorldMove;
 	}
 	else {
 		// 座標変換
@@ -827,11 +842,14 @@ void Hair::Update(float deltaTime, const Matrix4x4& mat) {
 	dxrCmdList_->SetComputeRootConstantBufferView(0, gpuHairMaterialParameterBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootConstantBufferView(1, gpuHairSceneParameterBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootConstantBufferView(2, gpuConfigBuffer_->GetGPUVirtualAddress());
-	uint32_t id = StringPool::GetInstance()->GetStringID("Naira_ExportTest");
-	dxrCmdList_->SetComputeRootConstantBufferView(3, SDFManager::GetInstance()->tempBakeResources_[id].configBuffer->GetGPUVirtualAddress());
+	/*uint32_t id = StringPool::GetInstance()->GetStringID("Naira_ExportTest");*/
+	dxrCmdList_->SetComputeRoot32BitConstant(3, SDFFunctionManager::GetInstance()->GetActiveInstanceCount(), 0);
+	//dxrCmdList_->SetComputeRootConstantBufferView(3, SDFManager::GetInstance()->tempBakeResources_[id].configBuffer->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootDescriptorTable(4, guideInfoBuffer_->GetSRVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(5, SDFManager::GetInstance()->GetSDF("Naira_ExportTest")->texture.GetSRVHandleGPU());
-	dxrCmdList_->SetComputeRootDescriptorTable(6, gpuGuideBuffer_->GetUAVHandleGPU());
+	//dxrCmdList_->SetComputeRootDescriptorTable(5, SDFManager::GetInstance()->GetSDF("Naira_ExportTest")->texture.GetSRVHandleGPU());
+	dxrCmdList_->SetComputeRootDescriptorTable(5, SDFFunctionManager::GetInstance()->GetInstanceBufferSRVHandleGPU());
+	dxrCmdList_->SetComputeRootDescriptorTable(6, SDFFunctionManager::GetInstance()->GetNodeBufferSRVHandleGPU());
+	dxrCmdList_->SetComputeRootDescriptorTable(7, gpuGuideBuffer_->GetUAVHandleGPU());
 
 	dxrCmdList_->Dispatch(physicsGroupX, 1, 1);
 
@@ -1177,29 +1195,29 @@ bool Hair::SaveToFile(const std::string& filename) {
 
 	// コンフィグ類のコピー
 	saveData.hairConfig = *hairConfig;
-	//if (auto* physics = GetCPUPhysicsConfig()) { saveData.physicsConfig = *physics; }
-	//if (auto* make = GetCPUMakeConfig()) { saveData.makeConfig = *make; }
 
 	// --- データ収集ロジック ---
+	uint32_t activeGuides = 0;
 	uint32_t activeGuidePoints = 0;
 	for (uint32_t i = 0; i < guideInfoBuffer_->GetNumElements(); ++i) {
-		if (guideInfoBuffer_->GetMappedData()[i].vertexCount > 0) {
-			activeGuidePoints += guideInfoBuffer_->GetMappedData()[i].vertexCount;
+		uint32_t vCount = guideInfoBuffer_->GetMappedData()[i].vertexCount;
+		if (vCount == 0) {
+			break;
 		}
+		++activeGuides;
+		activeGuidePoints += vCount;
+	}
+
+	if (activeGuides > 0) {
+		auto* data = GetCPUGuideInfoData();
+		saveData.guideInfo.assign(data, data + activeGuides);
 	}
 	if (activeGuidePoints > 0) {
 		auto* data = GetCPUGuideData();
 		saveData.points.assign(data, data + activeGuidePoints);
 	}
 
-	uint32_t activeGuides = 0;
-	for (uint32_t i = 0; i < guideInfoBuffer_->GetNumElements(); ++i) {
-		if (guideInfoBuffer_->GetMappedData()[i].vertexCount > 0) { ++activeGuides; }
-	}
-	if (activeGuides > 0) {
-		auto* data = GetCPUGuideInfoData();
-		saveData.guideInfo.assign(data, data + activeGuides);
-	}
+	saveData.hairConfig.numGuides = activeGuides;
 
 	uint32_t activeStrands = 0;
 	for (uint32_t i = 0; i < strandInfoBuffer_->GetNumElements(); ++i) {
@@ -1211,6 +1229,8 @@ bool Hair::SaveToFile(const std::string& filename) {
 		saveData.strandInfos.assign(infoData, infoData + activeStrands);
 		saveData.childStrands.assign(childData, childData + activeStrands);
 	}
+
+	saveData.hairConfig.numStrands = static_cast<float>(activeStrands);
 
 	uint32_t totalSegments = 0;
 	for (const auto& info : saveData.strandInfos) {

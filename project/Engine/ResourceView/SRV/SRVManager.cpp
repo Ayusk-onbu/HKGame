@@ -19,6 +19,7 @@ void SRVManager::Initialize(ID3D12Device* device, uint32_t maxCount) {
 
     HRESULT hr = device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&descriptorHeap_));
     assert(SUCCEEDED(hr));
+	descriptorHeap_->SetName(L"SRV Main Descriptor Heap");
 
     // デスクリプタ1個分のサイズを取得（環境によってサイズが変わるため必須）
     descriptorSize_ = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -49,6 +50,24 @@ SRVAllocation SRVManager::Allocate() {
 
     alloc.gpu = descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
     alloc.gpu.ptr += static_cast<SIZE_T>(descriptorSize_ * index);
+
+    return alloc;
+}
+
+SRVAllocation SRVManager::AllocateRange(uint32_t count) {
+    assert(useIndex_ + count <= maxCount_ && "SRV Descriptor Heap is full!");
+
+    // フリーリストを使わず、未使用領域の末尾から連続して切り出す
+    uint32_t startIndex = useIndex_;
+    useIndex_ += count;
+
+    SRVAllocation alloc;
+    alloc.index = startIndex;
+    alloc.cpu = descriptorHeap_->GetCPUDescriptorHandleForHeapStart();
+    alloc.cpu.ptr += static_cast<SIZE_T>(descriptorSize_ * startIndex);
+
+    alloc.gpu = descriptorHeap_->GetGPUDescriptorHandleForHeapStart();
+    alloc.gpu.ptr += static_cast<SIZE_T>(descriptorSize_ * startIndex);
 
     return alloc;
 }

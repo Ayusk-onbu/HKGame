@@ -9,10 +9,12 @@ class SRVManager :
 public:
 	friend class ISingleton<SRVManager>;
     // 初期化（ヒープの作成とフリーリストの準備）
-    void Initialize(ID3D12Device* device, uint32_t maxCount = 512);
+    void Initialize(ID3D12Device* device, uint32_t maxCount = 1024);
 
     // 新しいSRVスロットを割り当てる（CPU/GPUハンドルとインデックスを返す）
     SRVAllocation Allocate();
+    // 連続した count 個の先頭を返す
+    SRVAllocation AllocateRange(uint32_t count);
 
     // 使わなくなったSRVスロットを返却し、再利用可能にする
     void Free(uint32_t index);

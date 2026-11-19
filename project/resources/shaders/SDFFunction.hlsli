@@ -74,7 +74,7 @@ struct SDFEvaluator
     StructuredBuffer<SDFFunctionInstanceGPU> instances;
     StructuredBuffer<SDFFunctionStackNodeGPU> nodes;
 
-    // AABB との概算距離（早期カリング用）
+    
     float32_t BoxBoundDistance(float32_t3 p, float32_t3 bMin, float32_t3 bMax)
     {
         float32_t3 center = (bMin + bMax) * 0.5;
@@ -82,14 +82,12 @@ struct SDFEvaluator
         return SDFFunctionPrimitive::Box(p - center, extent);
     }
 
-    // 指定した1インスタンスに対する正確な SDF 距離を評価
+    
     float32_t EvaluateInstance(uint32_t instanceIdx, float32_t3 worldPos)
     {
         SDFFunctionInstanceGPU inst = instances[instanceIdx];
         float32_t3 localPos = mul(float32_t4(worldPos, 1.0),inst.worldInverse).xyz;
 
-        // 【高速化】インスタンスの AABB から一定以上離れていたら詳細なスタック計算をスキップ
-        // ※正確な勾配(法線)が必要な場合や、スケールが大きい場合はマージンを調整する
         float32_t boundDist = BoxBoundDistance(localPos, inst.aabbMin, inst.aabbMax);
         if (boundDist > 2.0)
         {
@@ -128,7 +126,6 @@ struct SDFEvaluator
             }
             else
             {
-                // 演算ノード
                 float32_t b = stack[stackPtr--];
                 float32_t a = stack[stackPtr--];
                 float32_t res = a;
@@ -159,7 +156,6 @@ struct SDFEvaluator
         return (stackPtr >= 0) ? stack[0] : 1e5;
     }
 
-    // シーン内の全 SDF インスタンスとの最短距離を一括評価
     float32_t EvaluateScene(float32_t3 worldPos, uint32_t instanceCount, out int32_t outHitInstanceIdx)
     {
         float32_t minDist = 1e5;

@@ -156,7 +156,9 @@ void Fngine::Initialize() {
 
 	postPerfectForGPU_->GetMappedData()->enableLuminanceOutline = 0;
 	postPerfectForGPU_->GetMappedData()->enableDepthOutline = 0;
+#ifdef USE_IMGUI
 	postPerfectForGPU_->GetMappedData()->enableSDFDebug = 1;
+#endif// USE_IMGUI
 
 	float clearColor[4] = { 0.0f,0.0f,0.0f,1.0f };
 	float sssClearColor[4] = { 0.0f,0.0f,0.0f,1.0f };
@@ -244,7 +246,7 @@ void Fngine::BeginOSRFrame() {
 
 void Fngine::EndOSRFrame() {
 	//osr_.End(command_);
-
+	auto commandList = command_.GetList().GetList().Get();
 	auto RTMgr = RayTracingManager::GetInstance();
 
 	RTMgr->Update(1.0f / 60.0f);
@@ -255,7 +257,10 @@ void Fngine::EndOSRFrame() {
 		osrGroup_.GetDSVResource().Get()
 	);
 
-	RTMgr->Render(osrGroup_.GetDSVResource().Get());
+	RTMgr->Render(osrGroup_.GetDSVDepthHandleGPU());
+
+	//ID3D12DescriptorHeap* mainHeaps[] = { SRVManager::GetInstance()->GetHeap() }; // ※使用しているメインヒープの取得処理に合わせて調整
+	//commandList->SetDescriptorHeaps(_countof(mainHeaps), mainHeaps);
 
 	RTMgr->PostRender(osrGroup_.GetResource(
 		RenderTargetType::Albedo).Get(),
@@ -267,11 +272,6 @@ void Fngine::EndOSRFrame() {
 
 	UINT dispatchX = (1280 + 7) / 8; // 8切り上げ
 	UINT dispatchY = (720 + 7) / 8;
-
-	auto commandList = command_.GetList().GetList().Get();
-
-	ID3D12DescriptorHeap* mainHeaps[] = { SRVManager::GetInstance()->GetHeap() }; // ※使用しているメインヒープの取得処理に合わせて調整
-	commandList->SetDescriptorHeaps(_countof(mainHeaps), mainHeaps);
 
 	// --- Dispatch 前に、入力テクスチャを Compute Shader で読める状態に遷移させる ---
 	D3D12_RESOURCE_BARRIER inputBarriers[] = {
@@ -309,9 +309,10 @@ void Fngine::EndOSRFrame() {
 	commandList->ResourceBarrier(_countof(inputBarriers), inputBarriers);
 
 #ifdef USE_IMGUI
-	ImGui::Begin("SSS Mask");
-	D3D12_GPU_DESCRIPTOR_HANDLE sssMaskHandle = osrGroup_.GetSRVGPUHandle(RenderTargetType::SSS);
-	ImGui::Image((void*)sssMaskHandle.ptr, ImVec2(256, 256));
+	ImGui::Begin("Engine");
+	if(ImGui::Button(postPerfectForGPU_->GetMappedData()->enableSDFDebug ? "Disable SDF Debug" : "Enable SDF Debug")){
+		postPerfectForGPU_->GetMappedData()->enableSDFDebug = !postPerfectForGPU_->GetMappedData()->enableSDFDebug;
+	}
 	ImGui::End();
 #endif
 
@@ -384,8 +385,8 @@ void Fngine::BeginFrame() {
 	command_.GetList().GetList()->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);//
 	command_.GetList().GetList()->ClearRenderTargetView(rtv_.GetHandle(backBufferIndex), clearColor, 0, nullptr);
 
-	ID3D12DescriptorHeap* descriptorHeaps[] = { SRVManager::GetInstance()->GetHeap() };
-	command_.GetList().GetList()->SetDescriptorHeaps(1, descriptorHeaps);
+	ID3D12DescriptorHeap* mainHeaps[] = { SRVManager::GetInstance()->GetHeap() };
+	command_.GetList().GetList()->SetDescriptorHeaps(_countof(mainHeaps), mainHeaps);
 	/////////////////////////////////////////////////////////////////////////
 	//描画0200
 	command_.GetList().GetList()->RSSetViewports(1, &viewport_);
@@ -393,6 +394,10 @@ void Fngine::BeginFrame() {
 }
 
 void Fngine::EndFrame() {
+	auto commandList = command_.GetList().GetList().Get();
+	ID3D12DescriptorHeap* mainHeaps[] = { SRVManager::GetInstance()->GetHeap() }; // ※使用しているメインヒープの取得処理に合わせて調整
+	commandList->SetDescriptorHeaps(_countof(mainHeaps), mainHeaps);
+
 	// Pre 
 	if (usePostEffectName_ == "DepthBasedOutline"){
 		auto transitionDepth = CD3DX12_RESOURCE_BARRIER::Transition(

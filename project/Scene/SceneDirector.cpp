@@ -209,6 +209,7 @@ void SceneDirector::LoadModelData() {
 	ModelManager::GetInstance()->AddObject("Grass", MakeObjectVertices(CylinderData{ 3, 0.05f * 0.1f, 0.5f * 0.1f,0.5f }), MakeObjectIndices(CylinderData{ 3, 0.05f * 0.1f, 0.5f * 0.1f, 0.5f }));
 
 	AnimationManager::GetInstance()->LoadAnimationFile("Assets/Animations/Naira", "Walk.gltf");
+	AnimationManager::GetInstance()->LoadAnimationFile("Assets/Animations/Naira", "FrontFlip.gltf");
 }
 
 void SceneDirector::LoadTexture() {

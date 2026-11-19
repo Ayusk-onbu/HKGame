@@ -93,7 +93,7 @@ public:
 	// 各BLAS,TLASの更新処理
 	void Update(float deltaTime);
 	// レイトレーシングの実行（DispatchRays）
-	void Render(ID3D12Resource* depthResource);
+	void Render(D3D12_GPU_DESCRIPTOR_HANDLE depthSrvHandleGPU);
 	// 前処理と後処理
 	void PreRender(ID3D12Resource* renderTargetResource, D3D12_RESOURCE_STATES preState, ID3D12Resource* depthResource);
 	void PostRender(ID3D12Resource* renderTargetResource, D3D12_RESOURCE_STATES postState, ID3D12Resource* depthResource);
@@ -107,7 +107,7 @@ private:
 	void CreateRootSignature();
 	void CreateRaytracingPSO();
 	void CreateShaderBindingTable();
-	void CreateDescriptorHeap();
+	void AllocateDesctiptors();
 
 	// 内部ビルド処理
 	D3D12_GPU_VIRTUAL_ADDRESS GetOrCreateStaticBLAS(uint32_t modelID);
@@ -122,7 +122,8 @@ private:
 
 private:
 	Fngine* engine_ = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Device5> device5_ = nullptr;Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> dxrCmdList_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Device5> device5_ = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList4> dxrCmdList_ = nullptr;
 	UINT width_ = 1280;
 	UINT height_ = 720;
 
@@ -162,10 +163,11 @@ private:
 
 	std::unique_ptr<Structured<RayTracingInstanceMaterial>> materialStructuredBuffer_;
 
-	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtDescriptorHeap_;
+	//Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtDescriptorHeap_;
 	UINT descriptorSize_ = 0;
+	SRVAllocation hairSRVBaseAllocation_{};
 
 	static constexpr UINT MAX_HAIR_BUFFERS = 64;
 	// ヒープ全体のサイズ = Output UAV (1) + Depth SRV (1) + Hair SRVs (64) = 66
-	static constexpr UINT TOTAL_DESCRIPTORS = 2 + MAX_HAIR_BUFFERS;
+	//static constexpr UINT TOTAL_DESCRIPTORS = 2 + MAX_HAIR_BUFFERS;
 };

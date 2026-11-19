@@ -18,15 +18,15 @@ enum class SDFFunctionStackNodeType : uint32_t {
 
 // 全体を対象のObjectのMatrixを使用する
 
-	// --- 静的な場合 ---
-	// 座標はほしい。回転もほしい。Scaleもほしい。
-	// どのような形状もしくは演算なのかが欲しい
-	// 形状の場合はそのサイズほしい。
-	// 結合の場合は結合の幅
+// --- 静的な場合 ---
+// 座標はほしい。回転もほしい。Scaleもほしい。
+// どのような形状もしくは演算なのかが欲しい
+// 形状の場合はそのサイズほしい。
+// 結合の場合は結合の幅
 
-	// --- 動的に対応する場合 ---
-	// 追従させる対象のMatrixの情報がほしい？
-	// Skinningは物によって異なるからIDとかは無理
+// --- 動的に対応する場合 ---
+// 追従させる対象のMatrixの情報がほしい？
+// Skinningは物によって異なるからIDとかは無理
 //  CPU側の構造体
 struct SDFFunctionStackNodeCPU {
 	SDFFunctionStackNodeType type = SDFFunctionStackNodeType::Sphere; // ノードの種類

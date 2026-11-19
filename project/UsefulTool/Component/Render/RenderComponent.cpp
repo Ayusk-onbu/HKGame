@@ -18,6 +18,8 @@ void RenderComponent::Update(float deltaTime) {
     }
 }
 
+
+
 json RenderComponent::Serialize() const {
     json j;
     if (dynamic_cast<NormalMeshRenderProvider*>(provider_.get())) {
@@ -113,4 +115,8 @@ void RenderComponent::DrawUI() {
         return;
     }
 #endif
+}
+
+void RenderComponent::SetModelFromName(const std::string& name) {
+    modelID_ = StringPool::GetInstance()->GetStringID(name);
 }

@@ -26,7 +26,7 @@ RayTracingManager::~RayTracingManager() {
 	globalRootSignature_.Reset();
 	outputTexture_.reset();
 	cameraBuffer_.reset();
-	rtDescriptorHeap_.Reset();
+	//rtDescriptorHeap_.Reset();
 
 	// コマンドリストの参照解除
 	dxrCmdList_.Reset();
@@ -65,7 +65,8 @@ void RayTracingManager::Initialize(Fngine* engine) {
 	cameraBuffer_->Initialize();
 
 	// RootSignature & RTPSO & SBT の構築
-	CreateDescriptorHeap();
+	//CreateDescriptorHeap();
+	AllocateDesctiptors();
 	CreateRootSignature();
 	CreateRaytracingPSO();
 	CreateShaderBindingTable();
@@ -137,9 +138,14 @@ void RayTracingManager::Update(float deltaTime)
 			matData.hairBufferIndex = currentHairBufferCount;
 
 			// Index 0 (Output UAV) と Index 1 (Depth SRV) を避けて Index 2 から書き込む
-			CD3DX12_CPU_DESCRIPTOR_HANDLE targetHandle(
+			/*CD3DX12_CPU_DESCRIPTOR_HANDLE targetHandle(
 				rtDescriptorHeap_->GetCPUDescriptorHandleForHeapStart(),
 				2 + currentHairBufferCount,
+				descriptorSize_
+			);*/
+			CD3DX12_CPU_DESCRIPTOR_HANDLE targetHandle(
+				hairSRVBaseAllocation_.cpu,
+				currentHairBufferCount,
 				descriptorSize_
 			);
 
@@ -478,7 +484,7 @@ void RayTracingManager::RegisterHairInstance(
 // 【 レンダリング 】
 // ==================
 
-void RayTracingManager::Render(ID3D12Resource* depthResource)
+void RayTracingManager::Render(D3D12_GPU_DESCRIPTOR_HANDLE depthSrvHandleGPU)
 {
 #ifdef USE_IMGUI
 	// PIXイベントを開始
@@ -486,28 +492,28 @@ void RayTracingManager::Render(ID3D12Resource* depthResource)
 #endif// USEIMGUI
 	if (registeredInstances_.empty() || !tlasResultBuffer_) return;
 
-	// -------------------------------------------------------------
-	// rtDescriptorHeap_ の Index 0 と 1 に Output UAV と Depth SRV を直接構築
-	// -------------------------------------------------------------
-	CD3DX12_CPU_DESCRIPTOR_HANDLE heapCpuStart(rtDescriptorHeap_->GetCPUDescriptorHandleForHeapStart());
+	//// -------------------------------------------------------------
+	//// rtDescriptorHeap_ の Index 0 と 1 に Output UAV と Depth SRV を直接構築
+	//// -------------------------------------------------------------
+	//CD3DX12_CPU_DESCRIPTOR_HANDLE heapCpuStart(rtDescriptorHeap_->GetCPUDescriptorHandleForHeapStart());
 
-	// [Index 0] Output UAV
-	CD3DX12_CPU_DESCRIPTOR_HANDLE uavCpuHandle(heapCpuStart, 0, descriptorSize_);
-	D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
-	uavDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-	device5_->CreateUnorderedAccessView(outputTexture_->GetResource(), nullptr, &uavDesc, uavCpuHandle);
+	//// [Index 0] Output UAV
+	//CD3DX12_CPU_DESCRIPTOR_HANDLE uavCpuHandle(heapCpuStart, 0, descriptorSize_);
+	//D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc{};
+	//uavDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	//uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+	//device5_->CreateUnorderedAccessView(outputTexture_->GetResource(), nullptr, &uavDesc, uavCpuHandle);
 
-	// [Index 1] Depth SRV
-	CD3DX12_CPU_DESCRIPTOR_HANDLE depthCpuHandle(heapCpuStart, 1, descriptorSize_);
-	D3D12_SHADER_RESOURCE_VIEW_DESC depthSrvDesc{};
+	//// [Index 1] Depth SRV
+	//CD3DX12_CPU_DESCRIPTOR_HANDLE depthCpuHandle(heapCpuStart, 1, descriptorSize_);
+	//D3D12_SHADER_RESOURCE_VIEW_DESC depthSrvDesc{};
 
-	depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-	depthSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	depthSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	depthSrvDesc.Texture2D.MipLevels = 1;
+	//depthSrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	//depthSrvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	//depthSrvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	//depthSrvDesc.Texture2D.MipLevels = 1;
 
-	device5_->CreateShaderResourceView(depthResource, &depthSrvDesc, depthCpuHandle);
+	//device5_->CreateShaderResourceView(depthResource, &depthSrvDesc, depthCpuHandle);
 
 	// -------------------------------------------------------------
 	// カメラ等のパラメータ更新
@@ -521,25 +527,25 @@ void RayTracingManager::Render(ID3D12Resource* depthResource)
 	// -------------------------------------------------------------
 	// レイトレ専用 Descriptor Heap をバインド（これ1つのみでOK！）
 	// -------------------------------------------------------------
-	ID3D12DescriptorHeap* ppHeaps[] = { rtDescriptorHeap_.Get() };
+	ID3D12DescriptorHeap* ppHeaps[] = { SRVManager::GetInstance()->GetHeap()};
 	dxrCmdList_->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE heapGpuStart(rtDescriptorHeap_->GetGPUDescriptorHandleForHeapStart());
+	//CD3DX12_GPU_DESCRIPTOR_HANDLE heapGpuStart(rtDescriptorHeap_->GetGPUDescriptorHandleForHeapStart());
 
 	dxrCmdList_->SetComputeRootSignature(globalRootSignature_.Get());
 	dxrCmdList_->SetComputeRootConstantBufferView(0, cameraBuffer_->GetGPUVirtualAddress());
 	dxrCmdList_->SetComputeRootShaderResourceView(1, tlasResultBuffer_->GetGPUVirtualAddress());
 
 	// Index 0 の Output UAV ハンドル
-	dxrCmdList_->SetComputeRootDescriptorTable(2, CD3DX12_GPU_DESCRIPTOR_HANDLE(heapGpuStart, 0, descriptorSize_));
+	dxrCmdList_->SetComputeRootDescriptorTable(2, outputUAVHandleGPU_);
 
 	// Index 1 の Depth SRV ハンドル
-	dxrCmdList_->SetComputeRootDescriptorTable(3, CD3DX12_GPU_DESCRIPTOR_HANDLE(heapGpuStart, 1, descriptorSize_));
+	dxrCmdList_->SetComputeRootDescriptorTable(3, depthSrvHandleGPU);
 
 	dxrCmdList_->SetComputeRootShaderResourceView(4, materialStructuredBuffer_->GetResource()->GetGPUVirtualAddress());
 
 	// Index 2～ の Hair Flat Vertices SRV 配列の先頭ハンドル
-	dxrCmdList_->SetComputeRootDescriptorTable(5, CD3DX12_GPU_DESCRIPTOR_HANDLE(heapGpuStart, 2, descriptorSize_));
+	dxrCmdList_->SetComputeRootDescriptorTable(5, hairSRVBaseAllocation_.gpu);
 
 	dxrCmdList_->SetPipelineState1(rtpso_.Get());
 
@@ -552,6 +558,7 @@ void RayTracingManager::Render(ID3D12Resource* depthResource)
 
 void RayTracingManager::PreRender(ID3D12Resource* renderTargetResource, D3D12_RESOURCE_STATES preState, ID3D12Resource* depthResource)
 {
+	if (registeredInstances_.empty()) return;
 #ifdef USE_IMGUI
 	// PIXイベントを開始
 	PIXScopedEvent(dxrCmdList_.Get(), PIX_COLOR_INDEX(2), "RayTracing Pre Pass");
@@ -573,6 +580,7 @@ void RayTracingManager::PreRender(ID3D12Resource* renderTargetResource, D3D12_RE
 
 void RayTracingManager::PostRender(ID3D12Resource* renderTargetResource, D3D12_RESOURCE_STATES postState, ID3D12Resource* depthResource)
 {
+	if (registeredInstances_.empty()) return;
 #ifdef USE_IMGUI
 	// PIXイベントを開始
 	PIXScopedEvent(dxrCmdList_.Get(), PIX_COLOR_INDEX(2), "RayTracing Post Pass");
@@ -595,16 +603,20 @@ void RayTracingManager::PostRender(ID3D12Resource* renderTargetResource, D3D12_R
 // 【 シェーダー・PSO・SBT構築 】
 // ==============================
 
-void RayTracingManager::CreateDescriptorHeap() {
-	D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
-	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	heapDesc.NumDescriptors = TOTAL_DESCRIPTORS;
-	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	heapDesc.NodeMask = 0;
+//void RayTracingManager::CreateDescriptorHeap() {
+//	/*D3D12_DESCRIPTOR_HEAP_DESC heapDesc{};
+//	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+//	heapDesc.NumDescriptors = TOTAL_DESCRIPTORS;
+//	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+//	heapDesc.NodeMask = 0;
+//
+//	HRESULT hr = device5_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&rtDescriptorHeap_));
+//	assert(SUCCEEDED(hr));
+//	rtDescriptorHeap_->SetName(L"RayTracing Descriptor Heap");*/
+//}
 
-	HRESULT hr = device5_->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&rtDescriptorHeap_));
-	assert(SUCCEEDED(hr));
-	rtDescriptorHeap_->SetName(L"RayTracing Descriptor Heap");
+void RayTracingManager::AllocateDesctiptors() {
+	hairSRVBaseAllocation_ = SRVManager::GetInstance()->AllocateRange(MAX_HAIR_BUFFERS);
 }
 
 void RayTracingManager::CreateRootSignature()

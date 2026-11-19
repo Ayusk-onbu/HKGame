@@ -21,9 +21,10 @@
        { "type": "CBV", "register": 0, "visibility": "All" },
        { "type": "CBV", "register": 1, "visibility": "All" },
        { "type": "CBV", "register": 2, "visibility": "All" },
-       { "type": "CBV", "register": 3, "visibility": "All" },
+       { "type": "Constants", "register": 3, "count": 1, "visibility": "All" },
        { "type": "SRVTable", "register": 0, "count": 1, "visibility": "All" },
        { "type": "SRVTable", "register": 1, "count": 1, "visibility": "All" },
+       { "type": "SRVTable", "register": 2, "count": 1, "visibility": "All" },
        { "type": "UAVTable", "register": 0, "count": 1, "visibility": "All" }
       ],
       "staticSamplers":[

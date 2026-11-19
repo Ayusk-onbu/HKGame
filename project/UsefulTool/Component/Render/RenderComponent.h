@@ -30,6 +30,7 @@ public:
     bool IsCastSDFShadowEnable()const { return castSDFShadow_; }
 
     void SendToDrawManager();
+    void SetModelFromName(const std::string& name);
 
 private:
     uint32_t modelID_ = 0;
